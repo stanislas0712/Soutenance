@@ -1,0 +1,18 @@
+from auditlog.registry import auditlog
+from django.contrib import admin
+from simple_history.admin import SimpleHistoryAdmin
+
+from .models import Convention
+
+
+@admin.register(Convention)
+class ConventionAdmin(SimpleHistoryAdmin):
+    list_display = ("reference", "project", "status", "odoo_id", "updated_at")
+    list_filter = ("status",)
+    search_fields = ("reference", "project__title", "project__operator__name")
+    raw_id_fields = ("project",)
+    readonly_fields = ("created_at", "updated_at", "validated_at", "sent_to_odoo_at")
+
+
+auditlog.register(Convention)
+

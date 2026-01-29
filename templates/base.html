@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{% block title %}Plateforme Budget{% endblock %}</title>
+
+    <!-- HTMX (no React) -->
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+
+    {% block head %}{% endblock %}
+  </head>
+  <body>
+    <main style="max-width: 980px; margin: 2rem auto; font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;">
+      {% block content %}{% endblock %}
+    </main>
+  </body>
+</html>
+
