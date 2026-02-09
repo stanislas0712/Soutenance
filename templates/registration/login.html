@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center align-items-center" style="min-height: 80vh;">
+        <div class="col-md-5">
+            <div class="card shadow-lg border-0">
+                <div class="card-header text-white py-4 budget-header-gradient text-center">
+                    <h3 class="mb-0">
+                        <i class="bi bi-lock-fill me-2"></i>Connexion
+                    </h3>
+                </div>
+                <div class="card-body p-5">
+                    {% if form.errors %}
+                    <div class="alert alert-danger" role="alert">
+                        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                        <strong>Erreur !</strong> Nom d'utilisateur ou mot de passe incorrect.
+                    </div>
+                    {% endif %}
+
+                    {% if next %}
+                        {% if user.is_authenticated %}
+                        <div class="alert alert-warning" role="alert">
+                            Vous n'avez pas la permission d'accéder à cette page.
+                        </div>
+                        {% endif %}
+                    {% endif %}
+
+                    <form method="post" action="{% url 'login' %}">
+                        {% csrf_token %}
+
+                        <div class="mb-4">
+                            <label for="id_username" class="form-label fw-bold">
+                                <i class="bi bi-person-fill me-1"></i>Nom d'utilisateur
+                            </label>
+                            <input type="text"
+                                   name="username"
+                                   class="form-control form-control-lg"
+                                   id="id_username"
+                                   placeholder="Entrez votre nom d'utilisateur"
+                                   required
+                                   autofocus>
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="id_password" class="form-label fw-bold">
+                                <i class="bi bi-key-fill me-1"></i>Mot de passe
+                            </label>
+                            <input type="password"
+                                   name="password"
+                                   class="form-control form-control-lg"
+                                   id="id_password"
+                                   placeholder="Entrez votre mot de passe"
+                                   required>
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="bi bi-box-arrow-in-right me-2"></i>Se connecter
+                            </button>
+                        </div>
+
+                        <input type="hidden" name="next" value="{{ next }}" />
+                    </form>
+                </div>
+                <div class="card-footer text-center py-3">
+                    <span class="text-muted">Vous n'avez pas de compte ?</span>
+                    <a href="{% url 'inscription' %}" class="fw-bold ms-1">
+                        <i class="bi bi-person-plus me-1"></i>Créer un compte
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .budget-header-gradient {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+</style>
+{% endblock %}
