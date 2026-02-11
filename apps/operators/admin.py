@@ -27,7 +27,6 @@ class OperatorAdmin(SimpleHistoryAdmin):
     
     search_fields = ['name', 'registration_number', 'gg_operator_id']
     
-    # Correction : readonly_fields alignés sur le modèle
     readonly_fields = [
         'gg_operator_id',
         'odoo_partner_id',
@@ -35,6 +34,29 @@ class OperatorAdmin(SimpleHistoryAdmin):
         'updated_at',
         'verified_at',
     ]
+
+    fieldsets = (
+        ('Identité', {
+            'classes': ('wide',),
+            'fields': ('name', 'legal_name', 'acronym', 'type', 'registration_number'),
+        }),
+        ('Statut & Vérification', {
+            'classes': ('wide',),
+            'fields': ('status', 'is_verified', 'verified_at'),
+        }),
+        ('Coordonnées', {
+            'classes': ('wide',),
+            'fields': ('email', 'phone', 'address', 'city', 'country'),
+        }),
+        ('Intégrations Externes', {
+            'classes': ('wide',),
+            'fields': ('gg_operator_id', 'odoo_partner_id'),
+        }),
+        ('Données brutes & Métadonnées', {
+            'classes': ('wide',),
+            'fields': ('raw_data', 'created_by', 'created_at', 'updated_at'),
+        }),
+    )
 
     # --- Méthodes pour les badges ---
     def type_badge(self, obj):

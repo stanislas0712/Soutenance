@@ -92,7 +92,43 @@ class InfosBudget(models.Model):
 
     historique = HistoricalRecords()
 
+    def recalculer_tout(self):
+        """Force un recalcul complet depuis les articles (bottom-up)"""
+        for section in self.sections.all():
+            for ligne in section.lignes.all():
+                groupes = ligne.groupes.all()
+                for groupe in groupes:
+                    articles = groupe.articles.all()
+                    groupe.cout_total_groupe = sum(a.quantite * a.prix_unitaire for a in articles)
+                    groupe.co_financement_groupe = sum(a.co_financement for a in articles)
+                    groupe.budget_demande_groupe = groupe.cout_total_groupe - groupe.co_financement_groupe
+                    GroupeArticle.objects.filter(pk=groupe.pk).update(
+                        cout_total_groupe=groupe.cout_total_groupe,
+                        co_financement_groupe=groupe.co_financement_groupe,
+                        budget_demande_groupe=groupe.budget_demande_groupe,
+                    )
+                ligne.cout_total_ligne = sum(g.cout_total_groupe for g in groupes)
+                ligne.co_financement_ligne = sum(g.co_financement_groupe for g in groupes)
+                ligne.budget_demande_ligne = ligne.cout_total_ligne - ligne.co_financement_ligne
+                LigneBudgetaire.objects.filter(pk=ligne.pk).update(
+                    cout_total_ligne=ligne.cout_total_ligne,
+                    co_financement_ligne=ligne.co_financement_ligne,
+                    budget_demande_ligne=ligne.budget_demande_ligne,
+                )
+            lignes = section.lignes.all()
+            section.cout_total_section = sum(l.cout_total_ligne for l in lignes)
+            section.co_financement_section = sum(l.co_financement_ligne for l in lignes)
+            section.budget_demande_section = section.cout_total_section - section.co_financement_section
+            SectionBudgetaire.objects.filter(pk=section.pk).update(
+                cout_total_section=section.cout_total_section,
+                co_financement_section=section.co_financement_section,
+                budget_demande_section=section.budget_demande_section,
+            )
+
     def calculer_synthese(self):
+        # Forcer le recalcul complet depuis les articles
+        self.recalculer_tout()
+
         sections = self.sections.all()
         self.cout_total_global = sum(s.cout_total_section for s in sections)
         self.co_financement_global = sum(s.co_financement_section for s in sections)
@@ -111,12 +147,13 @@ class InfosBudget(models.Model):
             self.cout_par_session = self.cout_par_apprenant * self.apprenants_par_session
 
         # Calcul du pourcentage A.1
+        self.pourcentage_a1 = Decimal(0)
         if self.cout_total_global > 0:
             try:
                 ligne_a1 = LigneBudgetaire.objects.get(section__budget_parent=self, code="A.1")
                 self.pourcentage_a1 = (ligne_a1.cout_total_ligne / self.cout_total_global) * 100
             except LigneBudgetaire.DoesNotExist:
-                self.pourcentage_a1 = 0
+                pass
 
         # On évite d'appeler save() pour ne pas déclencher les signaux en boucle
         InfosBudget.objects.filter(pk=self.pk).update(
@@ -193,13 +230,18 @@ class InfosBudget(models.Model):
         return self.appel_a_projet.est_actif
 
     def peut_etre_modifie(self):
-        """Vérifie si le budget peut être modifié (statut OK + appel actif)"""
-        statut_ok = self.statut in [self.STATUT_BROUILLON, self.STATUT_MODIFICATION_AUTORISEE]
-        return statut_ok and self.appel_est_actif()
+        """Vérifie si le budget peut être modifié"""
+        # Si l'admin a demandé une modification, l'opérateur peut toujours modifier
+        if self.statut == self.STATUT_MODIFICATION_AUTORISEE:
+            return True
+        # Brouillon ou soumis : modifiable tant que l'appel est actif
+        if self.statut in [self.STATUT_BROUILLON, self.STATUT_SOUMIS] and self.appel_est_actif():
+            return True
+        return False
 
     def peut_demander_modification(self):
         """Vérifie si une demande de modification peut être faite"""
-        return self.statut == self.STATUT_SOUMIS and self.appel_est_actif()
+        return self.statut == self.STATUT_SOUMIS
 
     def __str__(self) -> str:
         return f"Budget: {self.titre_projet[:50]}"

@@ -11,6 +11,20 @@ class WorkflowEventAdmin(SimpleHistoryAdmin):
     list_filter = ("action", "content_type")
     search_fields = ("object_id", "notes")
     readonly_fields = ("created_at",)
+    fieldsets = (
+        ('Objet concerné', {
+            'classes': ('wide',),
+            'fields': ('content_type', 'object_id'),
+        }),
+        ('Action & Détails', {
+            'classes': ('wide',),
+            'fields': ('action', 'notes'),
+        }),
+        ('Métadonnées', {
+            'classes': ('wide',),
+            'fields': ('created_by', 'created_at'),
+        }),
+    )
 
 
 auditlog.register(WorkflowEvent)

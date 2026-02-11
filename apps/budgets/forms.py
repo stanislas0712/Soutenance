@@ -39,11 +39,12 @@ class InfosBudgetForm(forms.ModelForm):
     class Meta:
         model = InfosBudget
         fields = [
-            'operateur', 'titre_projet', 'filiere',
+            'appel_a_projet', 'operateur', 'titre_projet', 'filiere',
             'metier', 'localite', 'total_apprenants',
             'nombre_sessions'
         ]
         widgets = {
+            'appel_a_projet': forms.Select(attrs={'class': 'form-control'}),
             'titre_projet': forms.Textarea(attrs={'rows': 2, 'class': 'form-control'}),
             'operateur': forms.TextInput(attrs={'class': 'form-control'}),
             'filiere': forms.TextInput(attrs={'class': 'form-control'}),
@@ -52,6 +53,17 @@ class InfosBudgetForm(forms.ModelForm):
             'total_apprenants': forms.NumberInput(attrs={'class': 'form-control'}),
             'nombre_sessions': forms.NumberInput(attrs={'class': 'form-control'}),
         }
+
+    def __init__(self, *args, **kwargs):
+        appels_actifs = kwargs.pop('appels_actifs', None)
+        super().__init__(*args, **kwargs)
+        if appels_actifs is not None:
+            self.fields['appel_a_projet'].queryset = appels_actifs
+            self.fields['appel_a_projet'].required = True
+            self.fields['appel_a_projet'].empty_label = "-- Choisir un appel à projet --"
+        else:
+            # En mode modification, cacher le champ appel_a_projet
+            self.fields.pop('appel_a_projet', None)
 
 class SousLigneArticleForm(forms.ModelForm):
     class Meta:

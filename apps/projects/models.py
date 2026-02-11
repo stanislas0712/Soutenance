@@ -10,11 +10,6 @@ class AppelAProjet(models.Model):
     nom = models.CharField(max_length=255, verbose_name="Nom de l'appel à projet")
     date_debut = models.DateTimeField(verbose_name="Date de début")
     date_fin = models.DateTimeField(verbose_name="Date de fin")
-    actif_manuellement = models.BooleanField(
-        default=False,
-        verbose_name="Activé manuellement",
-        help_text="Cochez pour forcer l'activation de l'appel, même en dehors des dates prévues."
-    )
     created_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,
@@ -38,7 +33,7 @@ class AppelAProjet(models.Model):
     def est_actif(self):
         from django.utils import timezone
         now = timezone.now()
-        return self.actif_manuellement or (self.date_debut <= now <= self.date_fin)
+        return self.date_debut <= now <= self.date_fin
 
 
 class Project(models.Model):

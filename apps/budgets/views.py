@@ -1,3 +1,4 @@
+import threading
 from django.shortcuts import render, get_object_or_404, redirect
 from django.http import HttpResponse, JsonResponse
 from django.db.models import Q
@@ -8,6 +9,26 @@ from django.contrib import messages
 from django.contrib.auth.models import User
 from .models import InfosBudget, GroupeArticle, SousLigneArticle, SectionBudgetaire
 from .forms import SousLigneArticleForm, InfosBudgetForm, InscriptionOperateurForm
+
+
+def _envoyer_email_async(subject, message, recipient_list):
+    """Envoie un email dans un thread séparé pour ne pas bloquer la requête."""
+    from django.core.mail import send_mail
+    from django.conf import settings
+
+    def _send():
+        try:
+            send_mail(
+                subject=subject,
+                message=message,
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                recipient_list=recipient_list,
+                fail_silently=True,
+            )
+        except Exception as e:
+            print(f"Erreur envoi email: {e}")
+
+    threading.Thread(target=_send, daemon=True).start()
 
 def inscription(request):
     """Inscription d'un nouvel opérateur (utilisateur sans droits admin)"""
@@ -79,7 +100,7 @@ def sauvegarder_ligne(request, groupe_id):
                 co_financement=float(request.POST.get('co_financement', 0))
             )
 
-            response = render(request, 'partials/subline_row.html', {'article': article})
+            response = render(request, 'partials/subline_row.html', {'article': article, 'budget': budget})
             response['HX-Trigger'] = 'refreshTotals'
             return response
         except (ValueError, TypeError) as e:
@@ -114,15 +135,39 @@ def get_synthese(request, uuid):
     return render(request, 'budgets/synthese_header.html', {'budget': budget})
 
 @login_required
+def get_budget_statut(request, uuid):
+    """Retourne le statut actuel du budget en JSON (pour le polling temps réel)"""
+    budget = get_object_or_404(InfosBudget, uuid=uuid)
+    return JsonResponse({
+        'statut': budget.statut,
+        'statut_display': budget.get_statut_display(),
+        'motif': budget.motif_demande_modification or '',
+    })
+
+@login_required
 def get_pourcentage_a1(request, uuid):
-    """Retourne le pourcentage A1 en JSON pour la validation JS"""
+    """Retourne le pourcentage A1 et les infos de validation en JSON"""
     budget = get_object_or_404(InfosBudget, uuid=uuid)
     budget.calculer_synthese()
     budget.refresh_from_db()
+
     return JsonResponse({
         'pourcentage_a1': float(budget.pourcentage_a1),
         'cout_total_global': float(budget.cout_total_global),
         'depasse_30': float(budget.pourcentage_a1) > 30,
+    })
+
+@login_required
+def get_appel_statut(request):
+    """Retourne le nombre d'appels actifs (pour le polling temps réel)"""
+    from apps.projects.models import AppelAProjet
+    from django.utils import timezone as tz
+    now = tz.now()
+    count = AppelAProjet.objects.filter(
+        date_debut__lte=now, date_fin__gte=now
+    ).count()
+    return JsonResponse({
+        'count': count,
     })
 
 @login_required
@@ -138,7 +183,8 @@ def budget_dashboard(request):
                 Q(titre_projet__icontains=query) |
                 Q(operateur__icontains=query) |
                 Q(filiere__icontains=query) |
-                Q(localite__icontains=query)
+                Q(localite__nom__icontains=query) |
+                Q(metier__nom__icontains=query)
             ).order_by('-id')
         else:
             budgets = InfosBudget.objects.all().order_by('-id')
@@ -150,24 +196,25 @@ def budget_dashboard(request):
                 Q(titre_projet__icontains=query) |
                 Q(operateur__icontains=query) |
                 Q(filiere__icontains=query) |
-                Q(localite__icontains=query)
+                Q(localite__nom__icontains=query) |
+                Q(metier__nom__icontains=query)
             ).order_by('-id')
         else:
             budgets = InfosBudget.objects.none()
 
-    # Vérifier s'il y a un appel à projet actif (par dates OU activé manuellement)
+    # Récupérer tous les appels à projet actifs
     from apps.projects.models import AppelAProjet
     from django.utils import timezone as tz
     now = tz.now()
-    appel_actif = AppelAProjet.objects.filter(
-        Q(actif_manuellement=True) | Q(date_debut__lte=now, date_fin__gte=now)
-    ).first()
+    appels_actifs = AppelAProjet.objects.filter(
+        date_debut__lte=now, date_fin__gte=now
+    )
 
     return render(request, 'budgets/dashboard.html', {
         'budgets': budgets,
         'query': query,
         'is_admin': is_admin,
-        'appel_actif': appel_actif,
+        'appels_actifs': appels_actifs,
     })
 
 @login_required
@@ -180,27 +227,26 @@ def creer_budget(request):
         messages.error(request, "Les administrateurs ne sont pas autorisés à créer des budgets.")
         return redirect('budgets:dashboard')
 
-    # Vérifier qu'il y a un appel à projet actif (par dates OU activé manuellement)
+    # Récupérer tous les appels à projet actifs
     now = timezone.now()
-    appel_actif = AppelAProjet.objects.filter(
-        Q(actif_manuellement=True) | Q(date_debut__lte=now, date_fin__gte=now)
-    ).first()
-    if not appel_actif:
+    appels_actifs = AppelAProjet.objects.filter(
+        date_debut__lte=now, date_fin__gte=now
+    )
+    if not appels_actifs.exists():
         messages.error(request, "Aucun appel à projet n'est actif actuellement. Vous ne pouvez pas créer de budget en dehors de la période d'appel.")
         return redirect('budgets:dashboard')
 
     if request.method == "POST":
-        form = InfosBudgetForm(request.POST)
+        form = InfosBudgetForm(request.POST, appels_actifs=appels_actifs)
         if form.is_valid():
             nouveau_budget = form.save(commit=False)
             nouveau_budget.created_by = request.user
-            nouveau_budget.appel_a_projet = appel_actif
             nouveau_budget.save()
             return redirect('budgets:budget_detail', uuid=nouveau_budget.uuid)
     else:
-        form = InfosBudgetForm()
+        form = InfosBudgetForm(appels_actifs=appels_actifs)
 
-    return render(request, 'budgets/creer_budget.html', {'form': form, 'appel_actif': appel_actif})
+    return render(request, 'budgets/creer_budget.html', {'form': form, 'appels_actifs': appels_actifs})
 
 @login_required
 def modifier_budget(request, uuid):
@@ -217,9 +263,9 @@ def modifier_budget(request, uuid):
         messages.error(request, "Vous n'avez pas accès à ce budget.")
         return redirect('budgets:dashboard')
 
-    # Vérifier que l'appel à projet est encore actif
-    if not budget.appel_est_actif():
-        messages.error(request, "La période de l'appel à projet est terminée. Vous ne pouvez plus modifier ce budget.")
+    # Vérifier que le budget est modifiable (statut + appel actif)
+    if not budget.peut_etre_modifie():
+        messages.error(request, "Ce budget ne peut pas être modifié dans son état actuel.")
         return redirect('budgets:budget_detail', uuid=uuid)
 
     if request.method == "POST":
@@ -786,9 +832,6 @@ def changer_mot_de_passe(request):
 def soumettre_budget(request, uuid):
     """Soumet le budget pour validation par l'admin"""
     from django.utils import timezone
-    from django.core.mail import send_mail
-    from django.conf import settings
-
     budget = get_object_or_404(InfosBudget, uuid=uuid)
 
     # Vérifier que l'utilisateur est le créateur ou admin
@@ -796,8 +839,8 @@ def soumettre_budget(request, uuid):
         messages.error(request, "Vous n'avez pas la permission de soumettre ce budget.")
         return redirect('budgets:budget_detail', uuid=uuid)
 
-    # Vérifier que le budget est en brouillon ou modification autorisée
-    if budget.statut not in [InfosBudget.STATUT_BROUILLON, InfosBudget.STATUT_MODIFICATION_AUTORISEE]:
+    # Vérifier que le budget est modifiable (brouillon, soumis avec appel actif, ou modification autorisée)
+    if not budget.peut_etre_modifie():
         messages.error(request, "Ce budget ne peut pas être soumis dans son état actuel.")
         return redirect('budgets:budget_detail', uuid=uuid)
 
@@ -814,14 +857,12 @@ def soumettre_budget(request, uuid):
     budget.date_soumission = timezone.now()
     budget.save()
 
-    # Envoyer un email à l'admin
-    try:
-        admin_emails = [user.email for user in User.objects.filter(is_staff=True, is_active=True) if user.email]
-        if admin_emails:
-            send_mail(
-                subject=f'Nouveau budget soumis: {budget.titre_projet}',
-                message=f"""
-Un nouveau budget a été soumis pour validation.
+    # Envoyer un email à l'admin (en arrière-plan)
+    admin_emails = [u.email for u in User.objects.filter(is_staff=True, is_active=True) if u.email]
+    if admin_emails:
+        _envoyer_email_async(
+            subject=f'Nouveau budget soumis: {budget.titre_projet}',
+            message=f"""Un nouveau budget a été soumis pour validation.
 
 Titre du projet: {budget.titre_projet}
 Opérateur: {budget.operateur}
@@ -832,14 +873,9 @@ Date de soumission: {timezone.now().strftime('%d/%m/%Y %H:%M')}
 Coût total global: {budget.cout_total_global:,.0f} FCFA
 Budget demandé: {budget.budget_demande_global:,.0f} FCFA
 
-Veuillez vous connecter à l'application pour examiner ce budget.
-                """,
-                from_email=settings.DEFAULT_FROM_EMAIL,
-                recipient_list=admin_emails,
-                fail_silently=True,
-            )
-    except Exception as e:
-        print(f"Erreur lors de l'envoi de l'email: {e}")
+Veuillez vous connecter à l'application pour examiner ce budget.""",
+            recipient_list=admin_emails,
+        )
 
     messages.success(request, "Votre budget a été soumis avec succès. Vous recevrez une notification une fois qu'il aura été examiné.")
     return redirect('budgets:budget_detail', uuid=uuid)
@@ -848,9 +884,6 @@ Veuillez vous connecter à l'application pour examiner ce budget.
 def demander_modification(request, uuid):
     """Admin demande à l'opérateur de modifier son budget (avec motif + email)"""
     from django.utils import timezone
-    from django.core.mail import send_mail
-    from django.conf import settings
-
     # Réservé aux admins
     if not (request.user.is_staff or request.user.is_superuser):
         messages.error(request, "Accès non autorisé.")
@@ -876,13 +909,12 @@ def demander_modification(request, uuid):
         budget.date_autorisation_modification = timezone.now()
         budget.save()
 
-        # Envoyer un email à l'opérateur
+        # Envoyer un email à l'opérateur (en arrière-plan)
         budget_url = request.build_absolute_uri(f'/budgets/{budget.uuid}/')
-        try:
-            if budget.created_by and budget.created_by.email:
-                send_mail(
-                    subject=f'[MODIFICATION DEMANDÉE] {budget.titre_projet}',
-                    message=f"""Bonjour {budget.created_by.get_full_name() or budget.created_by.username},
+        if budget.created_by and budget.created_by.email:
+            _envoyer_email_async(
+                subject=f'[MODIFICATION DEMANDÉE] {budget.titre_projet}',
+                message=f"""Bonjour {budget.created_by.get_full_name() or budget.created_by.username},
 
 L'administrateur vous demande de modifier votre budget "{budget.titre_projet}".
 
@@ -895,14 +927,9 @@ Cliquez ici pour accéder à votre budget :
 {budget_url}
 
 Cordialement,
-Système de Gestion de Budget
-                    """,
-                    from_email=settings.DEFAULT_FROM_EMAIL,
-                    recipient_list=[budget.created_by.email],
-                    fail_silently=True,
-                )
-        except Exception as e:
-            print(f"Erreur lors de l'envoi de l'email: {e}")
+Système de Gestion de Budget""",
+                recipient_list=[budget.created_by.email],
+            )
 
         messages.success(request, "La demande de modification a été envoyée à l'opérateur par email. Le budget est maintenant modifiable.")
         return redirect('budgets:budget_detail', uuid=uuid)
@@ -913,9 +940,6 @@ Système de Gestion de Budget
 def approuver_budget(request, uuid):
     """Admin approuve définitivement un budget (vue admin uniquement)"""
     from django.utils import timezone
-    from django.core.mail import send_mail
-    from django.conf import settings
-
     # Vérifier que l'utilisateur est admin
     if not (request.user.is_staff or request.user.is_superuser):
         messages.error(request, "Accès non autorisé - Seuls les administrateurs peuvent approuver des budgets.")
@@ -933,27 +957,58 @@ def approuver_budget(request, uuid):
     budget.date_approbation = timezone.now()
     budget.save()
 
-    # Envoyer un email au créateur
-    try:
-        if budget.created_by and budget.created_by.email:
-            send_mail(
-                subject=f'Budget approuvé: {budget.titre_projet}',
-                message=f"""
-Félicitations! Votre budget "{budget.titre_projet}" a été approuvé.
+    # Envoyer un email au créateur (en arrière-plan)
+    if budget.created_by and budget.created_by.email:
+        _envoyer_email_async(
+            subject=f'Budget approuvé: {budget.titre_projet}',
+            message=f"""Félicitations! Votre budget "{budget.titre_projet}" a été approuvé.
 
 Coût total global: {budget.cout_total_global:,.0f} FCFA
 Budget demandé: {budget.budget_demande_global:,.0f} FCFA
 Date d'approbation: {timezone.now().strftime('%d/%m/%Y %H:%M')}
 
-Merci pour votre soumission.
-                """,
-                from_email=settings.DEFAULT_FROM_EMAIL,
-                recipient_list=[budget.created_by.email],
-                fail_silently=True,
-            )
-    except Exception as e:
-        print(f"Erreur lors de l'envoi de l'email: {e}")
+Merci pour votre soumission.""",
+            recipient_list=[budget.created_by.email],
+        )
 
     messages.success(request, "Le budget a été approuvé. L'opérateur a été notifié.")
+    return redirect('budgets:budget_detail', uuid=uuid)
+
+@login_required
+def rejeter_budget(request, uuid):
+    """Admin rejette définitivement un budget"""
+    from django.utils import timezone
+    if not (request.user.is_staff or request.user.is_superuser):
+        messages.error(request, "Accès non autorisé.")
+        return redirect('budgets:dashboard')
+
+    budget = get_object_or_404(InfosBudget, uuid=uuid)
+
+    if budget.statut != InfosBudget.STATUT_SOUMIS:
+        messages.error(request, "Seuls les budgets soumis peuvent être rejetés.")
+        return redirect('budgets:budget_detail', uuid=uuid)
+
+    budget.statut = InfosBudget.STATUT_REJETE
+    budget.save()
+
+    # Envoyer un email à l'opérateur (en arrière-plan)
+    if budget.created_by and budget.created_by.email:
+        _envoyer_email_async(
+            subject=f'Budget rejeté: {budget.titre_projet}',
+            message=f"""Bonjour {budget.created_by.get_full_name() or budget.created_by.username},
+
+Votre budget "{budget.titre_projet}" a été rejeté par l'administrateur.
+
+Coût total global: {budget.cout_total_global:,.0f} FCFA
+Budget demandé: {budget.budget_demande_global:,.0f} FCFA
+
+Pour toute question, veuillez contacter l'administrateur.
+
+Cordialement,
+Système de Gestion de Budget""",
+            recipient_list=[budget.created_by.email],
+        )
+
+    messages.success(request, "Le budget a été rejeté. L'opérateur a été notifié.")
     return redirect('budgets:budget_detail', uuid=uuid)
 

@@ -84,12 +84,3 @@
     <td></td>
 </tr>
 
-{# Alerte si A.1 dépasse 30% #}
-{% if budget.pourcentage_a1 > 30 %}
-<tr class="table-danger">
-    <td colspan="9" class="fw-bold text-center text-danger">
-        <i class="bi bi-exclamation-triangle-fill me-2"></i>
-        ERREUR : A.1 (Matières d'œuvre) représente {{ budget.pourcentage_a1|floatformat:1 }}% du budget total (maximum autorisé : 30%)
-    </td>
-</tr>
-{% endif %}
