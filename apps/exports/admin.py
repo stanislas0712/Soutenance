@@ -11,6 +11,20 @@ class ExportJobAdmin(SimpleHistoryAdmin):
     list_filter = ("kind", "status")
     search_fields = ("error_message",)
     readonly_fields = ("created_at", "updated_at")
+    fieldsets = (
+        ('Type & Statut', {
+            'classes': ('wide',),
+            'fields': ('kind', 'status'),
+        }),
+        ('Paramètres & Résultat', {
+            'classes': ('wide',),
+            'fields': ('parameters', 'result_file', 'error_message'),
+        }),
+        ('Métadonnées', {
+            'classes': ('wide',),
+            'fields': ('created_by', 'created_at', 'updated_at'),
+        }),
+    )
 
 
 auditlog.register(ExportJob)

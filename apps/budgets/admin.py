@@ -1,8 +1,37 @@
 from django.contrib import admin
+from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
+from django.contrib.auth.models import User
 from .models import (
     InfosBudget, SectionBudgetaire, LigneBudgetaire,
     GroupeArticle, SousLigneArticle, Metier, Localite
 )
+
+# --- UTILISATEURS : toutes les sections visibles ---
+admin.site.unregister(User)
+
+@admin.register(User)
+class UserAdmin(BaseUserAdmin):
+    fieldsets = (
+        ('Informations de connexion', {
+            'classes': ('wide',),
+            'fields': ('username', 'password'),
+        }),
+        ('Informations personnelles', {
+            'classes': ('wide',),
+            'fields': ('first_name', 'last_name', 'email'),
+        }),
+        ('Permissions', {
+            'classes': ('wide',),
+            'fields': ('is_active', 'is_staff', 'is_superuser', 'groups', 'user_permissions'),
+        }),
+        ('Dates importantes', {
+            'classes': ('wide',),
+            'fields': ('last_login', 'date_joined'),
+        }),
+    )
+    list_display = ('username', 'email', 'first_name', 'last_name', 'is_staff', 'is_active')
+    list_filter = ('is_staff', 'is_superuser', 'is_active')
+    search_fields = ('username', 'first_name', 'last_name', 'email')
 
 
 @admin.register(Metier)
@@ -55,20 +84,39 @@ class InfosBudgetAdmin(admin.ModelAdmin):
     """
     Vue principale du Budget
     """
-    list_display = ('titre_projet', 'operateur', 'cout_total_global', 'budget_demande_global', 'cout_par_apprenant')
+    list_display = ('titre_projet', 'operateur', 'statut', 'cout_total_global', 'budget_demande_global', 'cout_par_apprenant', 'created_by')
+    list_filter = ('statut', 'appel_a_projet', 'filiere')
+    search_fields = ('titre_projet', 'operateur', 'filiere')
     fieldsets = (
         ('Informations Générales', {
-            'fields': ('operateur', 'titre_projet', 'filiere', 'metier', 'localite')
+            'classes': ('wide',),
+            'fields': ('uuid', 'operateur', 'titre_projet', 'filiere', 'metier', 'localite', 'created_by', 'appel_a_projet'),
         }),
         ('Paramètres & Effectifs', {
-            'fields': ('total_apprenants', 'nombre_sessions')
+            'classes': ('wide',),
+            'fields': ('total_apprenants', 'nombre_sessions'),
+        }),
+        ('Workflow & Statut', {
+            'classes': ('wide',),
+            'fields': ('statut', 'date_soumission', 'date_approbation', 'motif_demande_modification', 'date_demande_modification', 'date_autorisation_modification'),
         }),
         ('Synthèse Financière (Calculée)', {
-            'fields': (('cout_total_global', 'co_financement_global'), ('budget_demande_global', 'cout_par_apprenant')),
-            'description': "Ces montants sont mis à jour automatiquement via la cascade de calculs."
+            'classes': ('wide',),
+            'fields': (
+                ('cout_total_global', 'co_financement_global'),
+                ('budget_demande_global', 'cout_par_apprenant'),
+                ('apprenants_par_session', 'cout_par_session'),
+                'pourcentage_a1',
+            ),
+            'description': "Ces montants sont mis à jour automatiquement via la cascade de calculs.",
         }),
     )
-    readonly_fields = ('cout_total_global', 'co_financement_global', 'budget_demande_global', 'cout_par_apprenant')
+    readonly_fields = (
+        'uuid', 'created_by', 'cout_total_global', 'co_financement_global',
+        'budget_demande_global', 'cout_par_apprenant', 'apprenants_par_session',
+        'cout_par_session', 'pourcentage_a1', 'date_soumission', 'date_approbation',
+        'date_demande_modification', 'date_autorisation_modification',
+    )
     inlines = [SectionBudgetaireInline]
 
     # Action manuelle pour recalculer tout le budget en cas de besoin

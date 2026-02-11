@@ -5,11 +5,11 @@ from django.contrib.auth import views as auth_views
 from apps.budgets.views import inscription
 
 urlpatterns = [
-    path('admin/', admin.site.urls),
+    path('manager/', admin.site.urls),
     path('', RedirectView.as_view(pattern_name='login', permanent=False)),
 
     # Authentification
-    path('accounts/login/', auth_views.LoginView.as_view(), name='login'),
+    path('accounts/login/', auth_views.LoginView.as_view(redirect_authenticated_user=True), name='login'),
     path('accounts/logout/', auth_views.LogoutView.as_view(), name='logout'),
     path('accounts/inscription/', inscription, name='inscription'),
 

@@ -15,6 +15,8 @@ urlpatterns = [
     path('sauvegarder-ligne/<int:groupe_id>/', views.sauvegarder_ligne, name='sauvegarder_ligne'),
     path('supprimer-article/<int:article_id>/', views.supprimer_article, name='supprimer_article'),
     path('get-synthese/<uuid:uuid>/', views.get_synthese, name='get_synthese'),
+    path('get-statut/<uuid:uuid>/', views.get_budget_statut, name='get_budget_statut'),
+    path('get-appel-statut/', views.get_appel_statut, name='get_appel_statut'),
     path('get-pourcentage-a1/<uuid:uuid>/', views.get_pourcentage_a1, name='get_pourcentage_a1'),
     path('get-total-section/<int:section_id>/', views.get_total_section, name='get_total_section'),
 
@@ -31,4 +33,5 @@ urlpatterns = [
     path('<uuid:uuid>/soumettre/', views.soumettre_budget, name='soumettre_budget'),
     path('<uuid:uuid>/demander-modification/', views.demander_modification, name='demander_modification'),
     path('<uuid:uuid>/approuver/', views.approuver_budget, name='approuver_budget'),
+    path('<uuid:uuid>/rejeter/', views.rejeter_budget, name='rejeter_budget'),
 ]

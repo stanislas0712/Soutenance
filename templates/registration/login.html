@@ -1,6 +1,9 @@
 {% extends "base.html" %}
 
 {% block content %}
+{% if user.is_authenticated %}
+<script>window.location.href = "{% url 'budgets:dashboard' %}";</script>
+{% endif %}
 <div class="container">
     <div class="row justify-content-center align-items-center" style="min-height: 80vh;">
         <div class="col-md-5">

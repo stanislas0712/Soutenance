@@ -50,8 +50,8 @@
                                     {% include 'partials/subline_row.html' with article=article budget=budget %}
                                 {% endfor %}
 
-                                {# Formulaire de saisie toujours visible (sauf si budget verrouillé) #}
-                                {% if budget.peut_etre_modifie %}
+                                {# Formulaire de saisie visible uniquement pour l'operateur (pas l'admin) #}
+                                {% if budget.peut_etre_modifie and not user.is_staff and not user.is_superuser %}
                                 <tr class="bg-light article-form-row" data-groupe-id="{{ groupe.id }}" id="form-groupe-{{ groupe.id }}">
                                     <td class="ps-5"></td>
                                     <td>
@@ -103,40 +103,111 @@
     </div>
 </div>
 
-{% if budget.peut_etre_modifie %}
+{# Boutons operateur : soumettre (seulement si budget modifiable et pas admin) #}
+{% if budget.peut_etre_modifie and not user.is_staff and not user.is_superuser %}
 <div class="d-flex justify-content-end gap-2 mt-4 mb-5">
     <button type="button" class="btn btn-outline-secondary" onclick="window.location.reload();">
         <i class="bi bi-x-circle me-1"></i>Annuler les modifications
     </button>
     <a href="{% url 'budgets:soumettre_budget' budget.uuid %}" class="btn btn-success"
        id="btn-soumettre"
-       {% if budget.pourcentage_a1 > 30 %}
-       style="pointer-events: none; opacity: 0.5;"
-       {% endif %}
        onclick="return verifierAvantSoumission();">
         <i class="bi bi-send me-1"></i>Soumettre le budget
     </a>
 </div>
-{% else %}
-<div class="alert alert-info mt-4">
-    <i class="bi bi-lock me-2"></i>
-    {% if not budget.appel_est_actif %}
-        La période de l'appel à projet est terminée. Ce budget ne peut plus être modifié.
-    {% else %}
-        Ce budget ne peut plus être modifié dans son état actuel ({{ budget.get_statut_display }}).
+{% endif %}
+
+{# Zone admin en bas : boutons d'action ou message de statut #}
+{% if user.is_staff or user.is_superuser %}
+    {% if budget.statut == 'soumis' %}
+    <div class="d-flex justify-content-center gap-3 mt-4 mb-5">
+        <a href="{% url 'budgets:approuver_budget' budget.uuid %}" class="btn btn-success btn-lg"
+           onclick="return confirm('Confirmer la validation de ce budget ?');">
+            <i class="bi bi-check-circle-fill me-2"></i>Valider le budget
+        </a>
+        <a href="{% url 'budgets:demander_modification' budget.uuid %}" class="btn btn-warning btn-lg">
+            <i class="bi bi-pencil-square me-2"></i>Demander modification
+        </a>
+        <a href="{% url 'budgets:rejeter_budget' budget.uuid %}" class="btn btn-danger btn-lg"
+           onclick="return confirm('Confirmer le rejet de ce budget ?');">
+            <i class="bi bi-x-circle-fill me-2"></i>Rejeter le budget
+        </a>
+    </div>
+    {% elif budget.statut == 'rejete' %}
+    <div class="text-center mt-4 mb-5">
+        <div class="alert alert-danger d-inline-flex align-items-center px-5 py-3">
+            <i class="bi bi-x-circle-fill fs-3 me-3"></i>
+            <div>
+                <strong class="fs-5">Ce budget a ete rejete</strong>
+            </div>
+        </div>
+    </div>
+    {% elif budget.statut == 'approuve' %}
+    <div class="text-center mt-4 mb-5">
+        <div class="alert alert-success d-inline-flex align-items-center px-5 py-3">
+            <i class="bi bi-check-circle-fill fs-3 me-3"></i>
+            <div>
+                <strong class="fs-5">Ce budget a ete approuve</strong>
+            </div>
+        </div>
+    </div>
     {% endif %}
-</div>
 {% endif %}
 
 <script>
-// Fonction globale pour vérifier avant soumission
+// Fonction globale pour verifier avant soumission (appelee au clic sur Soumettre)
 function verifierAvantSoumission() {
-    const alerteA1 = document.getElementById('alerte-a1');
-    if (alerteA1 && !alerteA1.classList.contains('d-none')) {
-        alert('Impossible de soumettre : A.1 (Matieres d\'oeuvre) depasse 30% du budget total. Veuillez corriger avant de soumettre.');
-        return false;
-    }
-    return confirm('Etes-vous sur de vouloir soumettre ce budget pour validation ? Vous ne pourrez plus le modifier sans demande speciale.');
+    // Empecher la navigation par defaut, on verifie d'abord via API
+    const btnSoumettre = document.getElementById('btn-soumettre');
+    const urlSoumettre = btnSoumettre.href;
+
+    // Recuperer l'UUID du budget
+    const urlParts = window.location.pathname.split('/');
+    const budgetUuid = urlParts[urlParts.length - 2];
+
+    // Appel API pour verifier le pourcentage A1 et le total
+    fetch(`/budgets/get-pourcentage-a1/${budgetUuid}/`)
+        .then(response => response.json())
+        .then(data => {
+            let bloque = false;
+
+            // Verifier A1 > 30%
+            if (data.depasse_30) {
+                const alerteA1 = document.getElementById('alerte-a1');
+                const spanPourcentage = document.getElementById('a1-pourcentage-value');
+                if (alerteA1) {
+                    alerteA1.classList.remove('d-none');
+                    if (spanPourcentage) {
+                        spanPourcentage.textContent = data.pourcentage_a1.toFixed(1);
+                    }
+                }
+                alert('Impossible de soumettre : A.1 (Matieres d\'oeuvre) represente ' + data.pourcentage_a1.toFixed(1) + '% du budget total. Le maximum autorise est de 30%.');
+                bloque = true;
+            } else {
+                const alerteA1 = document.getElementById('alerte-a1');
+                if (alerteA1) alerteA1.classList.add('d-none');
+            }
+
+            if (!bloque) {
+                // Scroll vers le haut pour cacher les alertes
+                const alerteA1 = document.getElementById('alerte-a1');
+                if (alerteA1) alerteA1.classList.add('d-none');
+
+                // Demander confirmation puis soumettre
+                if (confirm('Etes-vous sur de vouloir soumettre ce budget pour validation ? Vous ne pourrez plus le modifier sans demande speciale.')) {
+                    window.location.href = urlSoumettre;
+                }
+            }
+        })
+        .catch(err => {
+            console.error('Erreur verification:', err);
+            if (confirm('Impossible de verifier les regles. Soumettre quand meme ?')) {
+                window.location.href = urlSoumettre;
+            }
+        });
+
+    // Toujours bloquer la navigation par defaut (le redirect se fait dans le .then)
+    return false;
 }
 
 (function() {
@@ -160,52 +231,6 @@ function verifierAvantSoumission() {
         return cookieValue;
     }
     const csrfToken = getCookie('csrftoken');
-
-    // Recuperer l'UUID du budget depuis l'URL
-    function getBudgetUuid() {
-        const urlParts = window.location.pathname.split('/');
-        return urlParts[urlParts.length - 2];
-    }
-
-    // Verifier le pourcentage A1 et mettre a jour l'alerte + bouton soumettre
-    function verifierPourcentageA1() {
-        const budgetUuid = getBudgetUuid();
-        fetch(`/budgets/get-pourcentage-a1/${budgetUuid}/`)
-            .then(response => response.json())
-            .then(data => {
-                const alerteA1 = document.getElementById('alerte-a1');
-                const btnSoumettre = document.getElementById('btn-soumettre');
-                const spanPourcentage = document.getElementById('a1-pourcentage-value');
-
-                if (data.depasse_30) {
-                    // Afficher l'alerte
-                    if (alerteA1) {
-                        alerteA1.classList.remove('d-none');
-                        if (spanPourcentage) {
-                            spanPourcentage.textContent = data.pourcentage_a1.toFixed(1);
-                        }
-                    }
-                    // Desactiver le bouton soumettre
-                    if (btnSoumettre) {
-                        btnSoumettre.style.pointerEvents = 'none';
-                        btnSoumettre.style.opacity = '0.5';
-                    }
-                    // Alerte JS
-                    alert('Attention : A.1 (Matieres d\'oeuvre) represente ' + data.pourcentage_a1.toFixed(1) + '% du budget total. Le maximum autorise est de 30%. Le budget ne peut pas etre soumis.');
-                } else {
-                    // Cacher l'alerte
-                    if (alerteA1) {
-                        alerteA1.classList.add('d-none');
-                    }
-                    // Reactiver le bouton soumettre
-                    if (btnSoumettre) {
-                        btnSoumettre.style.pointerEvents = '';
-                        btnSoumettre.style.opacity = '';
-                    }
-                }
-            })
-            .catch(err => console.error('Erreur verification A1:', err));
-    }
 
     // Initialiser tous les formulaires
     formRows.forEach(formRow => {
@@ -234,25 +259,10 @@ function verifierAvantSoumission() {
     });
 
     function updateTotals() {
-        const budgetUuid = getBudgetUuid();
-
-        // Recharger la synthese header
-        fetch(`/budgets/get-synthese/${budgetUuid}/`)
-            .then(response => response.text())
-            .then(html => {
-                const synthese = document.querySelector('.card.mb-4.border-0.shadow-sm');
-                if (synthese && synthese.previousElementSibling) {
-                    synthese.previousElementSibling.outerHTML = html;
-                }
-            });
-
-        // Verifier le pourcentage A1
-        verifierPourcentageA1();
-
         // Recharger toute la page apres un court delai pour mettre a jour tous les totaux
         setTimeout(() => {
             location.reload();
-        }, 1500);
+        }, 800);
     }
 
     function saveArticle(formRow, groupeId, inputs) {
@@ -304,7 +314,7 @@ function verifierAvantSoumission() {
                 formRow.style.backgroundColor = '';
             }, 500);
 
-            // Mettre a jour les totaux et verifier A1
+            // Mettre a jour les totaux
             updateTotals();
         })
         .catch(error => {

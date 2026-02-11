@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load humanize %}
 
 {% block content %}
 <div class="container-fluid mt-4">
@@ -21,9 +22,11 @@
                 <span class="badge bg-warning text-dark"><i class="bi bi-pencil-square me-1"></i>Modification demandée</span>
             {% elif budget.statut == 'approuve' %}
                 <span class="badge bg-success"><i class="bi bi-check-circle me-1"></i>Approuvé</span>
+            {% elif budget.statut == 'rejete' %}
+                <span class="badge bg-danger"><i class="bi bi-x-circle me-1"></i>Rejeté</span>
             {% endif %}
 
-            {# Boutons Admin #}
+            {# Bouton export Admin (reste en haut) #}
             {% if user.is_staff or user.is_superuser %}
             <div class="btn-group" role="group">
                 <button type="button" class="btn btn-success dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
@@ -47,31 +50,40 @@
                     </li>
                 </ul>
             </div>
-
-            {% if budget.statut == 'soumis' %}
-                <a href="{% url 'budgets:approuver_budget' budget.uuid %}" class="btn btn-success">
-                    <i class="bi bi-check-circle-fill me-1"></i>Approuver
-                </a>
-                <a href="{% url 'budgets:demander_modification' budget.uuid %}" class="btn btn-warning">
-                    <i class="bi bi-pencil-square me-1"></i>Demander modification
-                </a>
-            {% endif %}
-
             {% endif %}
         </div>
     </div>
 
     {% include 'budgets/synthese_header.html' %}
 
-    {# Alerte A1 > 30% - affichee en haut de page #}
-    <div id="alerte-a1" class="alert alert-danger mb-4 {% if budget.pourcentage_a1 <= 30 %}d-none{% endif %}"
-         data-pourcentage="{{ budget.pourcentage_a1|floatformat:1 }}">
+    {# Alerte A1 > 30% - toujours cachee, visible uniquement via JS lors de la soumission #}
+    <div id="alerte-a1" class="alert alert-danger mb-4 d-none">
         <i class="bi bi-exclamation-triangle-fill me-2"></i>
         <strong>ATTENTION :</strong> A.1 (Matieres d'oeuvre) represente
-        <span id="a1-pourcentage-value">{{ budget.pourcentage_a1|floatformat:1 }}</span>% du budget total.
+        <span id="a1-pourcentage-value">0</span>% du budget total.
         <strong>Le maximum autorise est de 30%.</strong>
         Le budget ne peut pas etre soumis tant que cette limite est depassee.
     </div>
+
+    {# Message appel termine - seulement si l'appel est expire ET le budget n'est pas en modification autorisee #}
+    {% if not budget.appel_est_actif and budget.statut != 'modification_autorisee' %}
+    <div class="alert alert-danger mb-4">
+        <i class="bi bi-calendar-x me-2"></i>
+        <strong>La periode de l'appel a projet est terminee.</strong>
+        Ce budget ne peut plus etre modifie.
+        {% if budget.appel_a_projet %}
+            <br><small class="text-muted">Appel : {{ budget.appel_a_projet.nom }} - Date de fin : {{ budget.appel_a_projet.date_fin|date:"d/m/Y H:i" }}</small>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    {# Message statut verrouille - seulement si le budget ne peut PAS etre modifie et l'appel est encore actif #}
+    {% if not budget.peut_etre_modifie and budget.appel_est_actif %}
+    <div class="alert alert-info mb-4">
+        <i class="bi bi-lock me-2"></i>
+        Ce budget ne peut plus etre modifie dans son etat actuel (<strong>{{ budget.get_statut_display }}</strong>).
+    </div>
+    {% endif %}
 
     {# Message pour l'opérateur quand l'admin demande une modification #}
     {% if budget.statut == 'modification_autorisee' %}
@@ -153,4 +165,28 @@
         {% include 'budgets/budget_table.html' %}
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Polling temps reel : detecte les changements de statut et recharge la page automatiquement
+(function() {
+    const statutActuel = '{{ budget.statut }}';
+    const budgetUuid = '{{ budget.uuid }}';
+
+    function verifierStatut() {
+        fetch(`/budgets/get-statut/${budgetUuid}/`)
+            .then(r => r.json())
+            .then(data => {
+                if (data.statut !== statutActuel) {
+                    location.reload();
+                }
+            })
+            .catch(() => {});
+    }
+
+    // Verifier toutes les 5 secondes
+    setInterval(verifierStatut, 5000);
+})();
+</script>
 {% endblock %}

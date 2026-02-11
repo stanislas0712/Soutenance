@@ -9,7 +9,7 @@
     <td class="text-end">{{ article.co_financement|floatformat:0|intcomma }}</td>
     <td class="text-end text-success fw-semibold">{{ article.budget_demande_article|floatformat:0|intcomma }}</td>
     <td class="text-center">
-        {% if budget.peut_etre_modifie %}
+        {% if budget.peut_etre_modifie and not user.is_staff and not user.is_superuser %}
         <button class="btn btn-sm btn-outline-danger"
                 hx-delete="{% url 'budgets:supprimer_article' article.id %}"
                 hx-target="closest tr"
