@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # BudgetFlow — Plateforme de Gestion Budgétaire Entreprise
 
 [![CI/CD](https://github.com/votre-org/budgetflow/actions/workflows/ci.yml/badge.svg)](https://github.com/votre-org/budgetflow/actions)
@@ -401,3 +402,6 @@ BudgetFlow implémente l'ensemble des recommandations **OWASP Top 10** :
 ---
 
 *Développé dans le cadre d'un projet de fin d'études — 2024/2025*
+=======
+# gestion_budgetaire_soutenance
+>>>>>>> 8179da248bc6189a266dca344f335265659893f9
