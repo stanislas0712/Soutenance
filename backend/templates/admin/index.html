@@ -1,0 +1,229 @@
+{% extends "admin/base_site.html" %}
+{% load i18n static %}
+
+{% block extrastyle %}
+{{ block.super }}
+<style>
+  :root {
+    --p:#1a56db; --p-dk:#1e3a5f; --ok:#057a55; --warn:#c27803; --err:#c81e1e;
+    --bg:#f1f5f9; --card:#fff; --brd:#e5e7eb; --txt:#111827; --muted:#6b7280; --r:12px;
+  }
+  .d-hero { background:linear-gradient(135deg,#1e3a5f 0%,#1a56db 55%,#2563eb 100%); border-radius:var(--r); padding:36px 44px; margin-bottom:24px; color:#fff; position:relative; overflow:hidden; }
+  .d-hero::before { content:''; position:absolute; top:-70px; right:-70px; width:260px; height:260px; border-radius:50%; background:rgba(255,255,255,.06); }
+  .d-hero-inner  { position:relative; z-index:1; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:16px; }
+  .role-badge    { display:inline-flex; align-items:center; gap:6px; background:rgba(255,255,255,.18); border:1px solid rgba(255,255,255,.3); color:#fff; font-size:.72rem; font-weight:700; padding:4px 14px; border-radius:20px; text-transform:uppercase; letter-spacing:1px; margin-bottom:12px; }
+  .d-hero h1     { font-size:1.75rem; font-weight:800; margin-bottom:4px; }
+  .d-hero p      { font-size:.9rem; opacity:.82; max-width:500px; margin:0; }
+  .hero-chips    { display:flex; gap:10px; flex-wrap:wrap; }
+  .hero-chip     { background:rgba(255,255,255,.15); border:1px solid rgba(255,255,255,.25); color:#fff; border-radius:8px; padding:8px 16px; font-size:.82rem; font-weight:600; text-decoration:none !important; transition:background .15s; }
+  .hero-chip:hover { background:rgba(255,255,255,.25); color:#fff !important; }
+
+  .kpi-row  { display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap:14px; margin-bottom:24px; }
+  .kpi-card { background:var(--card); border:1px solid var(--brd); border-radius:var(--r); padding:20px 16px; display:flex; align-items:center; gap:14px; text-decoration:none !important; color:var(--txt) !important; transition:box-shadow .2s,transform .2s; box-shadow:0 1px 4px rgba(0,0,0,.04); }
+  .kpi-card:hover { box-shadow:0 6px 24px rgba(0,0,0,.1); transform:translateY(-2px); }
+  .kpi-icon { width:46px; height:46px; border-radius:11px; display:flex; align-items:center; justify-content:center; font-size:1.2rem; flex-shrink:0; }
+  .kpi-icon.blue   { background:#eff6ff; color:var(--p); }
+  .kpi-icon.yellow { background:#fffbeb; color:var(--warn); }
+  .kpi-icon.purple { background:#f5f3ff; color:#7c3aed; }
+  .kpi-icon.green  { background:#f0fdf4; color:var(--ok); }
+  .kpi-icon.red    { background:#fef2f2; color:var(--err); }
+  .kpi-icon.gray   { background:#f3f4f6; color:#6b7280; }
+  .kpi-val { font-size:1.75rem; font-weight:800; line-height:1; }
+  .kpi-lbl { font-size:.75rem; color:var(--muted); margin-top:4px; font-weight:500; }
+
+  .consum-card  { background:var(--card); border:1px solid var(--brd); border-radius:var(--r); padding:20px 24px; margin-bottom:24px; box-shadow:0 1px 4px rgba(0,0,0,.04); }
+  .consum-head  { display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; }
+  .consum-title { font-size:.95rem; font-weight:700; }
+  .consum-pct   { font-size:1.2rem; font-weight:800; padding:4px 14px; border-radius:8px; }
+  .progress-track { height:9px; background:#e5e7eb; border-radius:999px; overflow:hidden; }
+  .progress-fill  { height:100%; border-radius:999px; }
+
+  .s-title { font-size:.9rem; font-weight:700; margin-bottom:14px; padding-bottom:9px; border-bottom:2px solid var(--brd); display:flex; align-items:center; gap:8px; }
+  .s-title i { color:var(--p); }
+  .main-grid { display:grid; grid-template-columns:1fr 1fr; gap:18px; margin-bottom:24px; }
+  @media(max-width:900px){ .main-grid { grid-template-columns:1fr; } }
+  .i-card { background:var(--card); border:1px solid var(--brd); border-radius:var(--r); padding:20px; box-shadow:0 1px 4px rgba(0,0,0,.04); }
+
+  .act-list { display:flex; flex-direction:column; gap:7px; }
+  .act-btn  { display:flex; align-items:center; gap:10px; padding:10px 14px; border-radius:8px; text-decoration:none !important; font-weight:600; font-size:.85rem; transition:background .12s; }
+  .act-btn i { width:16px; text-align:center; flex-shrink:0; }
+  .act-btn .act-label { flex:1; }
+  .act-btn .act-badge { font-size:.7rem; font-weight:700; padding:2px 8px; border-radius:10px; background:rgba(0,0,0,.07); }
+  .act-btn.blue   { background:#eff6ff; color:var(--p); }    .act-btn.blue:hover   { background:#dbeafe; }
+  .act-btn.green  { background:#f0fdf4; color:var(--ok); }   .act-btn.green:hover  { background:#dcfce7; }
+  .act-btn.yellow { background:#fffbeb; color:var(--warn); } .act-btn.yellow:hover { background:#fef3c7; }
+  .act-btn.red    { background:#fef2f2; color:var(--err); }  .act-btn.red:hover    { background:#fee2e2; }
+  .act-btn.purple { background:#f5f3ff; color:#7c3aed; }     .act-btn.purple:hover { background:#ede9fe; }
+  .act-btn.gray   { background:#f3f4f6; color:#374151; }     .act-btn.gray:hover   { background:#e5e7eb; }
+
+  .tx-list { display:flex; flex-direction:column; gap:7px; }
+  .tx-row  { display:flex; align-items:center; gap:10px; padding:9px 11px; border-radius:8px; background:#f8fafc; text-decoration:none !important; color:var(--txt) !important; transition:background .1s; }
+  .tx-row:hover { background:#f1f5f9; }
+  .tx-dot  { width:32px; height:32px; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:.82rem; flex-shrink:0; }
+  .tx-dot.bud { background:#eff6ff; color:var(--p); }
+  .tx-dot.log { background:#f5f3ff; color:#7c3aed; }
+  .tx-info  { flex:1; min-width:0; }
+  .tx-label { font-weight:600; font-size:.84rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .tx-meta  { font-size:.72rem; color:var(--muted); margin-top:2px; }
+
+  .pill { display:inline-block; padding:2px 9px; border-radius:20px; font-size:.69rem; font-weight:700; text-transform:uppercase; letter-spacing:.4px; }
+  .pill.brouillon  { background:#e5e7eb; color:#374151; }
+  .pill.soumis     { background:#eff6ff; color:var(--p); }
+  .pill.approuve   { background:#f0fdf4; color:var(--ok); }
+  .pill.rejete     { background:#fef2f2; color:var(--err); }
+  .pill.cloture    { background:#e5e7eb; color:#374151; }
+  .pill.archive    { background:#f3f4f6; color:#6b7280; }
+
+  .section-sep { font-size:.72rem; font-weight:700; text-transform:uppercase; letter-spacing:.8px; color:var(--muted); margin:24px 0 12px; display:flex; align-items:center; gap:10px; }
+  .section-sep::after { content:''; flex:1; height:1px; background:var(--brd); }
+  .empty { text-align:center; padding:28px 16px; color:var(--muted); font-size:.85rem; }
+  .empty i { font-size:1.8rem; display:block; margin-bottom:8px; opacity:.3; }
+</style>
+{% endblock %}
+
+{% block breadcrumbs %}{% endblock %}
+{% block content_title %}{% endblock %}
+
+{% block content %}
+<div class="col-12" style="padding:4px 0 16px;">
+
+  <!-- ══ HERO ══ -->
+  <div class="d-hero">
+    <div class="d-hero-inner">
+      <div>
+        <div class="role-badge"><i class="fas fa-shield-alt"></i> Administrateur</div>
+        <h1>Bonjour, {{ request.user.matricule|default:request.user.email }} &#128075;</h1>
+        <p>Tableau de bord d'administration &mdash; gérez les comptes, les budgets annuels et supervisez l'activité.</p>
+      </div>
+      <div class="hero-chips">
+        <a href="{% url 'admin:accounts_utilisateur_add' %}"              class="hero-chip"><i class="fas fa-user-plus me-1"></i> Nouvel utilisateur</a>
+        <a href="{% url 'admin:accounts_departement_add' %}"             class="hero-chip"><i class="fas fa-building me-1"></i> Nouveau département</a>
+        <a href="{% url 'admin:budget_budgetannuel_add' %}"              class="hero-chip"><i class="fas fa-calendar-alt me-1"></i> Nouveau budget annuel</a>
+        <a href="{% url 'admin:audit_logaudit_changelist' %}"            class="hero-chip"><i class="fas fa-history me-1"></i> Consulter logs</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ KPI ══ -->
+  <div class="kpi-row">
+    <a href="{% url 'admin:accounts_utilisateur_changelist' %}" class="kpi-card">
+      <div class="kpi-icon green"><i class="fas fa-users"></i></div>
+      <div><div class="kpi-val">{{ stats.nb_utilisateurs }}</div><div class="kpi-lbl">Utilisateurs</div></div>
+    </a>
+    <a href="{% url 'admin:accounts_departement_changelist' %}" class="kpi-card">
+      <div class="kpi-icon blue"><i class="fas fa-building"></i></div>
+      <div><div class="kpi-val">{{ stats.nb_departements }}</div><div class="kpi-lbl">Départements</div></div>
+    </a>
+    <a href="{% url 'admin:budget_budget_changelist' %}" class="kpi-card">
+      <div class="kpi-icon purple"><i class="fas fa-wallet"></i></div>
+      <div><div class="kpi-val">{{ stats.nb_budgets }}</div><div class="kpi-lbl">Budgets</div></div>
+    </a>
+    <a href="{% url 'admin:budget_budget_changelist' %}?statut__exact=SOUMIS" class="kpi-card">
+      <div class="kpi-icon yellow"><i class="fas fa-hourglass-half"></i></div>
+      <div><div class="kpi-val">{{ stats.budgets_en_validation }}</div><div class="kpi-lbl">En validation</div></div>
+    </a>
+    <a href="{% url 'admin:budget_budgetannuel_changelist' %}" class="kpi-card">
+      <div class="kpi-icon red"><i class="fas fa-calendar-alt"></i></div>
+      <div><div class="kpi-val">{{ stats.nb_budgets_annuels|default:"—" }}</div><div class="kpi-lbl">Budgets annuels</div></div>
+    </a>
+    <a href="{% url 'admin:audit_logaudit_changelist' %}" class="kpi-card">
+      <div class="kpi-icon gray"><i class="fas fa-clipboard-list"></i></div>
+      <div><div class="kpi-val">{{ stats.nb_logs|default:"—" }}</div><div class="kpi-lbl">Logs audit</div></div>
+    </a>
+  </div>
+
+  <!-- ══ CONSOMMATION ══ -->
+  {% if stats.montant_total %}
+  <div class="consum-card">
+    <div class="consum-head">
+      <div>
+        <div class="consum-title"><i class="fas fa-chart-pie" style="color:#1a56db;margin-right:8px;"></i>Consommation budgétaire globale</div>
+        <div style="font-size:.78rem;color:var(--muted);margin-top:2px;">{{ stats.montant_consomme|floatformat:0 }} F consommés sur {{ stats.montant_total|floatformat:0 }} F alloués</div>
+      </div>
+      <div class="consum-pct" style="{% if stats.taux_consommation >= 90 %}background:#fef2f2;color:#c81e1e{% elif stats.taux_consommation >= 75 %}background:#fffbeb;color:#c27803{% else %}background:#f0fdf4;color:#057a55{% endif %}">
+        {{ stats.taux_consommation }}%
+      </div>
+    </div>
+    <div class="progress-track">
+      <div class="progress-fill" style="width:{{ stats.taux_consommation|default:0 }}%;{% if stats.taux_consommation >= 90 %}background:#c81e1e{% elif stats.taux_consommation >= 75 %}background:#f59e0b{% else %}background:#1a56db{% endif %}"></div>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- ══ GESTION DES COMPTES ══ -->
+  <div class="section-sep"><i class="fas fa-users"></i> Gestion des comptes utilisateurs</div>
+  <div class="main-grid">
+    <div class="i-card">
+      <div class="s-title"><i class="fas fa-user-cog"></i> Créer &amp; modifier des comptes</div>
+      <div class="act-list">
+        <a href="{% url 'admin:accounts_utilisateur_add' %}"        class="act-btn blue">  <i class="fas fa-user-plus"></i>  <span class="act-label">Créer un compte utilisateur</span></a>
+        <a href="{% url 'admin:accounts_utilisateur_changelist' %}" class="act-btn blue">  <i class="fas fa-users"></i>       <span class="act-label">Voir tous les utilisateurs</span>  <span class="act-badge">{{ stats.nb_utilisateurs }}</span></a>
+        <a href="{% url 'admin:accounts_utilisateur_changelist' %}?actif__exact=0" class="act-btn red">  <i class="fas fa-user-slash"></i> <span class="act-label">Comptes désactivés</span></a>
+        <a href="{% url 'admin:accounts_utilisateur_changelist' %}?actif__exact=1" class="act-btn green"><i class="fas fa-user-check"></i> <span class="act-label">Comptes actifs</span></a>
+      </div>
+    </div>
+    <div class="i-card">
+      <div class="s-title"><i class="fas fa-id-badge"></i> Rôles &amp; permissions</div>
+      <div class="act-list">
+        <a href="{% url 'admin:accounts_utilisateur_changelist' %}?role__exact=ADMINISTRATEUR" class="act-btn purple"><i class="fas fa-shield-alt"></i>   <span class="act-label">Administrateurs</span></a>
+        <a href="{% url 'admin:accounts_utilisateur_changelist' %}?role__exact=GESTIONNAIRE"   class="act-btn blue">  <i class="fas fa-user-tie"></i>     <span class="act-label">Gestionnaires</span></a>
+        <a href="{% url 'admin:accounts_utilisateur_changelist' %}?role__exact=COMPTABLE"      class="act-btn green"> <i class="fas fa-calculator"></i>   <span class="act-label">Comptables</span></a>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ ORGANISATION ══ -->
+  <div class="section-sep"><i class="fas fa-sitemap"></i> Organisation &amp; budgets annuels</div>
+  <div class="main-grid">
+    <div class="i-card">
+      <div class="s-title"><i class="fas fa-building"></i> Départements</div>
+      <div class="act-list">
+        <a href="{% url 'admin:accounts_departement_add' %}"          class="act-btn green"><i class="fas fa-plus-circle"></i> <span class="act-label">Créer un département</span></a>
+        <a href="{% url 'admin:accounts_departement_changelist' %}"   class="act-btn blue"> <i class="fas fa-list"></i>         <span class="act-label">Voir les départements</span>  <span class="act-badge">{{ stats.nb_departements }}</span></a>
+      </div>
+    </div>
+    <div class="i-card">
+      <div class="s-title"><i class="fas fa-calendar-alt"></i> Budgets annuels</div>
+      <div class="act-list">
+        <a href="{% url 'admin:budget_budgetannuel_add' %}"                      class="act-btn green"> <i class="fas fa-plus-circle"></i> <span class="act-label">Créer un budget annuel</span></a>
+        <a href="{% url 'admin:budget_budgetannuel_changelist' %}"               class="act-btn blue">  <i class="fas fa-list"></i>         <span class="act-label">Tous les budgets annuels</span></a>
+        <a href="{% url 'admin:budget_allocationdepartementale_changelist' %}"   class="act-btn purple"><i class="fas fa-building"></i>    <span class="act-label">Allocations départementales</span></a>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ SUPERVISION ══ -->
+  <div class="section-sep"><i class="fas fa-eye"></i> Supervision du système</div>
+  <div class="main-grid">
+    <div class="i-card">
+      <div class="s-title"><i class="fas fa-tools"></i> Actions de supervision</div>
+      <div class="act-list">
+        <a href="{% url 'admin:audit_logaudit_changelist' %}"                               class="act-btn purple"><i class="fas fa-clipboard-list"></i> <span class="act-label">Consulter les logs d'audit</span>  <span class="act-badge">{{ stats.nb_logs }}</span></a>
+        <a href="{% url 'admin:budget_budget_changelist' %}?statut__exact=SOUMIS"           class="act-btn yellow"><i class="fas fa-hourglass-half"></i>  <span class="act-label">Budgets en validation</span>       <span class="act-badge">{{ stats.budgets_en_validation }}</span></a>
+        <a href="{% url 'admin:budget_budget_changelist' %}?statut__exact=APPROUVE"         class="act-btn green"> <i class="fas fa-check-circle"></i>    <span class="act-label">Budgets approuvés</span></a>
+        <a href="{% url 'admin:budget_budget_changelist' %}?statut__exact=CLOTURE"          class="act-btn gray">  <i class="fas fa-archive"></i>          <span class="act-label">Budgets clôturés</span></a>
+      </div>
+    </div>
+    <div class="i-card">
+      <div class="s-title"><i class="fas fa-folder-open"></i> Budgets récents</div>
+      {% if budgets_recents %}
+        <div class="tx-list">
+          {% for b in budgets_recents %}
+            <a href="{% url 'admin:budget_budget_change' b.id %}" class="tx-row">
+              <div class="tx-dot bud"><i class="fas fa-wallet"></i></div>
+              <div class="tx-info">
+                <div class="tx-label">{{ b.nom|truncatechars:28 }}</div>
+                <div class="tx-meta">{{ b.departement.nom }} &middot; {{ b.code }}</div>
+              </div>
+              <span class="pill {{ b.statut|lower }}">{{ b.get_statut_display }}</span>
+            </a>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="empty"><i class="fas fa-wallet"></i>Aucun budget créé</div>
+      {% endif %}
+    </div>
+  </div>
+
+</div>
+{% endblock %}

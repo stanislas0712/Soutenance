@@ -1,2 +1,0 @@
-"""GoodGrants integration package."""
-

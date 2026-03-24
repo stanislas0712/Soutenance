@@ -1,0 +1,53 @@
+import api from './axios'
+
+/* ── Budget annuel ───────────────────────────────────────────────────────── */
+export const getBudgetAnnuels    = (params) => api.get('/budget/annuel/', { params })
+export const getBudgetAnnuel     = (id)     => api.get(`/budget/annuel/${id}/`)
+export const createBudgetAnnuel  = (data)   => api.post('/budget/annuel/', data)
+export const updateBudgetAnnuel  = (id, d)  => api.patch(`/budget/annuel/${id}/`, d)
+export const deleteBudgetAnnuel  = (id)     => api.delete(`/budget/annuel/${id}/`)
+
+/* ── Allocations départementales ─────────────────────────────────────────── */
+export const getAllocations    = (bAnnuelId)         => api.get(`/budget/annuel/${bAnnuelId}/allocations/`)
+export const createAllocation = (bAnnuelId, data)   => api.post(`/budget/annuel/${bAnnuelId}/allocations/`, data)
+export const updateAllocation = (bAnnuelId, id, d)  => api.patch(`/budget/annuel/${bAnnuelId}/allocations/${id}/`, d)
+export const deleteAllocation = (bAnnuelId, id)     => api.delete(`/budget/annuel/${bAnnuelId}/allocations/${id}/`)
+
+/* ── Budgets ─────────────────────────────────────────────────────────────── */
+export const getBudgets       = (params) => api.get('/budget/', { params })
+export const getBudget        = (id)     => api.get(`/budget/${id}/`)
+export const createBudget     = (data)   => api.post('/budget/', data)
+export const updateBudget     = (id, d)  => api.patch(`/budget/${id}/`, d)
+export const deleteBudget     = (id)     => api.delete(`/budget/${id}/`)
+
+export const soumettrebudget  = (id) => api.post(`/budget/${id}/soumettre/`)
+export const approuverBudget  = (id)     => api.post(`/budget/${id}/approuver/`)
+export const rejeterBudget    = (id)     => api.post(`/budget/${id}/rejeter/`)
+export const cloturerBudget   = (id)     => api.post(`/budget/${id}/cloturer/`)
+export const archiverBudget   = (id)     => api.post(`/budget/${id}/archiver/`)
+
+/* ── Lignes budgétaires ──────────────────────────────────────────────────── */
+export const getLignes        = (bId)        => api.get(`/budget/${bId}/lignes/`)
+export const createLigne      = (bId, data)  => api.post(`/budget/${bId}/lignes/`, data)
+export const updateLigne      = (bId, id, d) => api.patch(`/budget/${bId}/lignes/${id}/`, d)
+export const deleteLigne      = (bId, id)    => api.delete(`/budget/${bId}/lignes/${id}/`)
+export const consommerLigne = (bId, id, montant, pieceJustificative, note = '') => {
+  const form = new FormData()
+  form.append('montant', montant)
+  if (pieceJustificative) form.append('piece_justificative', pieceJustificative)
+  if (note) form.append('note', note)
+  return api.post(`/budget/${bId}/lignes/${id}/consommer/`, form, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  })
+}
+
+/* ── Structure hiérarchique ───────────────────────────────────────────────── */
+export const getBudgetArbre        = (bId)         => api.get(`/budget/${bId}/arbre/`)
+export const getLignesSelecteur    = (bId)         => api.get(`/budget/${bId}/lignes-selecteur/`)
+export const createCategorie       = (bId, data)   => api.post(`/budget/${bId}/categories/`, data)
+export const deleteCategorie       = (id)          => api.delete(`/budget/categories/${id}/`)
+export const createSousCategorie   = (catId, data) => api.post(`/budget/categories/${catId}/sous-categories/`, data)
+export const deleteSousCategorie   = (id)          => api.delete(`/budget/sous-categories/${id}/`)
+export const createLigneHierarchie = (scId, data)  => api.post(`/budget/sous-categories/${scId}/lignes/`, data)
+export const updateLigneHierarchie = (id, data)    => api.patch(`/budget/lignes/${id}/`, data)
+export const deleteLigneHierarchie = (id)          => api.delete(`/budget/lignes/${id}/`)

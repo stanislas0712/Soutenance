@@ -1,0 +1,99 @@
+name: BudgetFlow CD — Deploy Production
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*.*.*"]
+
+jobs:
+  deploy:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository }}
+          tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=sha,prefix=sha-
+
+      - name: Build & Push backend image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./backend
+          target: production
+          push: true
+          tags: ghcr.io/${{ github.repository }}/backend:${{ github.sha }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build & Push frontend image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./frontend
+          target: production
+          push: true
+          tags: ghcr.io/${{ github.repository }}/frontend:${{ github.sha }}
+          labels: ${{ steps.meta.outputs.labels }}
+          build-args: VITE_API_URL=${{ secrets.PROD_API_URL }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.PROD_HOST }}
+          username: ${{ secrets.PROD_USER }}
+          key: ${{ secrets.PROD_SSH_KEY }}
+          script: |
+            cd /opt/budgetflow
+            # Mettre à jour les images
+            export BACKEND_IMAGE=ghcr.io/${{ github.repository }}/backend:${{ github.sha }}
+            export FRONTEND_IMAGE=ghcr.io/${{ github.repository }}/frontend:${{ github.sha }}
+
+            # Pull des nouvelles images
+            docker pull $BACKEND_IMAGE
+            docker pull $FRONTEND_IMAGE
+
+            # Mise à jour sans downtime (rolling update)
+            docker compose -f docker-compose.prod.yml pull
+            docker compose -f docker-compose.prod.yml up -d --no-deps backend frontend
+
+            # Migrations
+            docker compose -f docker-compose.prod.yml exec -T backend python manage.py migrate --no-input
+            docker compose -f docker-compose.prod.yml exec -T backend python manage.py collectstatic --no-input
+
+            # Health check
+            sleep 10
+            curl -f http://localhost/api/v1/health/ || (echo "Health check failed!" && exit 1)
+
+            echo "Deployment successful: ${{ github.sha }}"
+
+      - name: Notify deployment
+        if: always()
+        uses: slackapi/slack-github-action@v1.26.0
+        with:
+          payload: |
+            {
+              "text": "${{ job.status == 'success' && '✅' || '❌' }} BudgetFlow déployé: `${{ github.sha }}` par ${{ github.actor }}"
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}

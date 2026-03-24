@@ -1,0 +1,8 @@
+{% extends 'admin/base.html' %}
+
+{% block extrahead %}
+{{ block.super }}
+<script>
+  window.CURRENT_USER_PHOTO = "{% if request.user.photo %}{{ request.user.photo.url }}{% endif %}";
+</script>
+{% endblock %}

@@ -1,2 +1,0 @@
-"""Budgets app."""
-
