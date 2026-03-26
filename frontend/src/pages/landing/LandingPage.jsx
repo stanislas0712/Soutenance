@@ -6,7 +6,6 @@ import Features     from './components/Features'
 import HowItWorks   from './components/HowItWorks'
 import Personas     from './components/Personas'
 import Securite     from './components/Securite'
-import Testimonials from './components/Testimonials'
 import FAQ          from './components/FAQ'
 import CTAFinal     from './components/CTAFinal'
 import Footer       from './components/Footer'
@@ -19,7 +18,7 @@ export default function LandingPage() {
   }, [])
 
   return (
-    <div style={{ fontFamily: 'Inter, system-ui, sans-serif', background: '#fff', color: '#111827', overflowX: 'hidden' }}>
+    <div style={{ fontFamily: 'Roboto, system-ui, sans-serif', background: '#fff', color: '#111827', overflowX: 'hidden' }}>
       <Navbar />
       <main>
         <Hero />
@@ -28,7 +27,6 @@ export default function LandingPage() {
         <HowItWorks />
         <Personas />
         <Securite />
-        <Testimonials />
         <FAQ />
         <CTAFinal />
       </main>

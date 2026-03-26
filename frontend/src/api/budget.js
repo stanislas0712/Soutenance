@@ -20,22 +20,30 @@ export const createBudget     = (data)   => api.post('/budget/', data)
 export const updateBudget     = (id, d)  => api.patch(`/budget/${id}/`, d)
 export const deleteBudget     = (id)     => api.delete(`/budget/${id}/`)
 
-export const soumettrebudget  = (id) => api.post(`/budget/${id}/soumettre/`)
-export const approuverBudget  = (id)     => api.post(`/budget/${id}/approuver/`)
-export const rejeterBudget    = (id)     => api.post(`/budget/${id}/rejeter/`)
-export const cloturerBudget   = (id)     => api.post(`/budget/${id}/cloturer/`)
-export const archiverBudget   = (id)     => api.post(`/budget/${id}/archiver/`)
+export const soumettrebudget  = (id)        => api.post(`/budget/${id}/soumettre/`)
+export const approuverBudget  = (id)        => api.post(`/budget/${id}/approuver/`)
+export const rejeterBudget    = (id, data)  => api.post(`/budget/${id}/rejeter/`, data)
+export const cloturerBudget   = (id)        => api.post(`/budget/${id}/cloturer/`)
+export const archiverBudget   = (id)        => api.post(`/budget/${id}/archiver/`)
+export const getRapportCloture = (id)       => api.get(`/budget/${id}/rapport-cloture/`)
+export const effectuerVirement = (budgetId, data) => api.post(`/budget/${budgetId}/virement/`, data)
 
 /* ── Lignes budgétaires ──────────────────────────────────────────────────── */
 export const getLignes        = (bId)        => api.get(`/budget/${bId}/lignes/`)
 export const createLigne      = (bId, data)  => api.post(`/budget/${bId}/lignes/`, data)
 export const updateLigne      = (bId, id, d) => api.patch(`/budget/${bId}/lignes/${id}/`, d)
 export const deleteLigne      = (bId, id)    => api.delete(`/budget/${bId}/lignes/${id}/`)
-export const consommerLigne = (bId, id, montant, pieceJustificative, note = '') => {
+export const consommerLigne = (bId, id, montant, pieceJustificative, note = '', pieces = []) => {
   const form = new FormData()
   form.append('montant', montant)
   if (pieceJustificative) form.append('piece_justificative', pieceJustificative)
   if (note) form.append('note', note)
+  // Pièces multiples
+  if (pieces && pieces.length > 0) {
+    for (const f of pieces) {
+      form.append('pieces', f)
+    }
+  }
   return api.post(`/budget/${bId}/lignes/${id}/consommer/`, form, {
     headers: { 'Content-Type': 'multipart/form-data' },
   })

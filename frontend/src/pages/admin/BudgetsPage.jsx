@@ -1,26 +1,25 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { getBudgets, cloturerBudget, archiverBudget } from '../../api/budget'
+import { getBudgets, cloturerBudget, getRapportCloture } from '../../api/budget'
 import { StatutBadge, AlerteBadge } from '../../components/StatusBadge'
-import { Search, FileText, Archive, CheckSquare, TrendingUp, Building2, X } from 'lucide-react'
+import { Search, FileText, TrendingUp, Building2, X, Download, Printer } from 'lucide-react'
+import { exportCSV, printPDF } from '../../utils/export'
 
-const fmt = (n) => new Intl.NumberFormat('fr-FR', { notation: 'compact', maximumFractionDigits: 1 }).format(n)
+const fmt = (n) => new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 0 }).format(parseFloat(n || 0))
 
 const STATUTS = [
-  { value: '',         label: 'Tous' },
+  { value: '',          label: 'Tous'      },
   { value: 'BROUILLON', label: 'Brouillon' },
-  { value: 'SOUMIS',    label: 'Soumis' },
-  { value: 'APPROUVE',  label: 'Approuvé' },
-  { value: 'REJETE',    label: 'Rejeté' },
-  { value: 'CLOTURE',   label: 'Clôturé' },
-  { value: 'ARCHIVE',   label: 'Archivé' },
+  { value: 'SOUMIS',    label: 'Soumis'    },
+  { value: 'APPROUVE',  label: 'Approuvé'  },
+  { value: 'REJETE',    label: 'Rejeté'    },
+  { value: 'CLOTURE',   label: 'Clôturé'   },
 ]
 
 const jaugeColor = (taux) => {
-  if (taux >= 95) return '#EF4444'
-  if (taux >= 80) return '#F59E0B'
-  if (taux >= 50) return '#22C55E'
-  return '#3B82F6'
+  if (taux > 75) return '#F43F5E'
+  if (taux > 50) return '#F59E0B'
+  return '#22C55E'
 }
 
 export default function BudgetsPage() {
@@ -29,10 +28,47 @@ export default function BudgetsPage() {
   const deptId  = searchParams.get('departement') || ''
   const deptNom = searchParams.get('nom') || ''
 
-  const [budgets, setBudgets] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [filtre,  setFiltre]  = useState('')
-  const [search,  setSearch]  = useState('')
+  const [budgets,   setBudgets]   = useState([])
+  const [loading,   setLoading]   = useState(true)
+  const [filtre,    setFiltre]    = useState('')
+  const [search,    setSearch]    = useState('')
+  const [actionBusy, setActionBusy] = useState(null)
+
+  const handleCloturer = async (b, e) => {
+    e.stopPropagation()
+    if (!confirm(`Clôturer le budget ${b.code} – ${b.nom} ?`)) return
+    setActionBusy(b.id)
+    try { await cloturerBudget(b.id); load() }
+    catch (err) { alert(err.response?.data?.detail || 'Erreur') }
+    finally { setActionBusy(null) }
+  }
+
+  const handleRapport = async (b, e) => {
+    e.stopPropagation()
+    setActionBusy(b.id)
+    try {
+      const r = await getRapportCloture(b.id)
+      const rpt = r.data
+      const headers = ['Ligne', 'Alloué (FCFA)', 'Consommé (FCFA)', 'Disponible (FCFA)', 'Taux %']
+      const rows = rpt.lignes.map(l => [
+        l.libelle,
+        new Intl.NumberFormat('fr-FR').format(l.montant_alloue),
+        new Intl.NumberFormat('fr-FR').format(l.montant_consomme),
+        new Intl.NumberFormat('fr-FR').format(l.disponible),
+        `${l.taux}%`,
+      ])
+      printPDF(`Rapport de clôture — ${rpt.budget.code}`, headers, rows, {
+        subtitle: `${rpt.budget.nom} · Clôturé le ${rpt.date_cloture ? new Date(rpt.date_cloture).toLocaleDateString('fr-FR') : '—'}`,
+        stats: [
+          { value: new Intl.NumberFormat('fr-FR').format(rpt.budget.montant_global) + ' FCFA', label: 'Budget global' },
+          { value: new Intl.NumberFormat('fr-FR').format(rpt.budget.montant_consomme) + ' FCFA', label: 'Consommé' },
+          { value: `${rpt.budget.taux}%`, label: 'Taux consommation' },
+          { value: rpt.nb_depenses, label: 'Dépenses' },
+        ],
+      })
+    } catch (err) { alert('Impossible de générer le rapport.') }
+    finally { setActionBusy(null) }
+  }
 
   const load = (statut = filtre) => {
     setLoading(true)
@@ -45,19 +81,6 @@ export default function BudgetsPage() {
   }
 
   useEffect(() => { load() }, [filtre, deptId])
-
-  const handleCloturer = async (id, e) => {
-    e.stopPropagation()
-    if (!confirm('Clôturer ce budget ?')) return
-    await cloturerBudget(id).catch(err => alert(err.response?.data?.detail))
-    load()
-  }
-  const handleArchiver = async (id, e) => {
-    e.stopPropagation()
-    if (!confirm('Archiver ce budget ?')) return
-    await archiverBudget(id).catch(err => alert(err.response?.data?.detail))
-    load()
-  }
 
   const filtered = budgets.filter(b =>
     !search ||
@@ -79,8 +102,47 @@ export default function BudgetsPage() {
         <div className="flex items-center gap-2">
           <div className="flex items-center gap-[6px] px-[14px] py-[6px] rounded-[20px] bg-[#EFF6FF] text-[#1D4ED8] text-[13px] font-semibold">
             <TrendingUp size={14} strokeWidth={2} />
-            {budgets.length} budget{budgets.length !== 1 ? 's' : ''}
+            {filtered.length} budget{filtered.length !== 1 ? 's' : ''}
           </div>
+          <button
+            onClick={() => {
+              const headers = ['Code', 'Nom', 'Département', 'Statut', 'Montant global (FCFA)', 'Consommé (FCFA)', 'Taux %', 'Date début', 'Date fin']
+              const rows = filtered.map(b => [
+                b.code, b.nom, b.departement_nom || '—', b.statut,
+                fmt(b.montant_global), fmt(b.montant_consomme),
+                `${parseFloat(b.taux_consommation || 0).toFixed(1)}%`,
+                b.date_debut, b.date_fin,
+              ])
+              exportCSV(`budgets-${new Date().toISOString().slice(0,10)}`, headers, rows)
+            }}
+            className="btn btn-secondary btn-sm"
+            style={{ gap: 6 }}
+          >
+            <Download size={13} strokeWidth={2} /> CSV
+          </button>
+          <button
+            onClick={() => {
+              const headers = ['Code', 'Nom', 'Département', 'Statut', 'Montant global', 'Taux %']
+              const rows = filtered.map(b => [
+                b.code, b.nom, b.departement_nom || '—', b.statut,
+                fmt(b.montant_global) + ' FCFA',
+                `${parseFloat(b.taux_consommation || 0).toFixed(1)}%`,
+              ])
+              printPDF('Liste des budgets', headers, rows, {
+                subtitle: 'Supervision et gestion complète des budgets',
+                stats: [
+                  { value: filtered.length, label: 'Budgets affichés' },
+                  { value: filtered.filter(b => b.statut === 'APPROUVE').length, label: 'Approuvés' },
+                  { value: filtered.filter(b => b.statut === 'SOUMIS').length, label: 'En attente' },
+                  { value: fmt(filtered.reduce((s, b) => s + parseFloat(b.montant_global || 0), 0)) + ' FCFA', label: 'Total' },
+                ],
+              })
+            }}
+            className="btn btn-secondary btn-sm"
+            style={{ gap: 6 }}
+          >
+            <Printer size={13} strokeWidth={2} /> PDF
+          </button>
         </div>
       </div>
 
@@ -189,7 +251,7 @@ export default function BudgetsPage() {
                         </div>
                         <span
                           className="text-[11px] font-bold font-mono"
-                          style={{ color: taux >= 95 ? 'var(--color-danger-600)' : taux >= 80 ? 'var(--color-warning-600)' : '#374151' }}
+                          style={{ color: taux > 75 ? 'var(--color-danger-600)' : taux > 50 ? 'var(--color-warning-600)' : '#374151' }}
                         >
                           {taux}%
                         </span>
@@ -197,23 +259,31 @@ export default function BudgetsPage() {
                     </td>
                     <td><StatutBadge statut={b.statut} /></td>
                     <td><AlerteBadge niveau={b.niveau_alerte} /></td>
-                    <td onClick={e => e.stopPropagation()} className="whitespace-nowrap">
+                    <td onClick={e => e.stopPropagation()} className="whitespace-nowrap" style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+                      <button
+                        onClick={() => navigate(`/budgets/${b.id}`)}
+                        className="btn btn-secondary btn-sm"
+                      >
+                        Voir
+                      </button>
                       {b.statut === 'APPROUVE' && (
                         <button
-                          onClick={e => handleCloturer(b.id, e)}
-                          className="btn btn-warning btn-sm gap-[5px]"
+                          onClick={(e) => handleCloturer(b, e)}
+                          disabled={actionBusy === b.id}
+                          className="btn btn-sm"
+                          style={{ background: 'linear-gradient(135deg, #7C3AED, #6D28D9)', color: '#fff', border: 'none', gap: 4 }}
                         >
-                          <CheckSquare size={13} strokeWidth={2} />
                           Clôturer
                         </button>
                       )}
                       {b.statut === 'CLOTURE' && (
                         <button
-                          onClick={e => handleArchiver(b.id, e)}
-                          className="btn btn-secondary btn-sm gap-[5px]"
+                          onClick={(e) => handleRapport(b, e)}
+                          disabled={actionBusy === b.id}
+                          className="btn btn-sm"
+                          style={{ background: 'var(--color-info-600)', color: '#fff', border: 'none', gap: 4 }}
                         >
-                          <Archive size={13} strokeWidth={2} />
-                          Archiver
+                          Rapport
                         </button>
                       )}
                     </td>

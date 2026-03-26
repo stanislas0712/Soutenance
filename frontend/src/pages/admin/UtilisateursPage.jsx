@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { getUtilisateurs, createUtilisateur, updateUtilisateur, deleteUtilisateur, adminResetPassword } from '../../api/accounts'
-import { Plus, KeyRound, Trash2, UserCheck, UserX, Building2 } from 'lucide-react'
+import { Plus, KeyRound, Trash2, UserCheck, UserX, Building2, Search, X } from 'lucide-react'
 import { RoleBadge } from '../../components/StatusBadge'
 
 const ROLES = ['ADMINISTRATEUR', 'GESTIONNAIRE', 'COMPTABLE']
@@ -15,6 +15,9 @@ export default function UtilisateursPage() {
   const [success,    setSuccess]    = useState('')
   const [createForm, setCreateForm] = useState({ email: '', matricule: '', nom: '', prenom: '', role: 'GESTIONNAIRE', password: '' })
   const [pwdForm,    setPwdForm]    = useState({ nouveau_password: '', confirmer: '' })
+  const [search,     setSearch]     = useState('')
+  const [filterRole, setFilterRole] = useState('')
+  const [filterActif, setFilterActif] = useState('')
 
   const load = () => {
     setLoading(true)
@@ -81,6 +84,25 @@ export default function UtilisateursPage() {
     } finally { setSaving(false) }
   }
 
+  const filtered = useMemo(() => {
+    const q = search.toLowerCase().trim()
+    return users.filter(u => {
+      if (q && !(
+        u.prenom?.toLowerCase().includes(q) ||
+        u.nom?.toLowerCase().includes(q) ||
+        u.email?.toLowerCase().includes(q) ||
+        u.matricule?.toLowerCase().includes(q) ||
+        u.departement_detail?.nom?.toLowerCase().includes(q)
+      )) return false
+      if (filterRole && u.role !== filterRole) return false
+      if (filterActif === 'actif' && !u.actif) return false
+      if (filterActif === 'inactif' && u.actif) return false
+      return true
+    })
+  }, [users, search, filterRole, filterActif])
+
+  const hasFilters = search || filterRole || filterActif
+
   if (loading) return <div className="page-loader"><div className="spinner" /></div>
 
   return (
@@ -90,7 +112,7 @@ export default function UtilisateursPage() {
         <div>
           <h1 className="page-title">Utilisateurs</h1>
           <p className="page-subtitle">
-            {users.length} compte{users.length !== 1 ? 's' : ''} enregistré{users.length !== 1 ? 's' : ''}
+            {filtered.length} / {users.length} compte{users.length !== 1 ? 's' : ''}
           </p>
         </div>
         <button
@@ -101,9 +123,68 @@ export default function UtilisateursPage() {
         </button>
       </div>
 
+      {/* Barre de recherche + filtres */}
+      <div className="flex flex-wrap gap-3 mb-5 items-center">
+        {/* Search */}
+        <div className="relative flex-1 min-w-[200px] max-w-[340px]">
+          <Search size={15} strokeWidth={2} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+          <input
+            type="text"
+            placeholder="Rechercher par nom, email, matricule…"
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            className="form-input"
+            style={{ paddingLeft: 34, height: 38, fontSize: 13 }}
+          />
+          {search && (
+            <button onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+              <X size={14} />
+            </button>
+          )}
+        </div>
+
+        {/* Filtre rôle */}
+        <select
+          value={filterRole}
+          onChange={e => setFilterRole(e.target.value)}
+          className="form-select"
+          style={{ height: 38, fontSize: 13, minWidth: 160 }}
+        >
+          <option value="">Tous les rôles</option>
+          {ROLES.map(r => <option key={r} value={r}>{r}</option>)}
+        </select>
+
+        {/* Filtre statut */}
+        <select
+          value={filterActif}
+          onChange={e => setFilterActif(e.target.value)}
+          className="form-select"
+          style={{ height: 38, fontSize: 13, minWidth: 140 }}
+        >
+          <option value="">Tous les statuts</option>
+          <option value="actif">Actifs</option>
+          <option value="inactif">Inactifs</option>
+        </select>
+
+        {/* Réinitialiser */}
+        {hasFilters && (
+          <button
+            onClick={() => { setSearch(''); setFilterRole(''); setFilterActif('') }}
+            className="btn btn-secondary btn-sm gap-[5px]"
+          >
+            <X size={13} /> Réinitialiser
+          </button>
+        )}
+      </div>
+
       {/* Grille utilisateurs */}
       <div className="grid gap-[14px]" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))' }}>
-        {users.map(u => (
+        {filtered.length === 0 && (
+          <div className="col-span-full text-center py-12 text-gray-400 text-sm">
+            Aucun utilisateur ne correspond à votre recherche.
+          </div>
+        )}
+        {filtered.map(u => (
           <div
             key={u.id}
             className="card"

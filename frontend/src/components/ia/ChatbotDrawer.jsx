@@ -4,6 +4,7 @@
  */
 import { useState, useRef, useEffect } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { Brain } from 'lucide-react'
 import {
   creerConversation,
   envoyerMessage,
@@ -13,8 +14,9 @@ import {
 
 const SUGGESTIONS = [
   "Mon taux d'exécution budgétaire",
-  'Comment soumettre un budget ?',
-  'Quels sont les risques de dépassement ?',
+  'Alertes de dépassement',
+  'Fonds disponibles',
+  'Résumé de mes budgets',
 ]
 
 export default function ChatbotDrawer() {
@@ -36,6 +38,13 @@ export default function ChatbotDrawer() {
   useEffect(() => {
     if (open) setTimeout(() => inputRef.current?.focus(), 150)
   }, [open])
+
+  /* ── Ouverture depuis n'importe quelle page via événement custom ───────── */
+  useEffect(() => {
+    const h = () => setOpen(true)
+    window.addEventListener('open-chatbot', h)
+    return () => window.removeEventListener('open-chatbot', h)
+  }, [])
 
   /* ── Charger l'historique d'une conversation existante ────────────────── */
   const chargerConversation = async (id) => {
@@ -132,13 +141,13 @@ export default function ChatbotDrawer() {
       <button
         onClick={handleOpen}
         aria-label="Ouvrir l'assistant IA"
-        className="fixed bottom-6 right-6 z-[1000] w-[52px] h-[52px] rounded-full border-none cursor-pointer text-white text-[1.3rem] flex items-center justify-center transition-[transform_.2s,box-shadow_.2s] hover:scale-110"
+        className="fixed bottom-6 right-6 z-[1000] w-[52px] h-[52px] rounded-full border-none cursor-pointer flex items-center justify-center transition-[transform_.2s,box-shadow_.2s] hover:scale-110"
         style={{
-          background: 'linear-gradient(135deg, #1a56db, #6c63ff)',
+          background: 'linear-gradient(135deg, #1a56db, #2563eb)',
           boxShadow: '0 4px 16px rgba(26,86,219,.4)',
         }}
       >
-        🤖
+        <Brain size={21} strokeWidth={1.8} style={{ color: '#fff' }} />
       </button>
 
       {/* Drawer */}
@@ -151,13 +160,27 @@ export default function ChatbotDrawer() {
           {/* Header */}
           <div
             className="px-4 py-3 flex items-center justify-between shrink-0"
-            style={{ background: 'linear-gradient(135deg, #1a56db 0%, #6c63ff 100%)' }}
+            style={{ background: 'linear-gradient(135deg, #1a56db, #2563eb)' }}
           >
             <div className="flex items-center gap-[10px]">
-              <span className="text-[1.1rem]">🤖</span>
+              <div style={{
+                width: 32, height: 32, borderRadius: 9, flexShrink: 0,
+                background: 'rgba(255,255,255,.15)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}>
+                <Brain size={15} strokeWidth={2} style={{ color: '#fff' }} />
+              </div>
               <div>
                 <div className="text-white font-bold text-[.85rem]">Assistant BudgetFlow</div>
-                <div className="text-white/70 text-[.65rem]">Propulsé par Claude IA</div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 1 }}>
+                  <div style={{
+                    width: 5, height: 5, borderRadius: '50%',
+                    background: '#86efac', animation: 'ia-pulse 2s ease-in-out infinite',
+                  }} />
+                  <span style={{ fontSize: '9px', color: 'rgba(255,255,255,.75)', fontWeight: 600, letterSpacing: '.3px' }}>
+                    Propulsé par Claude IA
+                  </span>
+                </div>
               </div>
             </div>
             <div className="flex gap-[6px]">
@@ -249,19 +272,50 @@ export default function ChatbotDrawer() {
 
 const MSG_ACCUEIL = "Bonjour\u00a0! Je suis l'assistant IA BudgetFlow. Je peux vous aider avec l'analyse de vos budgets, le suivi des d\u00e9penses et toutes vos questions de gestion financi\u00e8re. Comment puis-je vous aider\u00a0?"
 
+/* Rendu Markdown minimal : **gras**, _italique_, `code`, listes */
+function renderMd(text) {
+  if (!text) return null
+  return text.split('\n').map((line, i) => {
+    // Convertir les segments inline : **bold**, _italic_, `code`
+    const parts = []
+    let rest = line
+    let key = 0
+    while (rest.length) {
+      const boldMatch  = rest.match(/^(.*?)\*\*(.+?)\*\*(.*)$/s)
+      const italicMatch = rest.match(/^(.*?)_(.+?)_(.*)$/s)
+      const codeMatch  = rest.match(/^(.*?)`(.+?)`(.*)$/s)
+      const first = [boldMatch, italicMatch, codeMatch]
+        .filter(Boolean)
+        .sort((a, b) => a[1].length - b[1].length)[0]
+      if (!first) { parts.push(<span key={key++}>{rest}</span>); break }
+      if (first[1]) parts.push(<span key={key++}>{first[1]}</span>)
+      if (first === boldMatch)
+        parts.push(<strong key={key++}>{first[2]}</strong>)
+      else if (first === italicMatch)
+        parts.push(<em key={key++}>{first[2]}</em>)
+      else
+        parts.push(<code key={key++} style={{ background: 'rgba(0,0,0,.08)', borderRadius: 3, padding: '0 3px', fontFamily: 'monospace', fontSize: '0.85em' }}>{first[2]}</code>)
+      rest = first[3]
+    }
+    // Lignes vides → espaceur
+    if (!line.trim()) return <div key={i} style={{ height: 4 }} />
+    return <div key={i} style={{ marginBottom: 1 }}>{parts}</div>
+  })
+}
+
 function MessageBubble({ msg }) {
   const isUser = msg.role === 'user'
   return (
     <div className={`flex ${isUser ? 'justify-end' : 'justify-start'}`}>
       <div
-        className="max-w-[82%] px-3 py-[9px] text-[.78rem] leading-[1.55] whitespace-pre-wrap break-words"
+        className="max-w-[82%] px-3 py-[9px] text-[.78rem] leading-[1.6] break-words"
         style={{
           background: isUser ? 'linear-gradient(135deg, #1a56db, #6c63ff)' : '#F3F4F6',
           color: isUser ? '#fff' : '#1F2937',
           borderRadius: isUser ? '12px 12px 0 12px' : '0 12px 12px 12px',
         }}
       >
-        {msg.contenu}
+        {isUser ? msg.contenu : renderMd(msg.contenu)}
       </div>
     </div>
   )
@@ -281,6 +335,10 @@ function TypingDots() {
         @keyframes typingBounce {
           0%, 60%, 100% { transform: translateY(0); }
           30% { transform: translateY(-6px); }
+        }
+        @keyframes ia-chatbot-ring {
+          0%, 90%, 100% { box-shadow: 0 4px 20px rgba(99,102,241,.5); }
+          45% { box-shadow: 0 4px 20px rgba(99,102,241,.5), 0 0 0 8px rgba(99,102,241,.15); }
         }
       `}</style>
     </div>

@@ -10,25 +10,33 @@ import { formaterMontant, getCouleurExecution } from '../../utils/formatters'
 export default function SelecteurLigne({ budgetId, value, onChange, error }) {
   const [lignes,   setLignes]   = useState([])
   const [loading,  setLoading]  = useState(true)
+  const [erreur,   setErreur]   = useState(null)
   const [openCats, setOpenCats] = useState(new Set())
 
   useEffect(() => {
-    if (!budgetId) return
+    if (!budgetId) { setLoading(false); return }
     setLoading(true)
+    setErreur(null)
     getLignesSelecteur(budgetId)
       .then(r => {
         const data = r.data.data || []
         setLignes(data)
         setOpenCats(new Set(data.map(l => l.categorie)))
       })
-      .catch(console.error)
+      .catch(err => {
+        console.error(err)
+        setErreur('Impossible de charger les lignes budgétaires.')
+      })
       .finally(() => setLoading(false))
   }, [budgetId])
 
   if (loading) return (
-    <div className="text-[12px] text-gray-400 py-[10px]">
-      Chargement des lignes…
+    <div className="flex items-center gap-2 text-[12px] text-gray-400 py-[10px]">
+      <span className="spinner-sm" /> Chargement des lignes…
     </div>
+  )
+  if (erreur) return (
+    <div className="text-[12px] text-danger-600 py-[10px]">{erreur}</div>
   )
   if (!lignes.length) return (
     <div className="text-[12px] text-gray-400 py-[10px]">

@@ -238,6 +238,7 @@ class Budget(models.Model):
                               null=True, blank=True,
                               verbose_name="Pièce justificative de soumission"
                           )
+    motif_rejet     = models.CharField(max_length=500, blank=True, default='', verbose_name="Motif de rejet")
     date_debut      = models.DateField(verbose_name="Date début")
     date_fin        = models.DateField(verbose_name="Date fin")
     date_creation   = models.DateTimeField(auto_now_add=True)
@@ -259,9 +260,27 @@ class Budget(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.code:
-            annee = datetime.date.today().year
-            seq   = Budget.objects.filter(code__startswith=f'BDG-{annee}-').count() + 1
-            self.code = f'BDG-{annee}-{seq:03d}'
+            annee  = datetime.date.today().year
+            prefix = f'BDG-{annee}-'
+            # Extraire le numéro max déjà utilisé pour éviter les doublons si des budgets ont été supprimés
+            existing = (
+                Budget.objects
+                .filter(code__startswith=prefix)
+                .values_list('code', flat=True)
+            )
+            max_seq = 0
+            for code in existing:
+                try:
+                    max_seq = max(max_seq, int(code[len(prefix):]))
+                except (ValueError, IndexError):
+                    pass
+            # Boucle de sécurité anti-collision en cas de création concurrente
+            seq = max_seq + 1
+            candidate = f'{prefix}{seq:03d}'
+            while Budget.objects.filter(code=candidate).exists():
+                seq += 1
+                candidate = f'{prefix}{seq:03d}'
+            self.code = candidate
         super().save(*args, **kwargs)
 
     def recalculer_montants(self):
@@ -311,10 +330,11 @@ class Budget(models.Model):
         self.comptable = comptable
         self.save(update_fields=['statut', 'comptable'])
 
-    def rejeter_budget(self, comptable):
+    def rejeter_budget(self, comptable, motif=''):
         self._changer_statut(StatutBudget.REJETE)
-        self.comptable = comptable
-        self.save(update_fields=['statut', 'comptable'])
+        self.comptable   = comptable
+        self.motif_rejet = motif
+        self.save(update_fields=['statut', 'comptable', 'motif_rejet'])
 
     def cloturer_budget(self):
         from django.utils import timezone
@@ -521,6 +541,33 @@ class LigneBudgetaire(models.Model):
             )
         budget.recalculer_montants()
 
+    def effectuer_virement(self, ligne_dest, montant, motif=''):
+        from django.db import transaction
+        from decimal import Decimal as _D
+        if self.budget_id != ligne_dest.budget_id:
+            raise ValidationError("Les deux lignes doivent appartenir au même budget.")
+        if self.budget.statut != StatutBudget.APPROUVE:
+            raise ValidationError("Le virement n'est possible que sur un budget approuvé.")
+        montant = _D(str(montant))
+        if montant <= 0:
+            raise ValidationError("Le montant du virement doit être positif.")
+        if montant > self.montant_disponible:
+            raise ValidationError(
+                f"Montant ({montant:,.0f} FCFA) supérieur au disponible sur la ligne source ({self.montant_disponible:,.0f} FCFA)."
+            )
+        with transaction.atomic():
+            LigneBudgetaire.objects.filter(pk=self.pk).update(
+                montant_alloue=models.F('montant_alloue') - montant,
+                montant_disponible=models.F('montant_disponible') - montant,
+            )
+            LigneBudgetaire.objects.filter(pk=ligne_dest.pk).update(
+                montant_alloue=models.F('montant_alloue') + montant,
+                montant_disponible=models.F('montant_disponible') + montant,
+            )
+            self.refresh_from_db()
+            ligne_dest.refresh_from_db()
+            self.budget.recalculer_montants()
+
     def enregistrer_consommation(self, montant, piece_justificative=None, note='', enregistre_par=None):
         if self.budget.niveau_alerte == NiveauAlerte.CRITIQUE:
             raise ValidationError("Dépense bloquée : le budget a atteint 100% de sa consommation (CRITIQUE).")
@@ -612,3 +659,63 @@ class ConsommationLigne(models.Model):
 
     def __str__(self):
         return f"{self.reference or self.id} – {self.montant:,.0f} FCFA ({self.date.date() if self.date else ''})"
+
+
+# ── Pièce justificative multiple ──────────────────────────────────────────────
+
+class PieceJustificative(models.Model):
+    id         = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    depense    = models.ForeignKey(
+                     ConsommationLigne,
+                     on_delete=models.CASCADE,
+                     related_name='pieces',
+                     verbose_name="Dépense"
+                 )
+    fichier    = models.FileField(upload_to='justificatifs/%Y/%m/', verbose_name="Fichier")
+    nom        = models.CharField(max_length=200, blank=True, verbose_name="Nom du fichier")
+    date_ajout = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table            = 'piece_justificative'
+        verbose_name        = 'Pièce justificative'
+        verbose_name_plural = 'Pièces justificatives'
+        ordering            = ['date_ajout']
+
+    def __str__(self):
+        return self.nom or str(self.fichier)
+
+
+# ── Notifications in-app ──────────────────────────────────────────────────────
+
+class Notification(models.Model):
+    id           = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    destinataire = models.ForeignKey(
+                       Utilisateur,
+                       on_delete=models.CASCADE,
+                       related_name='notifications',
+                       verbose_name="Destinataire"
+                   )
+    type_notif   = models.CharField(max_length=30, verbose_name="Type")
+    message      = models.CharField(max_length=500, verbose_name="Message")
+    lien         = models.CharField(max_length=200, blank=True, verbose_name="Lien")
+    lu           = models.BooleanField(default=False, verbose_name="Lu")
+    date         = models.DateTimeField(auto_now_add=True, verbose_name="Date")
+
+    class Meta:
+        db_table            = 'notification'
+        verbose_name        = 'Notification'
+        verbose_name_plural = 'Notifications'
+        ordering            = ['-date']
+
+    def __str__(self):
+        return f"[{self.type_notif}] {self.message[:60]}"
+
+
+def creer_notification(destinataire, type_notif, message, lien=''):
+    """Helper pour créer une notification in-app."""
+    Notification.objects.create(
+        destinataire=destinataire,
+        type_notif=type_notif,
+        message=message,
+        lien=lien,
+    )

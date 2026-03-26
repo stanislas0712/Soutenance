@@ -1,55 +1,71 @@
 import { useEffect, useState } from 'react'
-import { useNavigate, useSearchParams } from 'react-router-dom'
-import { getBudgets, deleteBudget } from '../../api/budget'
-import { getDepartements } from '../../api/accounts'
-import { StatutBadge, AlerteBadge } from '../../components/StatusBadge'
-import { Search, Plus, Building2, ArrowLeft, Wallet, Trash2 } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
+import { getBudgets, deleteBudget, soumettrebudget } from '../../api/budget'
+import { StatutBadge } from '../../components/StatusBadge'
+import {
+  Search, Plus, Wallet, Trash2, Eye, Send, Edit2, Receipt,
+  ChevronRight, Download, Printer,
+} from 'lucide-react'
+import { exportCSV, printPDF } from '../../utils/export'
 
-const fmt = (n) => new Intl.NumberFormat('fr-FR', { notation: 'compact', maximumFractionDigits: 1 }).format(n)
+const fmt = (n) => new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 0 }).format(parseFloat(n || 0))
 
-const jaugeColor = (taux) => {
-  if (taux >= 95) return '#EF4444'
-  if (taux >= 80) return '#F59E0B'
-  if (taux >= 50) return '#22C55E'
-  return '#3B82F6'
-}
+const TABS = [
+  { key: 'BROUILLON', label: 'Brouillons',  color: '#6B7280' },
+  { key: 'SOUMIS',    label: 'Soumis',      color: '#D97706' },
+  { key: 'APPROUVE',  label: 'Approuvés',   color: '#059669' },
+  { key: 'REJETE',    label: 'Rejetés',     color: '#DC2626' },
+]
 
 export default function MesBudgets() {
-  const navigate       = useNavigate()
-  const [searchParams] = useSearchParams()
-  const deptId         = searchParams.get('dept')
+  const navigate = useNavigate()
 
-  const [budgets, setBudgets] = useState([])
-  const [depts,   setDepts]   = useState([])
-  const [loading, setLoading] = useState(true)
-  const [search,  setSearch]  = useState('')
+  const [budgets,  setBudgets]  = useState([])
+  const [loading,  setLoading]  = useState(true)
+  const [search,   setSearch]   = useState('')
+  const [tab,      setTab]      = useState('BROUILLON')
+  const [busy,     setBusy]     = useState(null)   // id en cours d'action
 
   const load = () => {
     setLoading(true)
-    Promise.all([getBudgets(), getDepartements()])
-      .then(([b, d]) => {
-        setBudgets(b.data.results ?? b.data)
-        setDepts(d.data.results ?? d.data)
-      })
+    getBudgets()
+      .then(r => setBudgets(r.data.results ?? r.data))
       .finally(() => setLoading(false))
   }
 
   useEffect(() => { load() }, [])
 
+  const countFor = (key) => budgets.filter(b => b.statut === key).length
+
+  const q = search.trim().toLowerCase()
+  const visible = budgets.filter(b => {
+    const matchTab    = b.statut === tab
+    const matchSearch = !q || b.code?.toLowerCase().includes(q) || b.nom?.toLowerCase().includes(q)
+    return matchTab && matchSearch
+  })
+
   const handleDelete = async (id, e) => {
     e.stopPropagation()
     if (!confirm('Supprimer ce budget ?')) return
-    await deleteBudget(id).catch(err => alert(err.response?.data?.detail))
+    setBusy(id)
+    await deleteBudget(id).catch(err => alert(err.response?.data?.detail || 'Erreur'))
+    setBusy(null)
     load()
   }
 
-  const deptCourant = deptId ? depts.find(d => String(d.id) === deptId) : null
-
-  const filtered = budgets.filter(b => {
-    const matchDept   = !deptId || String(b.departement) === deptId || String(b.departement_detail?.id) === deptId
-    const matchSearch = !search || b.code?.toLowerCase().includes(search.toLowerCase()) || b.nom?.toLowerCase().includes(search.toLowerCase())
-    return matchDept && matchSearch
-  })
+  const handleSoumettre = async (id, e) => {
+    e.stopPropagation()
+    if (!confirm('Soumettre ce budget pour validation ?')) return
+    setBusy(id)
+    try {
+      await soumettrebudget(id)
+      load()
+    } catch (err) {
+      alert(err.response?.data?.detail || 'Erreur lors de la soumission')
+    } finally {
+      setBusy(null)
+    }
+  }
 
   if (loading) return <div className="page-loader"><div className="spinner" /></div>
 
@@ -58,75 +74,122 @@ export default function MesBudgets() {
       {/* Page header */}
       <div className="page-header">
         <div>
-          {deptCourant ? (
-            <>
-              <button
-                onClick={() => navigate('/mes-budgets')}
-                style={{
-                  display: 'inline-flex', alignItems: 'center', gap: 6,
-                  background: 'none', border: 'none',
-                  color: 'var(--color-primary-600)', fontSize: '13px',
-                  fontWeight: 500, cursor: 'pointer', padding: 0, marginBottom: 8,
-                }}
-              >
-                <ArrowLeft size={14} strokeWidth={2} />
-                Tous les budgets
-              </button>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <div style={{
-                  width: 36, height: 36, borderRadius: 9, flexShrink: 0,
-                  background: 'var(--color-primary-100)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                }}>
-                  <Building2 size={18} strokeWidth={2} style={{ color: 'var(--color-primary-600)' }} />
-                </div>
-                <div>
-                  <h1 className="page-title">{deptCourant.nom}</h1>
-                  <p className="page-subtitle">{filtered.length} budget{filtered.length !== 1 ? 's' : ''} dans ce département</p>
-                </div>
-              </div>
-            </>
-          ) : (
-            <>
-              <h1 className="page-title">Mes budgets</h1>
-              <p className="page-subtitle">{budgets.length} budget{budgets.length !== 1 ? 's' : ''} au total</p>
-            </>
-          )}
+          <h1 className="page-title">Mes budgets</h1>
+          <p className="page-subtitle">{budgets.length} budget{budgets.length !== 1 ? 's' : ''} au total</p>
         </div>
-        <button
-          onClick={() => navigate('/creer-budget')}
-          className="btn btn-primary btn-md"
-          style={{ gap: 7 }}
-        >
-          <Plus size={16} strokeWidth={2.5} />
-          Créer un budget
-        </button>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          <button
+            onClick={() => {
+              const rows = visible.map(b => [
+                b.code, b.nom, b.departement_nom || '—', b.statut,
+                fmt(b.montant_global), `${parseFloat(b.taux_consommation || 0).toFixed(1)}%`,
+                b.date_debut, b.date_fin,
+              ])
+              exportCSV(`mes-budgets-${new Date().toISOString().slice(0,10)}`,
+                ['Code','Nom','Département','Statut','Montant (FCFA)','Taux %','Début','Fin'], rows)
+            }}
+            className="btn btn-secondary btn-sm"
+            style={{ gap: 6 }}
+          >
+            <Download size={13} strokeWidth={2} /> CSV
+          </button>
+          <button
+            onClick={() => {
+              const rows = visible.map(b => [
+                b.code, b.nom, b.statut,
+                fmt(b.montant_global) + ' FCFA',
+                `${parseFloat(b.taux_consommation || 0).toFixed(1)}%`,
+              ])
+              printPDF('Mes budgets', ['Code','Nom','Statut','Montant','Taux'], rows, {
+                subtitle: `Onglet : ${TABS.find(t => t.key === tab)?.label}`,
+                stats: TABS.map(t => ({ value: budgets.filter(b => b.statut === t.key).length, label: t.label })),
+              })
+            }}
+            className="btn btn-secondary btn-sm"
+            style={{ gap: 6 }}
+          >
+            <Printer size={13} strokeWidth={2} /> PDF
+          </button>
+          <button
+            onClick={() => navigate('/creer-budget')}
+            className="btn btn-primary btn-md"
+            style={{ gap: 7 }}
+          >
+            <Plus size={16} strokeWidth={2.5} />
+            Créer un budget
+          </button>
+        </div>
       </div>
 
-      {/* Search */}
-      <div className="filter-bar" style={{ marginBottom: 20 }}>
-        <div className="search-wrapper" style={{ maxWidth: 420 }}>
+      {/* Tabs */}
+      <div style={{ display: 'flex', gap: 4, marginBottom: 18, borderBottom: '1px solid var(--color-gray-200)', paddingBottom: 0 }}>
+        {TABS.map(t => {
+          const cnt   = countFor(t.key)
+          const active = tab === t.key
+          return (
+            <button
+              key={t.key}
+              onClick={() => setTab(t.key)}
+              style={{
+                background: 'none', border: 'none', cursor: 'pointer',
+                padding: '8px 18px 10px',
+                fontSize: '13px', fontWeight: active ? 700 : 500,
+                color: active ? t.color : 'var(--color-gray-500)',
+                borderBottom: active ? `2.5px solid ${t.color}` : '2.5px solid transparent',
+                display: 'flex', alignItems: 'center', gap: 6,
+                transition: 'color .15s',
+              }}
+            >
+              {t.label}
+              <span style={{
+                background: active ? t.color : 'var(--color-gray-200)',
+                color: active ? '#fff' : 'var(--color-gray-600)',
+                fontSize: '10px', fontWeight: 700,
+                padding: '1px 6px', borderRadius: 9,
+              }}>
+                {cnt}
+              </span>
+            </button>
+          )
+        })}
+      </div>
+
+      {/* Barre de recherche */}
+      <div className="filter-bar" style={{ marginBottom: 16 }}>
+        <div className="search-wrapper" style={{ flex: '1 1 260px', maxWidth: 380 }}>
           <Search size={15} strokeWidth={2} className="search-icon" />
           <input
             className="search-input"
             value={search}
             onChange={e => setSearch(e.target.value)}
-            placeholder="Rechercher un budget…"
+            placeholder="Rechercher par nom ou code…"
           />
         </div>
+        {search && (
+          <button
+            onClick={() => setSearch('')}
+            className="btn btn-secondary btn-sm"
+          >
+            ✕ Effacer
+          </button>
+        )}
       </div>
 
-      {/* Content */}
-      {filtered.length === 0 ? (
+      {/* Contenu */}
+      {visible.length === 0 ? (
         <div className="empty-state">
           <div className="empty-icon">
             <Wallet size={28} strokeWidth={1.5} style={{ color: 'var(--color-gray-400)' }} />
           </div>
           <p className="empty-title">Aucun budget</p>
           <p className="empty-body">
-            {search ? 'Aucun résultat pour votre recherche.' : 'Créez votre premier budget pour commencer.'}
+            {search
+              ? 'Aucun résultat pour votre recherche.'
+              : tab === 'BROUILLON'
+                ? 'Créez votre premier budget pour commencer.'
+                : `Aucun budget en statut « ${TABS.find(t => t.key === tab)?.label} ».`}
           </p>
-          {!search && (
+          {!search && tab === 'BROUILLON' && (
             <button
               onClick={() => navigate('/creer-budget')}
               className="btn btn-primary btn-md"
@@ -138,81 +201,145 @@ export default function MesBudgets() {
           )}
         </div>
       ) : (
-        <div style={{ display: 'grid', gap: 12 }}>
-          {filtered.map(b => {
-            const taux    = parseFloat(b.taux_consommation || 0)
-            const color   = jaugeColor(taux)
-            const editable = ['BROUILLON', 'REJETE'].includes(b.statut)
+        <div className="card p-0 overflow-hidden">
+          {/* Header */}
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: '1fr 160px 140px 160px',
+            padding: '8px 20px',
+            background: 'var(--color-gray-50)',
+            borderBottom: '1px solid var(--color-gray-200)',
+            fontSize: '10px', fontWeight: 700,
+            textTransform: 'uppercase', letterSpacing: '.4px',
+            color: 'var(--color-gray-500)',
+          }}>
+            <span>Budget</span>
+            <span style={{ textAlign: 'right' }}>Montant global</span>
+            <span style={{ textAlign: 'center' }}>Consommation</span>
+            <span style={{ textAlign: 'right' }}>Actions</span>
+          </div>
+
+          {visible.map((b, i) => {
+            const taux   = parseFloat(b.taux_consommation || 0)
+            const isBusy = busy === b.id
+
             return (
               <div
                 key={b.id}
-                className="card card-hover"
-                style={{ cursor: 'pointer' }}
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: '1fr 160px 140px 160px',
+                  padding: '14px 20px',
+                  borderBottom: i < visible.length - 1 ? '1px solid var(--color-gray-100)' : 'none',
+                  alignItems: 'center',
+                  cursor: 'pointer',
+                  transition: 'background .12s',
+                }}
+                onMouseEnter={e => e.currentTarget.style.background = 'var(--color-gray-50)'}
+                onMouseLeave={e => e.currentTarget.style.background = ''}
                 onClick={() => navigate(`/mes-budgets/${b.id}`)}
               >
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16 }}>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6, flexWrap: 'wrap' }}>
-                      <span className="code-tag">{b.code}</span>
-                      <StatutBadge statut={b.statut} />
-                      <AlerteBadge niveau={b.niveau_alerte} />
-                    </div>
-                    <div style={{
-                      fontFamily: 'var(--font-display)', fontWeight: 700,
-                      fontSize: '15px', color: 'var(--color-gray-900)', marginBottom: 3,
-                    }}>
-                      {b.nom}
-                    </div>
-                    <div style={{ fontSize: '12px', color: 'var(--color-gray-400)' }}>
-                      {b.departement_nom} · {b.date_debut} → {b.date_fin}
-                    </div>
+                {/* Colonne Budget */}
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4, flexWrap: 'wrap' }}>
+                    <span className="code-tag">{b.code}</span>
+                    <StatutBadge statut={b.statut} />
                   </div>
-
-                  <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                    <div style={{
-                      fontFamily: 'var(--font-mono)', fontWeight: 700,
-                      fontSize: '16px', color: 'var(--color-gray-900)',
-                    }}>
-                      {fmt(b.montant_global)}
-                    </div>
-                    <div style={{ fontSize: '10px', color: 'var(--color-gray-400)', marginTop: 1 }}>FCFA global</div>
+                  <div style={{
+                    fontWeight: 600, fontSize: '14px',
+                    color: 'var(--color-gray-900)',
+                    whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+                    marginBottom: 2,
+                  }}>
+                    {b.nom}
+                  </div>
+                  <div style={{ fontSize: '11px', color: 'var(--color-gray-400)' }}>
+                    {b.departement_nom} · {b.date_debut} → {b.date_fin}
                   </div>
                 </div>
 
-                <div style={{ marginTop: 16, display: 'flex', alignItems: 'center', gap: 12 }}>
-                  <div className="exec-bar" style={{ flex: 1 }}>
+                {/* Montant */}
+                <div style={{ textAlign: 'right' }}>
+                  <div style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, fontSize: '14px', color: 'var(--color-gray-900)' }}>
+                    {fmt(b.montant_global)}
+                  </div>
+                  <div style={{ fontSize: '10px', color: 'var(--color-gray-400)', marginTop: 1 }}>FCFA</div>
+                </div>
+
+                {/* Jauge */}
+                <div style={{ padding: '0 12px' }}>
+                  <div className="progress-track">
                     <div
-                      className="exec-bar-fill"
-                      style={{
-                        width: `${Math.min(taux, 100)}%`,
-                        background: `linear-gradient(90deg, ${jaugeColor(Math.max(0, taux - 20))}, ${color})`,
-                      }}
+                      className={`progress-fill ${taux > 75 ? 'progress-fill-red' : taux > 50 ? 'progress-fill-orange' : 'progress-fill-green'}`}
+                      style={{ width: `${Math.min(taux, 100)}%` }}
                     />
                   </div>
-                  <span style={{
-                    fontSize: '11px', fontWeight: 700,
-                    fontFamily: 'var(--font-mono)',
-                    color: taux >= 95 ? 'var(--color-danger-600)' : taux >= 80 ? 'var(--color-warning-600)' : 'var(--color-gray-600)',
-                    whiteSpace: 'nowrap',
-                  }}>
-                    {taux}% consommé
-                  </span>
-                  {editable && (
+                  <div style={{ fontSize: '10px', color: 'var(--color-gray-500)', textAlign: 'center', marginTop: 3, fontWeight: 600 }}>
+                    {taux}%
+                  </div>
+                </div>
+
+                {/* Actions */}
+                <div
+                  style={{ display: 'flex', gap: 6, justifyContent: 'flex-end', alignItems: 'center' }}
+                  onClick={e => e.stopPropagation()}
+                >
+                  {/* Voir */}
+                  <button
+                    title="Voir le détail"
+                    onClick={() => navigate(`/mes-budgets/${b.id}`)}
+                    style={btnStyle('#3B82F6')}
+                  >
+                    <Eye size={13} strokeWidth={2} />
+                  </button>
+
+                  {/* Modifier (BROUILLON + REJETE) */}
+                  {['BROUILLON', 'REJETE'].includes(b.statut) && (
                     <button
-                      onClick={e => handleDelete(b.id, e)}
-                      style={{
-                        background: 'none', border: 'none', cursor: 'pointer',
-                        color: 'var(--color-gray-300)', padding: '4px',
-                        display: 'flex', alignItems: 'center', borderRadius: 6,
-                        transition: 'color .15s',
-                      }}
-                      onMouseEnter={e => e.currentTarget.style.color = 'var(--color-danger-500)'}
-                      onMouseLeave={e => e.currentTarget.style.color = 'var(--color-gray-300)'}
-                      title="Supprimer"
+                      title="Modifier"
+                      onClick={() => navigate(`/mes-budgets/${b.id}?edit=1`)}
+                      style={btnStyle('#D97706')}
                     >
-                      <Trash2 size={14} strokeWidth={2} />
+                      <Edit2 size={13} strokeWidth={2} />
                     </button>
                   )}
+
+                  {/* Soumettre (BROUILLON + REJETE) */}
+                  {['BROUILLON', 'REJETE'].includes(b.statut) && (
+                    <button
+                      title="Soumettre pour validation"
+                      onClick={e => handleSoumettre(b.id, e)}
+                      disabled={isBusy}
+                      style={btnStyle('#059669')}
+                    >
+                      {isBusy ? <span style={{ width: 13, height: 13 }} className="spinner-sm" /> : <Send size={13} strokeWidth={2} />}
+                    </button>
+                  )}
+
+                  {/* Enregistrer dépense (APPROUVE) */}
+                  {b.statut === 'APPROUVE' && (
+                    <button
+                      title="Enregistrer une dépense"
+                      onClick={() => navigate(`/mes-budgets/${b.id}?depense=1`)}
+                      style={btnStyle('#059669')}
+                    >
+                      <Receipt size={13} strokeWidth={2} />
+                    </button>
+                  )}
+
+                  {/* Supprimer (BROUILLON + REJETE) */}
+                  {['BROUILLON', 'REJETE'].includes(b.statut) && (
+                    <button
+                      title="Supprimer"
+                      onClick={e => handleDelete(b.id, e)}
+                      disabled={isBusy}
+                      style={btnStyle('#EF4444')}
+                    >
+                      <Trash2 size={13} strokeWidth={2} />
+                    </button>
+                  )}
+
+                  <ChevronRight size={14} strokeWidth={2} style={{ color: 'var(--color-gray-300)', marginLeft: 2 }} />
                 </div>
               </div>
             )
@@ -221,4 +348,18 @@ export default function MesBudgets() {
       )}
     </div>
   )
+}
+
+function btnStyle(color) {
+  return {
+    background: 'none',
+    border: `1px solid ${color}30`,
+    borderRadius: 7,
+    padding: '5px 7px',
+    cursor: 'pointer',
+    color,
+    display: 'flex',
+    alignItems: 'center',
+    transition: 'background .12s',
+  }
 }

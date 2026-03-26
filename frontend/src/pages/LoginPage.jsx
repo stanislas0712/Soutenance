@@ -1,7 +1,16 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
-import { Eye, EyeOff, Mail, Lock, TrendingUp, CheckCircle, Bell, Wallet } from 'lucide-react'
+import {
+  Eye, EyeOff, Mail, Lock, Wallet,
+  TrendingUp, CheckCircle2, Bell, ArrowRight,
+} from 'lucide-react'
+
+const FEATURES = [
+  { Icon: TrendingUp,   text: 'Suivi en temps réel des consommations'  },
+  { Icon: CheckCircle2, text: 'Workflow de validation multi-niveaux'   },
+  { Icon: Bell,         text: 'Alertes automatiques de dépassement'    },
+]
 
 export default function LoginPage() {
   const { login }   = useAuth()
@@ -26,112 +35,152 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex bg-[#0F172A]">
-      {/* ── Panneau gauche — branding ────────────────────────────────── */}
+    <div style={{ minHeight: '100vh', display: 'flex', fontFamily: 'Roboto, system-ui, sans-serif' }}>
+
+      {/* ── Panneau gauche — illustration ─────────────────────────────── */}
       <div
-        className="login-left flex-1 flex flex-col justify-center px-[72px] py-[64px] relative overflow-hidden"
-        style={{ background: 'linear-gradient(160deg, #0F2547 0%, #1E3A8A 60%, #1D4ED8 100%)' }}
+        style={{
+          flex: 1,
+          background: 'linear-gradient(180deg, #EFF6FF 0%, #DBEAFE 40%, #EFF6FF 100%)',
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'center',
+          padding: '64px 72px',
+          position: 'relative',
+          overflow: 'hidden',
+        }}
       >
-        {/* Cercles décoratifs */}
-        <div
-          className="absolute pointer-events-none rounded-full"
-          style={{
-            top: -120, right: -120, width: 400, height: 400,
-            background: 'radial-gradient(circle, rgba(59,130,246,.15) 0%, transparent 70%)',
-          }}
-        />
-        <div
-          className="absolute pointer-events-none rounded-full"
-          style={{
-            bottom: -80, left: -80, width: 300, height: 300,
-            background: 'radial-gradient(circle, rgba(99,102,241,.1) 0%, transparent 70%)',
-          }}
-        />
+        {/* Cercles déco */}
+        <div style={{
+          position: 'absolute', top: -100, right: -80, width: 400, height: 400,
+          borderRadius: '50%',
+          background: 'radial-gradient(circle, rgba(59,130,246,.12) 0%, transparent 70%)',
+          pointerEvents: 'none',
+        }} />
+        <div style={{
+          position: 'absolute', bottom: -60, left: -60, width: 280, height: 280,
+          borderRadius: '50%',
+          background: 'radial-gradient(circle, rgba(99,102,241,.08) 0%, transparent 70%)',
+          pointerEvents: 'none',
+        }} />
 
         {/* Logo */}
-        <div className="flex items-center gap-3 mb-16">
-          <div
-            className="w-[46px] h-[46px] rounded-[12px] flex items-center justify-center shrink-0"
-            style={{
-              background: 'linear-gradient(135deg, #3B82F6, #1D4ED8)',
-              boxShadow: '0 4px 16px rgba(59,130,246,.4)',
-            }}
-          >
-            <Wallet size={22} strokeWidth={2.5} color="#fff" />
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 52 }}>
+          <div style={{
+            width: 46, height: 46, borderRadius: 12, flexShrink: 0,
+            background: 'linear-gradient(135deg, #3B82F6, #1D4ED8)',
+            boxShadow: '0 4px 16px rgba(59,130,246,.3)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}>
+            <Wallet size={21} strokeWidth={2.5} color="#fff" />
           </div>
           <div>
-            <div className="font-extrabold text-[18px] text-white tracking-[-0.4px]">
-              BudgetFlow
-            </div>
-            <div className="text-[10px] text-white/40 tracking-[.8px] mt-[1px]">
-              GESTION BUDGÉTAIRE
-            </div>
+            <div style={{ fontWeight: 900, fontSize: 19, color: '#1E3A8A', letterSpacing: '-.4px' }}>BudgetFlow</div>
+            <div style={{ fontSize: 9, color: '#93C5FD', letterSpacing: '.8px', textTransform: 'uppercase', marginTop: 1 }}>GESTION BUDGÉTAIRE</div>
+          </div>
+        </div>
+
+        {/* Image africaine */}
+        <div style={{ position: 'relative', marginBottom: 40 }}>
+          <img
+            src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=720&q=80"
+            alt="Professionnelle africaine en bureau"
+            style={{
+              width: '100%', maxWidth: 400,
+              aspectRatio: '4/3', objectFit: 'cover',
+              borderRadius: 20,
+              boxShadow: '0 16px 48px rgba(59,130,246,.18)',
+              border: '3px solid #fff',
+            }}
+          />
+          {/* Badge flottant */}
+          <div style={{
+            position: 'absolute', bottom: -14, right: 16,
+            background: '#fff', borderRadius: 12, padding: '10px 16px',
+            boxShadow: '0 8px 24px rgba(0,0,0,.1)',
+            display: 'flex', alignItems: 'center', gap: 8,
+            border: '1px solid #F3F4F6',
+          }}>
+            <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#10B981', flexShrink: 0 }} />
+            <span style={{ fontSize: 12, fontWeight: 700, color: '#059669', whiteSpace: 'nowrap' }}>
+              BDG-2025-001 approuvé
+            </span>
           </div>
         </div>
 
         {/* Headline */}
-        <h1
-          className="font-extrabold text-white mb-[18px] tracking-[-0.04em]"
-          style={{ fontSize: 'clamp(1.75rem, 3vw, 2.6rem)', lineHeight: 1.15 }}
-        >
+        <h2 style={{
+          fontWeight: 900, color: '#1E3A8A',
+          fontSize: 'clamp(1.5rem, 2.5vw, 2rem)',
+          lineHeight: 1.2, letterSpacing: '-.03em', marginBottom: 14,
+        }}>
           Planifiez.<br />
           Dépensez.<br />
-          <span className="text-[#93C5FD]">Maîtrisez.</span>
-        </h1>
+          <span style={{ color: '#2563EB' }}>Maîtrisez.</span>
+        </h2>
 
-        <p className="text-[15px] text-white/60 leading-[1.7] max-w-[400px] mb-[52px]">
-          Plateforme de gestion budgétaire collaborative — allocation, validation,
-          suivi de consommation et alertes intelligentes en temps réel.
+        <p style={{ fontSize: 14, color: '#4B5563', lineHeight: 1.7, maxWidth: 380, marginBottom: 28 }}>
+          Plateforme de gestion budgétaire collaborative pour les institutions publiques du Burkina Faso.
         </p>
 
         {/* Features */}
-        {[
-          { Icon: TrendingUp,   text: 'Suivi en temps réel des consommations' },
-          { Icon: CheckCircle,  text: 'Workflow de validation multi-niveaux' },
-          { Icon: Bell,         text: 'Alertes automatiques de dépassement' },
-        ].map(({ Icon, text }) => (
-          <div key={text} className="flex items-center gap-[14px] mb-[18px]">
-            <div
-              className="w-9 h-9 rounded-[9px] shrink-0 flex items-center justify-center bg-[rgba(59,130,246,.2)]"
-            >
-              <Icon size={16} strokeWidth={2} color="#93C5FD" />
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          {FEATURES.map(({ Icon, text }) => (
+            <div key={text} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <div style={{
+                width: 32, height: 32, borderRadius: 8, flexShrink: 0,
+                background: '#EFF6FF', border: '1px solid #BFDBFE',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}>
+                <Icon size={14} strokeWidth={2} color="#2563EB" />
+              </div>
+              <span style={{ fontSize: 13, color: '#374151', fontWeight: 500 }}>{text}</span>
             </div>
-            <span className="text-[14px] text-white/75 font-medium">{text}</span>
-          </div>
-        ))}
+          ))}
+        </div>
 
         {/* Footer */}
-        <div className="mt-auto pt-12 text-[12px] text-white/25">
-          © 2026 BudgetFlow — Accès réservé aux utilisateurs autorisés
+        <div style={{ marginTop: 'auto', paddingTop: 40, fontSize: 11, color: '#9CA3AF' }}>
+          © 2025 BudgetFlow — Accès réservé aux utilisateurs autorisés
         </div>
       </div>
 
-      {/* ── Panneau droit — formulaire ────────────────────────────────── */}
-      <div className="w-[480px] shrink-0 flex items-center justify-center p-10 bg-white">
-        <div className="w-full max-w-[400px]">
+      {/* ── Panneau droit — formulaire ──────────────────────────────────── */}
+      <div style={{
+        width: 500, flexShrink: 0,
+        background: '#fff',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        padding: 40,
+        borderLeft: '1px solid #F3F4F6',
+        boxShadow: '-4px 0 24px rgba(0,0,0,.04)',
+      }}>
+        <div style={{ width: '100%', maxWidth: 400 }}>
 
-          {/* Header form */}
-          <div className="mb-9">
-            <h2 className="font-extrabold text-[26px] text-[#111827] tracking-[-0.04em] mb-2">
+          {/* Header */}
+          <div style={{ marginBottom: 36 }}>
+            <h2 style={{
+              fontWeight: 900, fontSize: 26, color: '#111827',
+              letterSpacing: '-.04em', marginBottom: 8,
+            }}>
               Connexion
             </h2>
-            <p className="text-[14px] text-[#6B7280] leading-[1.5]">
+            <p style={{ fontSize: 14, color: '#6B7280', lineHeight: 1.5 }}>
               Accédez à votre espace de gestion budgétaire
             </p>
           </div>
 
           <form onSubmit={handleSubmit} noValidate>
+
             {/* Email */}
-            <div className="mb-[18px]">
+            <div style={{ marginBottom: 18 }}>
               <label className="form-label" htmlFor="email">
-                Adresse email
-                <span className="required" aria-hidden="true"> *</span>
+                Adresse email <span style={{ color: '#EF4444' }}>*</span>
               </label>
-              <div className="relative">
-                <Mail
-                  size={16} strokeWidth={1.8}
-                  className="absolute left-3 top-1/2 -translate-y-1/2 text-[#9CA3AF] pointer-events-none"
-                />
+              <div style={{ position: 'relative' }}>
+                <Mail size={16} strokeWidth={1.8} style={{
+                  position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)',
+                  color: '#9CA3AF', pointerEvents: 'none',
+                }} />
                 <input
                   id="email"
                   type="email"
@@ -140,25 +189,23 @@ export default function LoginPage() {
                   autoFocus
                   value={form.email}
                   onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
-                  placeholder="votre@email.com"
-                  className={`form-input pl-[40px] pr-[12px] h-[44px]${error ? ' error' : ''}`}
-                  aria-describedby={error ? 'login-error' : undefined}
-                  aria-invalid={!!error}
+                  placeholder="votre@email.bf"
+                  className={`form-input${error ? ' error' : ''}`}
+                  style={{ paddingLeft: 40, height: 44 }}
                 />
               </div>
             </div>
 
             {/* Password */}
-            <div className="mb-7">
+            <div style={{ marginBottom: 28 }}>
               <label className="form-label" htmlFor="password">
-                Mot de passe
-                <span className="required" aria-hidden="true"> *</span>
+                Mot de passe <span style={{ color: '#EF4444' }}>*</span>
               </label>
-              <div className="relative">
-                <Lock
-                  size={16} strokeWidth={1.8}
-                  className="absolute left-3 top-1/2 -translate-y-1/2 text-[#9CA3AF] pointer-events-none"
-                />
+              <div style={{ position: 'relative' }}>
+                <Lock size={16} strokeWidth={1.8} style={{
+                  position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)',
+                  color: '#9CA3AF', pointerEvents: 'none',
+                }} />
                 <input
                   id="password"
                   type={showPwd ? 'text' : 'password'}
@@ -167,29 +214,45 @@ export default function LoginPage() {
                   value={form.password}
                   onChange={e => setForm(f => ({ ...f, password: e.target.value }))}
                   placeholder="••••••••"
-                  className={`form-input pl-[40px] pr-[44px] h-[44px]${error ? ' error' : ''}`}
-                  aria-describedby={error ? 'login-error' : undefined}
-                  aria-invalid={!!error}
+                  className={`form-input${error ? ' error' : ''}`}
+                  style={{ paddingLeft: 40, paddingRight: 44, height: 44 }}
                 />
                 <button
                   type="button"
                   onClick={() => setShowPwd(s => !s)}
-                  aria-label={showPwd ? 'Masquer le mot de passe' : 'Afficher le mot de passe'}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center p-1 text-[#9CA3AF]"
+                  aria-label={showPwd ? 'Masquer' : 'Afficher'}
+                  style={{
+                    position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)',
+                    background: 'none', border: 'none', cursor: 'pointer', padding: 4,
+                    color: '#9CA3AF', display: 'flex', alignItems: 'center',
+                  }}
                 >
                   {showPwd ? <EyeOff size={16} strokeWidth={1.8} /> : <Eye size={16} strokeWidth={1.8} />}
                 </button>
               </div>
             </div>
 
+            {/* Se souvenir + mot de passe oublié */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20, marginTop: -10 }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', userSelect: 'none' }}>
+                <input
+                  type="checkbox"
+                  style={{
+                    width: 15, height: 15, borderRadius: 4, cursor: 'pointer',
+                    accentColor: '#2563EB',
+                  }}
+                />
+                <span style={{ fontSize: 13, color: '#4B5563', fontWeight: 500 }}>Se souvenir de moi</span>
+              </label>
+              <span style={{ fontSize: 12, color: '#2563EB', fontWeight: 600, cursor: 'default' }}>
+                Contactez l'admin
+              </span>
+            </div>
+
             {/* Erreur */}
             {error && (
-              <div
-                id="login-error"
-                role="alert"
-                className="alert alert-error mb-5"
-              >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true" className="shrink-0 mt-[1px]">
+              <div role="alert" className="alert alert-error" style={{ marginBottom: 20 }}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ flexShrink: 0, marginTop: 1 }}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
                 </svg>
                 <span>{error}</span>
@@ -200,18 +263,21 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="btn btn-primary btn-lg w-full justify-center font-bold"
+              className="btn btn-primary btn-lg"
+              style={{ width: '100%', justifyContent: 'center', gap: 8, fontWeight: 700 }}
             >
               {loading ? (
-                <>
-                  <span className="spinner-sm" aria-hidden="true" />
-                  Connexion en cours…
-                </>
-              ) : 'Se connecter'}
+                <><span className="spinner-sm" /> Connexion en cours…</>
+              ) : (
+                <>Se connecter <ArrowRight size={16} strokeWidth={2.5} /></>
+              )}
             </button>
           </form>
 
-          <p className="text-center mt-8 text-[12px] text-[#9CA3AF] leading-[1.5]">
+          <p style={{
+            textAlign: 'center', marginTop: 28,
+            fontSize: 12, color: '#9CA3AF', lineHeight: 1.6,
+          }}>
             Accès réservé aux utilisateurs autorisés.<br />
             Contactez votre administrateur pour tout problème de connexion.
           </p>

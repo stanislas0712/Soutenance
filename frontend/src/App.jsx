@@ -96,10 +96,8 @@ function AppRoutes() {
           <Route path="/rapports"        element={<RapportsKPIPage />} />
         </>}
 
-        {/* IA — admin et comptable */}
-        {(isAdmin || isComptable) && (
-          <Route path="/ia" element={<IADashboard />} />
-        )}
+        {/* IA — tous les rôles authentifiés */}
+        <Route path="/ia" element={<IADashboard />} />
 
         {/* Profil — tous les rôles */}
         <Route path="/profil" element={<ProfilPage />} />

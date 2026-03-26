@@ -3,7 +3,6 @@ import { useEffect, useState } from 'react'
 const NAV_LINKS = [
   { label: 'Fonctionnalités', href: '#features' },
   { label: 'Comment ça marche', href: '#how-it-works' },
-  { label: 'Témoignages', href: '#testimonials' },
   { label: 'FAQ', href: '#faq' },
 ]
 
@@ -73,12 +72,6 @@ export default function Navbar() {
 
           {/* Desktop action buttons */}
           <div className="hidden md:flex items-center gap-2 flex-shrink-0">
-            <a
-              href="/login"
-              className="text-sm font-medium text-gray-700 hover:text-blue-600 px-4 py-2 rounded-lg transition-colors no-underline"
-            >
-              Se connecter
-            </a>
             <a
               href="/login"
               className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-5 py-2 rounded-lg transition-colors no-underline whitespace-nowrap"
@@ -154,12 +147,6 @@ export default function Navbar() {
 
         {/* Drawer action buttons */}
         <div className="flex flex-col gap-3 mt-6">
-          <a
-            href="/login"
-            className="text-sm font-medium text-gray-700 border border-gray-200 hover:border-gray-300 hover:bg-gray-50 px-4 py-3 rounded-xl transition-colors no-underline text-center"
-          >
-            Se connecter
-          </a>
           <a
             href="/login"
             className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-4 py-3 rounded-xl transition-colors no-underline text-center"

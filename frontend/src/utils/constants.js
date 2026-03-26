@@ -20,9 +20,9 @@ export const STATUT_BUDGET_CONFIG = {
   SOUMIS: {
     label:       'Soumis',
     labelCourt:  'Soumis',
-    couleur:     '#D97706',
-    bg:          '#FFFBEB',
-    border:      '#FDE68A',
+    couleur:     '#2563EB',
+    bg:          '#EFF6FF',
+    border:      '#BFDBFE',
     icone:       'Clock',
     description: 'Soumis à validation, en attente de décision.',
   },
@@ -249,12 +249,11 @@ export const ALERTE_CONFIG = {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 export const FILTRES_BUDGET = [
-  { key: '',          label: 'Tous' },
+  { key: '',          label: 'Tous'      },
   { key: 'BROUILLON', label: 'Brouillons' },
-  { key: 'SOUMIS',    label: 'Soumis' },
+  { key: 'SOUMIS',    label: 'Soumis'    },
   { key: 'APPROUVE',  label: 'Approuvés' },
-  { key: 'REJETE',    label: 'Rejetés' },
-  { key: 'CLOTURE',   label: 'Clôturés' },
+  { key: 'REJETE',    label: 'Rejetés'   },
 ]
 
 // R-COMPT-01 : le Comptable ne voit jamais BROUILLON (filtré côté API)

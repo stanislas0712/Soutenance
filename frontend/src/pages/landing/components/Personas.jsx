@@ -7,16 +7,14 @@ const PERSONAS = [
     tagBg: '#EFF6FF',
     avatarBg: 'linear-gradient(135deg, #1D4ED8, #3B82F6)',
     initials: 'AD',
-    description: 'Pour les responsables administratifs',
+    description: 'Responsable de la gouvernance budgétaire globale',
     features: [
       'Allocation des enveloppes budgétaires par département',
       'Gestion complète des utilisateurs et des rôles',
       'Création et gestion des départements',
-      "Accès aux logs d'audit et KPIs",
+      "Accès aux journaux d'audit et aux KPIs",
       'Paramétrage du budget annuel global',
     ],
-    quote: "La plateforme nous a fait gagner un temps considérable sur la gestion budgétaire. La visibilité par département est exactement ce dont nous avions besoin.",
-    author: 'Marie K., Directrice Administrative',
   },
   {
     role: 'Gestionnaire',
@@ -24,16 +22,14 @@ const PERSONAS = [
     tagBg: '#F0FDF4',
     avatarBg: 'linear-gradient(135deg, #047857, #10B981)',
     initials: 'GT',
-    description: 'Pour les chefs de projet et de département',
+    description: 'Chef de projet ou responsable de département',
     features: [
       'Création de budgets opérationnels structurés',
       'Enregistrement des dépenses avec justificatifs',
       'Upload de pièces justificatives (PDF, JPG, PNG)',
       'Suivi en temps réel de la consommation',
-      'Demande de modification et resoumission',
+      'Resoumission après correction et rejet',
     ],
-    quote: "Je peux créer et suivre mes budgets en quelques clics. Les alertes automatiques m'évitent les mauvaises surprises en fin de mois.",
-    author: 'Jean B., Chef de Projet Informatique',
   },
   {
     role: 'Comptable',
@@ -41,21 +37,19 @@ const PERSONAS = [
     tagBg: '#F5F3FF',
     avatarBg: 'linear-gradient(135deg, #6D28D9, #8B5CF6)',
     initials: 'CT',
-    description: 'Pour les responsables financiers',
+    description: 'Responsable du contrôle financier',
     features: [
       'Validation et approbation des budgets soumis',
       'Vérification des pièces justificatives',
-      'Génération de rapports PDF et Excel',
+      'Export des rapports PDF et CSV',
       'Vue consolidée de toutes les dépenses',
       'Accès aux KPIs et tableaux de bord avancés',
     ],
-    quote: "La traçabilité complète facilite grandement nos audits. Chaque opération est horodatée et justifiée. C'est exactement ce que les auditeurs attendent.",
-    author: 'Fatima D., Responsable Comptable',
   },
 ]
 
 function PersonaCard({ persona, index, visible }) {
-  const { role, tagColor, tagBg, avatarBg, initials, description, features, quote, author } = persona
+  const { role, tagColor, tagBg, avatarBg, initials, description, features } = persona
 
   return (
     <div
@@ -102,13 +96,14 @@ function PersonaCard({ persona, index, visible }) {
           ))}
         </ul>
 
-        {/* Quote */}
-        <div
-          className="rounded-xl p-4 mt-auto"
-          style={{ background: tagBg }}
-        >
-          <p className="text-sm text-gray-600 italic leading-relaxed mb-2">"{quote}"</p>
-          <p className="text-xs font-semibold" style={{ color: tagColor }}>— {author}</p>
+        {/* Badge rôle bas */}
+        <div className="mt-auto pt-4" style={{ borderTop: `1px solid ${tagBg}` }}>
+          <span
+            className="text-xs font-bold px-3 py-1.5 rounded-full"
+            style={{ background: tagBg, color: tagColor }}
+          >
+            Rôle : {role}
+          </span>
         </div>
       </div>
     </div>
@@ -137,14 +132,14 @@ export default function Personas() {
             }`}
           >
             <p className="text-sm font-semibold text-blue-600 uppercase tracking-widest mb-4">
-              Pour qui ?
+              Acteurs du système
             </p>
             <h2 id="personas-title" className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-4 tracking-tight">
-              Une solution pour chaque acteur
+              Trois rôles, une plateforme unifiée
             </h2>
             <p className="text-lg text-gray-500 max-w-xl mx-auto leading-relaxed">
-              BudgetFlow adapte ses fonctionnalités à chaque profil.
-              Trois rôles, une plateforme unifiée.
+              BudgetFlow définit des droits d'accès précis pour chaque profil d'utilisateur,
+              garantissant sécurité et traçabilité à chaque niveau.
             </p>
           </div>
 

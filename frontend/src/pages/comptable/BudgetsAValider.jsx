@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
-import { getBudgets, getBudget, getLignes, approuverBudget, rejeterBudget } from '../../api/budget'
+import { getBudgets, getBudget, getLignes, approuverBudget, rejeterBudget, cloturerBudget } from '../../api/budget'
 import { StatutBadge } from '../../components/StatusBadge'
-import { Search, ArrowLeft, ArrowRight, CheckCircle2, XCircle, TrendingUp, BarChart3 } from 'lucide-react'
+import { Search, ArrowLeft, ArrowRight, CheckCircle2, XCircle, TrendingUp, BarChart3, Download, Printer } from 'lucide-react'
+import { exportCSV, printPDF } from '../../utils/export'
 
-const fmt  = (n) => new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 0 }).format(n)
-const fmtK = (n) => new Intl.NumberFormat('fr-FR', { notation: 'compact', maximumFractionDigits: 1 }).format(n)
+const fmt  = (n) => new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 0 }).format(parseFloat(n || 0))
+const fmtK = fmt
 
 /* ══════════════════════════════════════════════════════════════════════════════
    Liste des budgets à valider
@@ -13,16 +14,22 @@ const fmtK = (n) => new Intl.NumberFormat('fr-FR', { notation: 'compact', maximu
 export function BudgetsAValiderList() {
   const navigate       = useNavigate()
   const [searchParams] = useSearchParams()
-  const [budgets, setBudgets] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [search,  setSearch]  = useState('')
-  const [filtre,  setFiltre]  = useState(searchParams.get('statut') || 'SOUMIS')
+  const [budgets,    setBudgets]    = useState([])
+  const [allBudgets, setAllBudgets] = useState([])
+  const [loading,    setLoading]    = useState(true)
+  const [search,     setSearch]     = useState('')
+  const [filtre,     setFiltre]     = useState(searchParams.get('statut') || 'SOUMIS')
   const deptId = searchParams.get('dept')
 
   useEffect(() => {
     const s = searchParams.get('statut') || 'SOUMIS'
     if (s !== filtre) { setFiltre(s); setLoading(true) }
   }, [searchParams])
+
+  // Charger tous les budgets une seule fois pour les comptages
+  useEffect(() => {
+    getBudgets().then(r => setAllBudgets(r.data.results ?? r.data)).catch(() => {})
+  }, [])
 
   useEffect(() => {
     const params = { statut: filtre || undefined }
@@ -36,12 +43,15 @@ export function BudgetsAValiderList() {
 
   // R-COMPT-01 : le Comptable ne voit jamais BROUILLON (filtré côté API)
   const FILTRES = [
-    { key: 'SOUMIS',   label: 'À valider' },
-    { key: 'APPROUVE', label: 'Approuvés' },
-    { key: 'REJETE',   label: 'Rejetés' },
-    { key: 'CLOTURE',  label: 'Clôturés' },
-    { key: '',         label: 'Tous' },
+    { key: 'SOUMIS',   label: 'En attente', countKey: 'SOUMIS'   },
+    { key: 'APPROUVE', label: 'Approuvés',  countKey: 'APPROUVE' },
+    { key: 'REJETE',   label: 'Rejetés',    countKey: 'REJETE'   },
+    { key: '',         label: 'Tous',       countKey: null        },
   ]
+
+  const countFor = (key) => key
+    ? allBudgets.filter(b => b.statut === key).length
+    : allBudgets.length
 
   const q       = search.trim().toLowerCase()
   const visible = q
@@ -57,8 +67,46 @@ export function BudgetsAValiderList() {
     <div>
       <div className="page-header">
         <div>
-          <h1 className="page-title">Budgets</h1>
+          <h1 className="page-title">Budgets à valider</h1>
           <p className="page-subtitle">{visible.length} budget{visible.length !== 1 ? 's' : ''}</p>
+        </div>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button
+            onClick={() => {
+              const headers = ['Code','Nom','Département','Gestionnaire','Statut','Montant (FCFA)','Date soumission']
+              const rows = visible.map(b => [
+                b.code, b.nom, b.departement_nom || '—', b.gestionnaire_nom || '—', b.statut,
+                fmt(b.montant_global),
+                b.date_soumission ? new Date(b.date_soumission).toLocaleDateString('fr-FR') : '—',
+              ])
+              exportCSV(`budgets-validation-${new Date().toISOString().slice(0,10)}`, headers, rows)
+            }}
+            className="btn btn-secondary btn-sm"
+            style={{ gap: 6 }}
+          >
+            <Download size={13} strokeWidth={2} /> CSV
+          </button>
+          <button
+            onClick={() => {
+              const headers = ['Code','Nom','Gestionnaire','Statut','Montant']
+              const rows = visible.map(b => [
+                b.code, b.nom, b.gestionnaire_nom || '—', b.statut,
+                fmt(b.montant_global) + ' FCFA',
+              ])
+              printPDF('Budgets à valider', headers, rows, {
+                subtitle: `Filtre : ${FILTRES.find(f => f.key === filtre)?.label || 'Tous'}`,
+                stats: [
+                  { value: countFor('SOUMIS'),   label: 'En attente' },
+                  { value: countFor('APPROUVE'), label: 'Approuvés'  },
+                  { value: countFor('REJETE'),   label: 'Rejetés'    },
+                ],
+              })
+            }}
+            className="btn btn-secondary btn-sm"
+            style={{ gap: 6 }}
+          >
+            <Printer size={13} strokeWidth={2} /> PDF
+          </button>
         </div>
       </div>
 
@@ -75,15 +123,26 @@ export function BudgetsAValiderList() {
           />
         </div>
         <div className="flex gap-[6px] flex-wrap">
-          {FILTRES.map(f => (
-            <button
-              key={f.key}
-              onClick={() => { setLoading(true); setFiltre(f.key) }}
-              className={`filter-pill${filtre === f.key ? ' active' : ''}`}
-            >
-              {f.label}
-            </button>
-          ))}
+          {FILTRES.map(f => {
+            const cnt = countFor(f.countKey)
+            return (
+              <button
+                key={f.key}
+                onClick={() => { setLoading(true); setFiltre(f.key) }}
+                className={`filter-pill${filtre === f.key ? ' active' : ''}`}
+              >
+                {f.label}
+                <span style={{
+                  marginLeft: 5,
+                  background: filtre === f.key ? 'rgba(255,255,255,.25)' : 'var(--color-gray-200)',
+                  color: filtre === f.key ? '#fff' : 'var(--color-gray-600)',
+                  fontSize: '10px', padding: '0px 5px', borderRadius: 8, fontWeight: 700,
+                }}>
+                  {cnt}
+                </span>
+              </button>
+            )
+          })}
         </div>
       </div>
 
@@ -151,10 +210,13 @@ export function BudgetsAValiderList() {
 export function BudgetValidationDetail() {
   const { id }   = useParams()
   const navigate = useNavigate()
-  const [budget,  setBudget]  = useState(null)
-  const [lignes,  setLignes]  = useState([])
-  const [loading, setLoading] = useState(true)
-  const [saving,  setSaving]  = useState(false)
+  const [budget,      setBudget]      = useState(null)
+  const [lignes,      setLignes]      = useState([])
+  const [loading,     setLoading]     = useState(true)
+  const [saving,      setSaving]      = useState(false)
+  const [showRejet,   setShowRejet]   = useState(false)
+  const [motifRejet,  setMotifRejet]  = useState('')
+  const [motifError,  setMotifError]  = useState('')
 
   const load = () => {
     Promise.all([getBudget(id), getLignes(id)])
@@ -165,11 +227,38 @@ export function BudgetValidationDetail() {
   useEffect(() => { load() }, [id])
 
   const handleAction = async (type) => {
-    if (!confirm(type === 'approuver' ? 'Approuver ce budget ?' : 'Rejeter ce budget ?')) return
+    if (type === 'rejeter') {
+      setMotifRejet(''); setMotifError(''); setShowRejet(true)
+      return
+    }
+    if (!confirm('Approuver ce budget ?')) return
     setSaving(true)
     try {
-      if (type === 'approuver') await approuverBudget(id)
-      else                       await rejeterBudget(id)
+      await approuverBudget(id)
+      navigate('/validation')
+    } catch (err) { alert(err.response?.data?.detail || 'Erreur') }
+    finally { setSaving(false) }
+  }
+
+  const handleRejeterConfirm = async () => {
+    if (motifRejet.trim().length < 10) {
+      setMotifError('Le motif doit faire au moins 10 caractères.')
+      return
+    }
+    setSaving(true)
+    try {
+      await rejeterBudget(id, { motif: motifRejet })
+      setShowRejet(false)
+      navigate('/validation')
+    } catch (err) { setMotifError(err.response?.data?.detail || 'Erreur') }
+    finally { setSaving(false) }
+  }
+
+  const handleCloturer = async () => {
+    if (!confirm('Clôturer ce budget ? Cette action est irréversible.')) return
+    setSaving(true)
+    try {
+      await cloturerBudget(id)
       navigate('/validation')
     } catch (err) { alert(err.response?.data?.detail || 'Erreur') }
     finally { setSaving(false) }
@@ -221,32 +310,38 @@ export function BudgetValidationDetail() {
               &nbsp;·&nbsp;Département : <strong>{budget.departement_nom}</strong>
             </p>
           </div>
-          {budget.statut === 'SOUMIS' && (
-            <div className="flex gap-[10px] shrink-0">
+          <div className="flex gap-[10px] shrink-0">
+            {budget.statut === 'SOUMIS' && (
+              <>
+                <button
+                  onClick={() => handleAction('rejeter')}
+                  disabled={saving}
+                  className="inline-flex items-center gap-[7px] px-[18px] py-[9px] rounded-[9px] font-bold text-[13px] cursor-pointer"
+                  style={{ border: '1.5px solid rgba(252,165,165,.5)', background: 'rgba(239,68,68,.15)', color: '#fca5a5' }}
+                >
+                  <XCircle size={15} strokeWidth={2} /> Rejeter
+                </button>
+                <button
+                  onClick={() => handleAction('approuver')}
+                  disabled={saving}
+                  className="inline-flex items-center gap-[7px] px-[18px] py-[9px] rounded-[9px] border-none text-white font-bold text-[13px] cursor-pointer"
+                  style={{ background: 'linear-gradient(135deg, #059669, #10b981)', boxShadow: '0 2px 10px rgba(5,150,105,.4)' }}
+                >
+                  <CheckCircle2 size={15} strokeWidth={2} /> Approuver
+                </button>
+              </>
+            )}
+            {budget.statut === 'APPROUVE' && (
               <button
-                onClick={() => handleAction('rejeter')}
-                disabled={saving}
-                className="inline-flex items-center gap-[7px] px-[18px] py-[9px] rounded-[9px] font-bold text-[13px] cursor-pointer"
-                style={{
-                  border: '1.5px solid rgba(252,165,165,.5)',
-                  background: 'rgba(239,68,68,.15)', color: '#fca5a5',
-                }}
-              >
-                <XCircle size={15} strokeWidth={2} /> Rejeter
-              </button>
-              <button
-                onClick={() => handleAction('approuver')}
+                onClick={handleCloturer}
                 disabled={saving}
                 className="inline-flex items-center gap-[7px] px-[18px] py-[9px] rounded-[9px] border-none text-white font-bold text-[13px] cursor-pointer"
-                style={{
-                  background: 'linear-gradient(135deg, #059669, #10b981)',
-                  boxShadow: '0 2px 10px rgba(5,150,105,.4)',
-                }}
+                style={{ background: 'linear-gradient(135deg, #7C3AED, #6D28D9)', boxShadow: '0 2px 10px rgba(124,58,237,.4)' }}
               >
-                <CheckCircle2 size={15} strokeWidth={2} /> Approuver
+                Clôturer
               </button>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       </div>
 
@@ -339,42 +434,98 @@ export function BudgetValidationDetail() {
       />
 
       {/* Zone de décision */}
-      {budget.statut === 'SOUMIS' && (
+      {(budget.statut === 'SOUMIS' || budget.statut === 'APPROUVE') && (
         <div
           className="mt-6 rounded-[var(--radius-lg)] px-7 py-[22px] flex justify-between items-center flex-wrap gap-4"
           style={{ background: 'linear-gradient(135deg, #0F2547, #1E3A8A)' }}
         >
           <div>
             <div className="font-display font-bold text-white mb-1 text-[15px]">
-              Décision de validation
+              {budget.statut === 'APPROUVE' ? 'Clôture budgétaire' : 'Décision de validation'}
             </div>
             <div className="text-[13px] text-white/65">
-              Analysez les lignes ci-dessus avant de valider ou rejeter ce budget
+              {budget.statut === 'APPROUVE'
+                ? 'Clôturez le budget pour figer la consommation finale'
+                : 'Analysez les lignes ci-dessus avant de valider ou rejeter ce budget'
+              }
             </div>
           </div>
           <div className="flex gap-3">
-            <button
-              onClick={() => handleAction('rejeter')}
-              disabled={saving}
-              className="inline-flex items-center gap-[7px] px-[22px] py-[10px] rounded-[9px] font-bold text-[14px] cursor-pointer"
-              style={{
-                border: '1.5px solid rgba(252,165,165,.5)',
-                background: 'rgba(239,68,68,.15)', color: '#fca5a5',
-              }}
-            >
-              <XCircle size={15} strokeWidth={2} /> Rejeter le budget
-            </button>
-            <button
-              onClick={() => handleAction('approuver')}
-              disabled={saving}
-              className="inline-flex items-center gap-[7px] px-[22px] py-[10px] rounded-[9px] border-none text-white font-bold text-[14px] cursor-pointer"
-              style={{
-                background: 'linear-gradient(135deg, #059669, #10b981)',
-                boxShadow: '0 2px 14px rgba(5,150,105,.4)',
-              }}
-            >
-              <CheckCircle2 size={15} strokeWidth={2} /> Approuver le budget
-            </button>
+            {budget.statut === 'SOUMIS' && (
+              <>
+                <button
+                  onClick={() => handleAction('rejeter')}
+                  disabled={saving}
+                  className="inline-flex items-center gap-[7px] px-[22px] py-[10px] rounded-[9px] font-bold text-[14px] cursor-pointer"
+                  style={{ border: '1.5px solid rgba(252,165,165,.5)', background: 'rgba(239,68,68,.15)', color: '#fca5a5' }}
+                >
+                  <XCircle size={15} strokeWidth={2} /> Rejeter le budget
+                </button>
+                <button
+                  onClick={() => handleAction('approuver')}
+                  disabled={saving}
+                  className="inline-flex items-center gap-[7px] px-[22px] py-[10px] rounded-[9px] border-none text-white font-bold text-[14px] cursor-pointer"
+                  style={{ background: 'linear-gradient(135deg, #059669, #10b981)', boxShadow: '0 2px 14px rgba(5,150,105,.4)' }}
+                >
+                  <CheckCircle2 size={15} strokeWidth={2} /> Approuver le budget
+                </button>
+              </>
+            )}
+            {budget.statut === 'APPROUVE' && (
+              <button
+                onClick={handleCloturer}
+                disabled={saving}
+                className="inline-flex items-center gap-[7px] px-[22px] py-[10px] rounded-[9px] border-none text-white font-bold text-[14px] cursor-pointer"
+                style={{ background: 'linear-gradient(135deg, #7C3AED, #6D28D9)', boxShadow: '0 2px 14px rgba(124,58,237,.4)' }}
+              >
+                Clôturer le budget
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Modal de rejet avec motif */}
+      {showRejet && (
+        <div className="modal-overlay" onClick={e => { if (e.target === e.currentTarget) setShowRejet(false) }}>
+          <div className="modal-panel" style={{ maxWidth: 480 }} onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2 style={{ fontSize: '15px', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8 }}>
+                <XCircle size={16} style={{ color: 'var(--color-danger-600)' }} />
+                Rejeter le budget
+              </h2>
+            </div>
+            <div className="modal-body" style={{ padding: '20px' }}>
+              <p style={{ fontSize: '13px', color: 'var(--color-gray-600)', marginBottom: 16 }}>
+                Indiquez un motif de rejet détaillé (minimum 10 caractères). Il sera transmis au gestionnaire.
+              </p>
+              <label className="form-label">Motif de rejet <span style={{ color: 'var(--color-danger-600)' }}>*</span></label>
+              <textarea
+                className="form-input"
+                rows={4}
+                value={motifRejet}
+                onChange={e => { setMotifRejet(e.target.value); setMotifError('') }}
+                placeholder="Ex : Les montants des lignes B.1 et B.2 semblent surestimés par rapport à l'exercice précédent…"
+                style={{ resize: 'vertical', fontFamily: 'inherit' }}
+              />
+              {motifError && (
+                <p style={{ fontSize: '12px', color: 'var(--color-danger-600)', marginTop: 6 }}>{motifError}</p>
+              )}
+              <div style={{ fontSize: '11px', color: 'var(--color-gray-400)', marginTop: 4 }}>
+                {motifRejet.length} / 500 caractères
+              </div>
+            </div>
+            <div className="modal-footer">
+              <button onClick={() => setShowRejet(false)} className="btn btn-secondary btn-md">Annuler</button>
+              <button
+                onClick={handleRejeterConfirm}
+                disabled={saving}
+                className="btn btn-danger btn-md"
+                style={{ gap: 6 }}
+              >
+                <XCircle size={14} /> Confirmer le rejet
+              </button>
+            </div>
           </div>
         </div>
       )}

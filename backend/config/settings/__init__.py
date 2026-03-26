@@ -102,7 +102,8 @@ USE_TZ = True
 
 
 # Static files
-STATIC_URL = 'static/'
+STATIC_URL = '/static/'
+STATIC_ROOT = BASE_DIR / 'staticfiles'
 STATICFILES_DIRS = [
     BASE_DIR / 'static',
     BASE_DIR / 'frontend_dist',
@@ -146,27 +147,95 @@ CORS_ALLOWED_ORIGINS = [
 ]
 CORS_ALLOW_CREDENTIALS = True
 
+# ── Logging ───────────────────────────────────────────────────────────────────
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+
+    'formatters': {
+        'colored': {
+            '()': 'django.utils.log.ServerFormatter',
+            'format': '[{asctime}] {levelname} {message}',
+            'style': '{',
+        },
+        'api': {
+            'format': '%(asctime)s  %(levelname)-8s  %(name)s  %(message)s',
+            'datefmt': '%H:%M:%S',
+        },
+    },
+
+    'filters': {
+        'require_debug_true': {
+            '()': 'django.utils.log.RequireDebugTrue',
+        },
+    },
+
+    'handlers': {
+        'console': {
+            'class':     'logging.StreamHandler',
+            'formatter': 'api',
+        },
+    },
+
+    'loggers': {
+        # Requêtes HTTP Django (runserver)
+        'django.request': {
+            'handlers':  ['console'],
+            'level':     'DEBUG',
+            'propagate': False,
+        },
+        # Requêtes DB (SQL) — passer à DEBUG pour voir les requêtes SQL
+        'django.db.backends': {
+            'handlers':  ['console'],
+            'level':     'WARNING',
+            'propagate': False,
+        },
+        # Nos apps métier
+        'budget': {
+            'handlers':  ['console'],
+            'level':     'DEBUG',
+            'propagate': False,
+        },
+        'accounts': {
+            'handlers':  ['console'],
+            'level':     'DEBUG',
+            'propagate': False,
+        },
+        'audit': {
+            'handlers':  ['console'],
+            'level':     'DEBUG',
+            'propagate': False,
+        },
+    },
+}
+
 # IA
 SKIP_CLAUDE_API = os.getenv('SKIP_CLAUDE_API', 'True').lower() in ('true', '1', 'yes')
 ANTHROPIC_API_KEY = os.getenv('ANTHROPIC_API_KEY', '')
 
 # ─── Jazzmin ──────────────────────────────────────────────────────────────────
 JAZZMIN_SETTINGS = {
-    'site_title': 'Gestion Budgétaire',
-    'site_header': 'Gestion Budgétaire',
-    'site_brand': 'Gestion Budgétaire',
-    'site_logo': '',
-    'site_icon': '',
-    'welcome_sign': 'Bienvenue sur la plateforme de Gestion Budgétaire',
-    'copyright': '© 2026 Gestion Budgétaire',
-    'search_model': ['accounts.Utilisateur'],
+    # Branding
+    'site_title':  'BudgetFlow Admin',
+    'site_header': 'BudgetFlow',
+    'site_brand':  'Gestion Budgétaire',
+    'site_logo':   None,
+    'site_icon':   None,
+    'welcome_sign': 'Bienvenue sur BudgetFlow — Plateforme de Gestion Budgétaire',
+    'copyright':    'BudgetFlow © 2025 — Burkina Faso',
+
+    # Recherche globale
+    'search_model': ['accounts.Utilisateur', 'budget.Budget'],
+
+    # Menu supérieur
     'topmenu_links': [
-        {'name': 'Tableau de bord', 'url': 'admin:index', 'permissions': ['auth.view_user']},
+        {'name': 'Dashboard', 'url': 'admin:index', 'permissions': ['auth.view_user']},
+        {'name': 'Application', 'url': '/', 'new_window': True},
         {
             'name': 'Comptes',
             'children': [
-                {'name': 'Utilisateurs',  'url': 'admin:accounts_utilisateur_changelist'},
-                {'name': 'Départements',  'url': 'admin:accounts_departement_changelist'},
+                {'name': 'Utilisateurs', 'url': 'admin:accounts_utilisateur_changelist'},
+                {'name': 'Départements', 'url': 'admin:accounts_departement_changelist'},
             ],
         },
         {
@@ -178,50 +247,94 @@ JAZZMIN_SETTINGS = {
                 {'name': 'Lignes',           'url': 'admin:budget_lignebudgetaire_changelist'},
             ],
         },
-        {
-            'name': 'Audit',
-            'children': [
-                {'name': "Logs d'audit", 'url': 'admin:audit_logaudit_changelist'},
-            ],
-        },
-        {'name': 'Frontend', 'url': 'http://localhost:5173', 'new_window': True},
+        {'name': "Audit", 'url': 'admin:audit_logaudit_changelist'},
     ],
-    'usermenu_links': [],
-    'show_sidebar': False,
-    'navigation_expanded': False,
+
+    # Menu utilisateur (en haut à droite)
+    'usermenu_links': [
+        {'name': 'Voir l\'application', 'url': '/', 'new_window': True, 'icon': 'fas fa-external-link-alt'},
+    ],
+
+    # Sidebar
+    'show_sidebar': True,
+    'navigation_expanded': True,
+
+    # Ordre des apps dans la sidebar
+    'order_with_respect_to': [
+        'accounts',
+        'accounts.Utilisateur',
+        'accounts.Departement',
+        'budget',
+        'budget.BudgetAnnuel',
+        'budget.AllocationDepartementale',
+        'budget.Budget',
+        'budget.LigneBudgetaire',
+        'audit',
+        'audit.LogAudit',
+    ],
+
+    # Masquer auth (groupes Django non utilisés)
+    'hide_apps': ['auth'],
+    'hide_models': [],
+
+    # Icônes FontAwesome
     'icons': {
-        'accounts':                        'fas fa-users',
-        'accounts.Utilisateur':            'fas fa-user-tie',
-        'accounts.Departement':            'fas fa-building',
-        'budget':                          'fas fa-coins',
-        'budget.Budget':                   'fas fa-wallet',
-        'budget.BudgetAnnuel':             'fas fa-calendar-alt',
-        'budget.AllocationDepartementale': 'fas fa-envelope-open-text',
-        'budget.LigneBudgetaire':          'fas fa-list-ol',
-        'audit':                           'fas fa-clipboard-list',
-        'audit.LogAudit':                  'fas fa-history',
-        'auth':                            'fas fa-lock',
-        'auth.Group':                      'fas fa-users-cog',
+        'accounts':                         'fas fa-users-cog',
+        'accounts.Utilisateur':             'fas fa-user-tie',
+        'accounts.Departement':             'fas fa-building',
+        'budget':                           'fas fa-chart-line',
+        'budget.BudgetAnnuel':              'fas fa-calendar-alt',
+        'budget.AllocationDepartementale':  'fas fa-wallet',
+        'budget.Budget':                    'fas fa-file-invoice-dollar',
+        'budget.LigneBudgetaire':           'fas fa-list-ul',
+        'audit':                            'fas fa-shield-alt',
+        'audit.LogAudit':                   'fas fa-history',
     },
-    'default_icon_parents': 'fas fa-folder-open',
-    'default_icon_children': 'fas fa-dot-circle',
-    'custom_css': 'jazzmin/css/custom.css',
-    'custom_js': 'jazzmin/js/custom.js',
+    'default_icon_parents':  'fas fa-folder-open',
+    'default_icon_children': 'fas fa-circle',
+
+    # Liens rapides dans la sidebar
+    'custom_links': {
+        'budget': [
+            {'name': 'Voir l\'application', 'url': '/', 'icon': 'fas fa-rocket', 'new_window': True},
+        ],
+    },
+
+    # UI
     'related_modal_active': True,
-    'use_google_fonts_cdn': False,
-    'show_ui_builder': False,
-    'language_chooser': False,
-    'changeform_format': 'horizontal_tabs',
+    'use_google_fonts_cdn':  False,
+    'show_ui_builder':       False,
+    'language_chooser':      False,
+    'changeform_format':     'horizontal_tabs',
 }
 
 JAZZMIN_UI_TWEAKS = {
-    'navbar': 'navbar-dark',
-    'no_navbar_border': True,
-    'navbar_fixed': True,
-    'footer_fixed': False,
-    'layout_boxed': False,
-    'theme': 'default',
-    'default_theme_mode': 'light',
+    # Navbar
+    'navbar':             'navbar-dark',
+    'no_navbar_border':   True,
+    'navbar_fixed':       True,
+    'navbar_small_text':  False,
+
+    # Sidebar
+    'sidebar':                    'sidebar-dark-primary',
+    'sidebar_fixed':              True,
+    'sidebar_nav_small_text':     False,
+    'sidebar_disable_expand':     False,
+    'sidebar_nav_child_indent':   True,
+    'sidebar_nav_compact_style':  False,
+    'sidebar_nav_legacy_style':   False,
+    'sidebar_nav_flat_style':     False,
+
+    # Thème — flatly = moderne, propre, professionnel
+    'theme':           'flatly',
+    'dark_mode_theme': None,
+
+    # Layout
+    'footer_fixed':  False,
+    'layout_boxed':  False,
+    'actions_sticky_top': True,
+
+    # Boutons
     'button_classes': {
         'primary':   'btn-primary',
         'secondary': 'btn-secondary',
@@ -230,5 +343,4 @@ JAZZMIN_UI_TWEAKS = {
         'danger':    'btn-danger',
         'success':   'btn-success',
     },
-    'actions_sticky_top': True,
 }

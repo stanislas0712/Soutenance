@@ -274,6 +274,22 @@ export default function LignesBudgetaires({ budgetId, readOnly = false, onTotalC
                 </div>
 
                 {/* Lignes budgétaires */}
+                {(sc.lignes || []).length > 0 && (
+                  <div
+                    className="px-[14px] pl-[50px] py-[3px] text-[10px] font-semibold uppercase tracking-[.4px] text-gray-400 grid gap-[8px]"
+                    style={{
+                      gridTemplateColumns: readOnly ? '1fr 130px 55px 75px' : '1fr 130px 55px 75px 28px',
+                      borderBottom: '0.5px solid var(--color-gray-100)',
+                      background: '#FAFAFA',
+                    }}
+                  >
+                    <span>Désignation</span>
+                    <span className="text-right">Montant alloué</span>
+                    <span className="text-right">Qté</span>
+                    <span>Unité</span>
+                    {!readOnly && <span />}
+                  </div>
+                )}
                 {(sc.lignes || []).map(ligne => (
                   <div
                     key={ligne.id}
@@ -283,7 +299,7 @@ export default function LignesBudgetaires({ budgetId, readOnly = false, onTotalC
                       borderBottom: '0.5px solid var(--color-gray-50)',
                     }}
                   >
-                    <span className="text-gray-700 overflow-hidden text-ellipsis whitespace-nowrap" title={ligne.libelle}>
+                    <span className="text-gray-700 min-w-0 overflow-hidden text-ellipsis whitespace-nowrap" title={ligne.libelle}>
                       {ligne.libelle}
                     </span>
                     <span className="font-mono font-bold text-[12px] text-gray-800 text-right">

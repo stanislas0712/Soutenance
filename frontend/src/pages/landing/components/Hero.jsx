@@ -1,7 +1,7 @@
 const TRUST_BADGES = [
-  'Configuration en moins de 10 minutes',
-  'Aucune carte bancaire requise',
-  'Support dédié en français',
+  'Workflow de validation multi-niveaux',
+  'Suivi en temps réel des consommations',
+  'Intelligence Artificielle intégrée',
 ]
 
 export default function Hero() {
@@ -42,8 +42,8 @@ export default function Hero() {
           <div className="w-full lg:w-3/5 hero-left">
             {/* Badge */}
             <div className="inline-flex items-center gap-2 bg-blue-50 text-blue-700 text-xs font-semibold px-4 py-2 rounded-full border border-blue-100 mb-6">
-              <span>✨</span>
-              <span>Nouveau · IA intégrée pour l'analyse budgétaire</span>
+              <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#10B981', display: 'inline-block', boxShadow: '0 0 5px #10B981' }} />
+              Intelligence Artificielle intégrée
             </div>
 
             {/* H1 */}
@@ -52,14 +52,13 @@ export default function Hero() {
               <span className="text-blue-600 underline decoration-wavy decoration-blue-300 underline-offset-4">
                 intelligente
               </span>{' '}
-              pour votre entreprise
+              pour les institutions publiques
             </h1>
 
             {/* Subtitle */}
             <p className="text-lg text-gray-500 leading-relaxed mb-8 max-w-xl">
-              Simplifiez la création, le suivi et l'approbation de vos budgets.
-              BudgetFlow centralise tous vos processus financiers avec intelligence et clarté,
-              pour des décisions plus rapides et plus éclairées.
+              Plateforme de gestion budgétaire collaborative pour les ministères et organismes publics.
+              Allocation, validation, suivi de consommation et alertes intelligentes en temps réel.
             </p>
 
             {/* Trust badges */}
@@ -78,7 +77,7 @@ export default function Hero() {
                 href="/login"
                 className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-8 py-3.5 rounded-xl text-base transition-all hover:scale-105 shadow-lg shadow-blue-200 no-underline inline-flex items-center gap-2"
               >
-                Se connecter →
+                Accéder à la plateforme →
               </a>
               <a
                 href="#how-it-works"
@@ -86,22 +85,6 @@ export default function Hero() {
               >
                 <span>▶</span> Voir comment ça marche
               </a>
-            </div>
-
-            {/* Partners */}
-            <div className="border-t border-gray-200 pt-6">
-              <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-4">
-                Ils nous font confiance
-              </p>
-              <div className="flex gap-3 flex-wrap items-center" aria-label="Logos de partenaires">
-                {[1, 2, 3, 4, 5].map((i) => (
-                  <div
-                    key={i}
-                    className="w-20 h-8 rounded-lg bg-gray-200 opacity-50"
-                    aria-hidden="true"
-                  />
-                ))}
-              </div>
             </div>
           </div>
 

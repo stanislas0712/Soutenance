@@ -1,10 +1,14 @@
-from rest_framework import generics, permissions, status
+import logging
+from django.db.models import ProtectedError
+from rest_framework import generics, permissions, serializers, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from .models import Utilisateur, Departement
 from audit.models import LogAudit, ActionAudit
+
+logger = logging.getLogger('accounts')
 from .serializers import (
     UtilisateurSerializer,
     CreerUtilisateurSerializer,
@@ -45,8 +49,11 @@ class LoginView(TokenObtainPairView):
                     action=ActionAudit.LOGIN,
                     user_agent=request.META.get('HTTP_USER_AGENT', ''),
                 )
+                logger.info("CONNEXION | %s | %s %s (%s)", user.email, user.prenom, user.nom, user.role)
             except Utilisateur.DoesNotExist:
                 pass
+        elif response.status_code == 401:
+            logger.warning("ECHEC LOGIN | email: %s", request.data.get('email', '?'))
         return response
 
 
@@ -145,15 +152,23 @@ class UtilisateurDetailView(generics.RetrieveUpdateDestroyAPIView):
         )
 
     def perform_destroy(self, instance):
-        LogAudit.enregistrer(
-            utilisateur=self.request.user,
-            table='utilisateur',
-            enregistrement_id=str(instance.id),
-            action=ActionAudit.DELETE,
-            valeur_avant=f"{instance.matricule} – {instance.nom} {instance.prenom}",
-            user_agent=self.request.META.get('HTTP_USER_AGENT', ''),
-        )
-        instance.delete()
+        try:
+            LogAudit.enregistrer(
+                utilisateur=self.request.user,
+                table='utilisateur',
+                enregistrement_id=str(instance.id),
+                action=ActionAudit.DELETE,
+                valeur_avant=f"{instance.matricule} – {instance.nom} {instance.prenom}",
+                user_agent=self.request.META.get('HTTP_USER_AGENT', ''),
+            )
+            instance.delete()
+        except ProtectedError:
+            nb_budgets = instance.budgets_crees.count()
+            raise serializers.ValidationError(
+                f"Impossible de supprimer {instance.prenom} {instance.nom} : "
+                f"cet utilisateur est lié à {nb_budgets} budget(s). "
+                "Réaffectez ou supprimez ses budgets d'abord."
+            )
 
 
 # ── Gestion des départements (admin) ─────────────────────────────────────────

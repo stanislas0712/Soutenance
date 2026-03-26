@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from .models import (
     BudgetAnnuel, AllocationDepartementale,
-    Budget, LigneBudgetaire, ConsommationLigne,
+    Budget, LigneBudgetaire, ConsommationLigne, PieceJustificative,
     StatutBudget, TechniqueEstimation,
     CategoriePrincipale, SousCategorie,
 )
@@ -98,6 +98,25 @@ class AllocationCreateSerializer(serializers.ModelSerializer):
         return data
 
 
+# ── Pièce justificative ───────────────────────────────────────────────────────
+
+class PieceJustificativeSerializer(serializers.ModelSerializer):
+    url = serializers.SerializerMethodField()
+
+    class Meta:
+        model  = PieceJustificative
+        fields = ['id', 'nom', 'url', 'date_ajout']
+
+    def get_url(self, obj):
+        request = self.context.get('request')
+        if obj.fichier:
+            try:
+                return request.build_absolute_uri(obj.fichier.url) if request else obj.fichier.url
+            except Exception:
+                return None
+        return None
+
+
 # ── Consommation ligne ────────────────────────────────────────────────────────
 
 class ConsommationLigneSerializer(serializers.ModelSerializer):
@@ -105,6 +124,7 @@ class ConsommationLigneSerializer(serializers.ModelSerializer):
     montant_fmt        = serializers.SerializerMethodField()
     date_fmt           = serializers.SerializerMethodField()
     statut_config      = serializers.SerializerMethodField()
+    pieces             = PieceJustificativeSerializer(many=True, read_only=True)
 
     class Meta:
         model  = ConsommationLigne
@@ -114,6 +134,7 @@ class ConsommationLigneSerializer(serializers.ModelSerializer):
             'date', 'date_fmt',
             'enregistre_par_nom',
             'statut_config',
+            'pieces',
         ]
 
     def get_enregistre_par_nom(self, obj):
@@ -194,6 +215,7 @@ class BudgetListSerializer(serializers.ModelSerializer):
             'montant_global', 'montant_consomme', 'montant_disponible',
             'montant_global_fmt', 'montant_consomme_fmt', 'montant_disponible_fmt',
             'statut', 'statut_display', 'statut_config', 'niveau_alerte',
+            'motif_rejet',
             'date_debut', 'date_fin', 'date_creation', 'date_soumission', 'date_cloture',
             'date_creation_fmt', 'date_soumission_fmt',
             'taux_consommation', 'taux_consommation_fmt', 'couleur_execution',
@@ -277,6 +299,7 @@ class BudgetDetailSerializer(serializers.ModelSerializer):
             'montant_global_fmt', 'montant_consomme_fmt', 'montant_disponible_fmt',
             'statut', 'statut_display', 'statut_config',
             'technique_estimation', 'technique_estimation_display', 'niveau_alerte',
+            'motif_rejet',
             'date_debut', 'date_fin', 'date_creation', 'date_soumission', 'date_cloture',
             'date_creation_fmt', 'date_soumission_fmt', 'date_cloture_fmt',
             'taux_consommation', 'taux_consommation_fmt', 'couleur_execution',
@@ -406,10 +429,16 @@ class LigneBudgetaireHierarchieSerializer(serializers.ModelSerializer):
         return formater_montant(obj.montant_disponible)
 
     def get_categorie_code(self, obj):
-        return obj.categorie_code
+        try:
+            return obj.sous_categorie.categorie.code
+        except Exception:
+            return None
 
     def get_sous_cat_code(self, obj):
-        return obj.sous_categorie_code
+        try:
+            return obj.sous_categorie.code
+        except Exception:
+            return None
 
 
 class SousCategorieSerializer(serializers.ModelSerializer):

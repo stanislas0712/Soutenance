@@ -5,15 +5,18 @@ import { getBudgets } from '../../api/budget'
 import { getDepartements } from '../../api/accounts'
 import KpiCard from '../../components/KpiCard'
 import { StatutBadge, AlerteBadge } from '../../components/StatusBadge'
-import { ChevronRight, Plus, ArrowRight, Building2 } from 'lucide-react'
+import { ChevronRight, Plus, ArrowRight, Building2, Sparkles, AlertTriangle, TrendingUp, MessageSquare } from 'lucide-react'
+import {
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
+  ResponsiveContainer, Legend, Cell,
+} from 'recharts'
 
-const fmt = n => new Intl.NumberFormat('fr-FR', { notation: 'compact', maximumFractionDigits: 1 }).format(n)
+const fmt = n => new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 0 }).format(parseFloat(n || 0))
 
 function jaugeColor(taux) {
-  if (taux >= 95) return '#EF4444'
-  if (taux >= 80) return '#F59E0B'
-  if (taux >= 50) return '#22C55E'
-  return '#3B82F6'
+  if (taux > 75) return '#F43F5E'
+  if (taux > 50) return '#F59E0B'
+  return '#22C55E'
 }
 
 export default function GestionnaireDashboard() {
@@ -48,6 +51,26 @@ export default function GestionnaireDashboard() {
   const critiques    = budgets.filter(b => b.niveau_alerte === 'CRITIQUE').length
   const alertes      = budgets.filter(b => ['ROUGE', 'ORANGE'].includes(b.niveau_alerte)).length
 
+  /* ── Données graphiques ── */
+  const chartBudgets = [...budgets]
+    .filter(b => parseFloat(b.montant_global || 0) > 0)
+    .sort((a, b) => parseFloat(b.montant_global || 0) - parseFloat(a.montant_global || 0))
+    .slice(0, 7)
+    .map(b => ({
+      name: (b.nom || b.code || '—').slice(0, 13),
+      alloue:   Math.round(parseFloat(b.montant_global   || 0) / 1e3),
+      consomme: Math.round(parseFloat(b.montant_consomme || 0) / 1e3),
+      taux:     b.montant_global > 0 ? Math.round(parseFloat(b.montant_consomme || 0) / parseFloat(b.montant_global) * 100) : 0,
+    }))
+
+  /* ── Sparklines (6 derniers mois) ── */
+  const sparkMois = Array.from({ length: 6 }, (_, i) => {
+    const d = new Date(); d.setDate(1); d.setMonth(d.getMonth() - (5 - i))
+    const m = d.getMonth(), y = d.getFullYear()
+    const bm = budgets.filter(b => { const c = new Date(b.date_creation); return c.getMonth() === m && c.getFullYear() === y })
+    return { count: bm.length, montant: Math.round(bm.reduce((s, b) => s + parseFloat(b.montant_global || 0), 0) / 1e6) }
+  })
+
   const budgetsByDept = budgets.reduce((acc, b) => {
     const key = b.departement
     if (!acc[key]) acc[key] = []
@@ -76,7 +99,7 @@ export default function GestionnaireDashboard() {
       {/* Hero greeting */}
       <div
         className="rounded-[14px] px-7 py-6 mb-7 text-white relative overflow-hidden"
-        style={{ background: 'linear-gradient(135deg, #0F2547 0%, #1E3A8A 60%, #2563EB 100%)' }}
+        style={{ background: 'linear-gradient(135deg, #0F2547 0%, #1E3A8A 55%, #2563EB 100%)' }}
       >
         <div className="absolute rounded-full pointer-events-none" style={{ top: -60, right: -60, width: 200, height: 200, background: 'rgba(255,255,255,.05)' }} />
         <div className="absolute rounded-full pointer-events-none" style={{ bottom: -40, right: 80, width: 120, height: 120, background: 'rgba(59,130,246,.15)' }} />
@@ -105,12 +128,182 @@ export default function GestionnaireDashboard() {
 
       {/* KPIs */}
       <div className="kpi-grid" style={{ gridTemplateColumns: 'repeat(auto-fit,minmax(170px,1fr))', marginBottom: 24 }}>
-        <KpiCard icon="📋" label="Mes budgets"        value={total}                         color="var(--color-primary-600)" bgColor="var(--color-primary-50)" />
-        <KpiCard icon="✅" label="Approuvés"           value={approuves}                     color="var(--color-success-600)" bgColor="var(--color-success-50)" />
-        <KpiCard icon="⏳" label="En validation"       value={soumis}                        color="var(--color-info-600)"    bgColor="var(--color-info-50)" />
-        <KpiCard icon="↩️" label="Rejetés"              value={rejetes}                       color="var(--color-danger-600)"  bgColor="var(--color-danger-50)" />
-        <KpiCard icon="💰" label="Montant total"       value={`${fmt(montantTotal)} FCFA`}   color="#7C3AED"                  bgColor="#F5F3FF" />
-        <KpiCard icon="⚠️" label="Alertes"             value={critiques}                     color="var(--color-danger-600)"  bgColor="var(--color-danger-50)" sub={`+${alertes} avertissements`} />
+        <KpiCard icon="📋" label="Mes budgets"  value={total}                       color="var(--color-primary-600)" bgColor="var(--color-primary-50)" sparklineData={sparkMois.map(m => m.count)} />
+        <KpiCard icon="✅" label="Approuvés"     value={approuves}                   color="var(--color-success-600)" bgColor="var(--color-success-50)" />
+        <KpiCard icon="⏳" label="En validation" value={soumis}                      color="var(--color-info-600)"    bgColor="var(--color-info-50)" />
+        <KpiCard icon="↩️" label="Rejetés"       value={rejetes}                     color="var(--color-danger-600)"  bgColor="var(--color-danger-50)" />
+        <KpiCard icon="💰" label="Montant total" value={`${fmt(montantTotal)} FCFA`} color="#7C3AED"                  bgColor="#F5F3FF" sparklineData={sparkMois.map(m => m.montant)} />
+        <KpiCard icon="⚠️" label="Alertes"       value={critiques}                   color="var(--color-danger-600)"  bgColor="var(--color-danger-50)" sub={`+${alertes} avertissements`} />
+      </div>
+
+      {/* ── Charts ────────────────────────────────────────────────────────── */}
+      {chartBudgets.length > 0 && (
+        <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:18, marginBottom:24 }}>
+
+          {/* Alloué vs Consommé */}
+          <div className="card" style={{ padding:'20px 24px' }}>
+            <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:16 }}>
+              <TrendingUp size={15} strokeWidth={2} color="var(--color-primary-600)" />
+              <span style={{ fontWeight:700, fontSize:14, color:'#111827' }}>Alloué vs Consommé</span>
+              <span style={{ fontSize:11, color:'#9CA3AF' }}>(K FCFA)</span>
+            </div>
+            <ResponsiveContainer width="100%" height={210}>
+              <BarChart data={chartBudgets} barSize={13} barGap={3} layout="vertical">
+                <CartesianGrid strokeDasharray="3 3" stroke="#F3F4F6" horizontal={false} />
+                <XAxis type="number" tick={{ fontSize:10, fill:'#9CA3AF' }} axisLine={false} tickLine={false} />
+                <YAxis type="category" dataKey="name" tick={{ fontSize:10, fill:'#6B7280' }} axisLine={false} tickLine={false} width={70} />
+                <Tooltip formatter={(v, n) => [`${v} K FCFA`, n === 'alloue' ? 'Alloué' : 'Consommé']} contentStyle={{ fontSize:11, borderRadius:8, border:'1px solid #E5E7EB' }} />
+                <Legend iconSize={7} iconType="circle" formatter={v => <span style={{ fontSize:11, color:'#6B7280' }}>{v === 'alloue' ? 'Alloué' : 'Consommé'}</span>} />
+                <Bar dataKey="alloue"   name="alloue"   fill="#DBEAFE" radius={[0,3,3,0]} />
+                <Bar dataKey="consomme" name="consomme" fill="#3B82F6" radius={[0,3,3,0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+
+          {/* Taux d'exécution */}
+          <div className="card" style={{ padding:'20px 24px' }}>
+            <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:16 }}>
+              <Building2 size={15} strokeWidth={2} color="var(--color-primary-600)" />
+              <span style={{ fontWeight:700, fontSize:14, color:'#111827' }}>Taux d'exécution (%)</span>
+            </div>
+            <ResponsiveContainer width="100%" height={210}>
+              <BarChart data={chartBudgets} barSize={16} layout="vertical">
+                <CartesianGrid strokeDasharray="3 3" stroke="#F3F4F6" horizontal={false} />
+                <XAxis type="number" domain={[0, 100]} tick={{ fontSize:10, fill:'#9CA3AF' }} axisLine={false} tickLine={false} tickFormatter={v => `${v}%`} />
+                <YAxis type="category" dataKey="name" tick={{ fontSize:10, fill:'#6B7280' }} axisLine={false} tickLine={false} width={70} />
+                <Tooltip formatter={v => [`${v}%`, 'Taux d\'exécution']} contentStyle={{ fontSize:11, borderRadius:8, border:'1px solid #E5E7EB' }} />
+                <Bar dataKey="taux" name="taux" radius={[0,3,3,0]}>
+                  {chartBudgets.map((e, i) => (
+                    <Cell key={i} fill={e.taux > 75 ? '#F43F5E' : e.taux > 50 ? '#F59E0B' : '#16A34A'} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      )}
+
+      {/* ── Renseignements IA ─────────────────────────────────────────────── */}
+      <div style={{ marginBottom: 24 }}>
+        <div className="card" style={{ overflow: 'hidden', padding: 0 }}>
+          {/* Header */}
+          <div style={{
+            padding: '16px 22px', background: '#F8FAFF', borderBottom: '1px solid #E5E7EB',
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <div style={{
+                width: 38, height: 38, borderRadius: 10, flexShrink: 0,
+                background: 'var(--color-primary-50)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}>
+                <Sparkles size={18} strokeWidth={2} style={{ color: 'var(--color-primary-600)' }} />
+              </div>
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span style={{ fontWeight: 700, fontSize: '14px', color: '#111827' }}>
+                    Renseignements IA
+                  </span>
+                  <div style={{
+                    display: 'flex', alignItems: 'center', gap: 5,
+                    background: '#F0FDF4', border: '1px solid #BBF7D0',
+                    borderRadius: 9999, padding: '2px 9px',
+                  }}>
+                    <div style={{
+                      width: 5, height: 5, borderRadius: '50%',
+                      background: '#16A34A', animation: 'ia-pulse 2s ease-in-out infinite',
+                    }} />
+                    <span style={{ fontSize: '9px', fontWeight: 700, color: '#15803D', letterSpacing: '.4px' }}>EN LIGNE</span>
+                  </div>
+                </div>
+                <div style={{ fontSize: '12px', color: '#6B7280', marginTop: 1 }}>
+                  Analyse intelligente de vos budgets par Claude
+                </div>
+              </div>
+            </div>
+            <button onClick={() => navigate('/ia')} className="btn btn-secondary btn-sm" style={{ gap: 6 }}>
+              Explorer <ArrowRight size={12} strokeWidth={2.5} />
+            </button>
+          </div>
+
+          {/* 3 action cards */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)' }}>
+            {[
+              {
+                icon: <AlertTriangle size={19} strokeWidth={1.8} />,
+                iconBg: 'var(--color-danger-50)', iconColor: 'var(--color-danger-600)',
+                title: 'Anomalies',
+                desc: 'Dépassements, sous-utilisations et pièces manquantes',
+                action: () => navigate('/ia'),
+                label: 'Détecter',
+                badge: critiques > 0 ? critiques : null,
+              },
+              {
+                icon: <TrendingUp size={19} strokeWidth={1.8} />,
+                iconBg: 'var(--color-primary-50)', iconColor: 'var(--color-primary-600)',
+                title: 'Prédictions',
+                desc: 'Projections de consommation et recommandations IA',
+                action: () => navigate('/ia'),
+                label: 'Analyser',
+                badge: null,
+              },
+              {
+                icon: <MessageSquare size={19} strokeWidth={1.8} />,
+                iconBg: 'var(--color-info-50)', iconColor: 'var(--color-info-600)',
+                title: 'Assistant IA',
+                desc: 'Posez vos questions budgétaires à Claude',
+                action: () => window.dispatchEvent(new Event('open-chatbot')),
+                label: 'Ouvrir le chat',
+                badge: null,
+              },
+            ].map((item, i) => (
+              <button
+                key={i}
+                onClick={item.action}
+                style={{
+                  padding: '20px 22px', textAlign: 'left', background: 'transparent',
+                  border: 'none', borderRight: i < 2 ? '1px solid #F3F4F6' : 'none',
+                  cursor: 'pointer', transition: 'background .15s',
+                  display: 'flex', flexDirection: 'column', gap: 10,
+                }}
+                onMouseEnter={e => e.currentTarget.style.background = '#F8FAFF'}
+                onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <div style={{
+                    width: 42, height: 42, borderRadius: 11, flexShrink: 0,
+                    background: item.iconBg, color: item.iconColor,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  }}>
+                    {item.icon}
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+                    <span style={{ fontWeight: 700, fontSize: '13px', color: '#111827' }}>
+                      {item.title}
+                    </span>
+                    {item.badge && (
+                      <span style={{
+                        background: 'var(--color-danger-600)', color: '#fff',
+                        fontSize: '10px', fontWeight: 700, padding: '1px 7px', borderRadius: 9999,
+                      }}>
+                        {item.badge}
+                      </span>
+                    )}
+                  </div>
+                </div>
+                <p style={{ fontSize: '12px', color: '#6B7280', margin: 0, lineHeight: 1.5 }}>
+                  {item.desc}
+                </p>
+                <span style={{
+                  fontSize: '12px', fontWeight: 600, color: 'var(--color-primary-600)',
+                  display: 'flex', alignItems: 'center', gap: 5,
+                }}>
+                  {item.label} <ArrowRight size={11} strokeWidth={2.5} />
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
       </div>
 
       {/* Layout département + table */}

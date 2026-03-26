@@ -1,9 +1,10 @@
 import { useScrollAnimation } from '../hooks/useScrollAnimation'
+import { ArrowRight, CheckCircle2, Shield, TrendingUp } from 'lucide-react'
 
-const TRUST_BADGES = [
-  'Essai 30 jours gratuit',
-  'Sans carte bancaire',
-  'Support en français',
+const POINTS = [
+  { Icon: CheckCircle2, text: 'Workflow de validation multi-niveaux'   },
+  { Icon: Shield,       text: 'Traçabilité complète via journal d\'audit' },
+  { Icon: TrendingUp,   text: 'Tableaux de bord et rapports IA intégrés' },
 ]
 
 export default function CTAFinal() {
@@ -11,67 +12,68 @@ export default function CTAFinal() {
 
   return (
     <div
-      className="py-24 px-6 relative overflow-hidden"
-      style={{ background: 'linear-gradient(135deg, #1D4ED8, #2563EB)' }}
+      className="py-20 px-6 relative overflow-hidden"
+      style={{ background: 'linear-gradient(160deg, #EFF6FF 0%, #DBEAFE 50%, #EFF6FF 100%)' }}
     >
-      {/* Decorative circles */}
-      <div
-        className="absolute top-0 left-0 w-64 h-64 bg-white/5 rounded-full -translate-x-1/2 -translate-y-1/2 pointer-events-none"
-        aria-hidden="true"
-      />
-      <div
-        className="absolute bottom-0 right-0 w-80 h-80 bg-white/5 rounded-full translate-x-1/2 translate-y-1/2 pointer-events-none"
-        aria-hidden="true"
-      />
+      {/* Déco */}
+      <div className="absolute top-0 left-0 w-64 h-64 rounded-full -translate-x-1/2 -translate-y-1/2 pointer-events-none" style={{ background: 'rgba(59,130,246,.06)' }} />
+      <div className="absolute bottom-0 right-0 w-80 h-80 rounded-full translate-x-1/2 translate-y-1/2 pointer-events-none" style={{ background: 'rgba(37,99,235,.05)' }} />
 
       <div
         ref={ref}
-        className={`max-w-3xl mx-auto text-center text-white relative z-10 transition-all duration-700 ${
+        className={`max-w-5xl mx-auto relative z-10 transition-all duration-700 ${
           visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
         }`}
-        aria-labelledby="cta-title"
       >
-        {/* Eyebrow badge */}
-        <div className="inline-flex items-center gap-2 bg-white/15 border border-white/20 text-white text-xs font-semibold px-4 py-2 rounded-full mb-6">
-          <span>🚀</span>
-          <span>Rejoignez 500+ entreprises qui nous font confiance</span>
-        </div>
+        <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 56 }}>
 
-        {/* Heading */}
-        <h2 id="cta-title" className="text-3xl md:text-4xl font-extrabold mb-6 tracking-tight leading-tight">
-          Prêt à transformer votre gestion budgétaire ?
-        </h2>
+          {/* Texte gauche */}
+          <div style={{ flex: '1 1 380px' }}>
+            <p style={{ fontSize: 12, fontWeight: 700, color: '#2563EB', textTransform: 'uppercase', letterSpacing: '.8px', marginBottom: 14 }}>
+              Prêt à commencer ?
+            </p>
+            <h2 style={{ fontSize: 'clamp(1.6rem, 2.8vw, 2.2rem)', fontWeight: 900, color: '#1E3A8A', lineHeight: 1.2, letterSpacing: '-.03em', marginBottom: 16 }}>
+              Accédez à votre espace<br />de gestion budgétaire
+            </h2>
+            <p style={{ fontSize: 15, color: '#4B5563', lineHeight: 1.7, marginBottom: 28 }}>
+              BudgetFlow centralise l'ensemble de vos processus financiers —
+              de l'allocation des budgets au suivi des dépenses en passant
+              par la validation et les analyses IA.
+            </p>
+            <a
+              href="/login"
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: 9,
+                background: 'linear-gradient(135deg, #2563EB, #1D4ED8)',
+                color: '#fff', fontWeight: 700, fontSize: 15,
+                padding: '14px 32px', borderRadius: 12, textDecoration: 'none',
+                boxShadow: '0 4px 18px rgba(37,99,235,.3)',
+                transition: 'transform .2s, box-shadow .2s',
+              }}
+              onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 8px 28px rgba(37,99,235,.4)' }}
+              onMouseLeave={e => { e.currentTarget.style.transform = ''; e.currentTarget.style.boxShadow = '0 4px 18px rgba(37,99,235,.3)' }}
+            >
+              Se connecter <ArrowRight size={16} strokeWidth={2.5} />
+            </a>
+          </div>
 
-        {/* Subtitle */}
-        <p className="text-lg opacity-90 mb-10 max-w-xl mx-auto leading-relaxed">
-          Commencez votre essai gratuit dès aujourd'hui. Aucune carte bancaire requise,
-          une configuration en moins de 10 minutes et un support dédié en français.
-        </p>
+          {/* Points droite */}
+          <div style={{ flex: '1 1 280px', display: 'flex', flexDirection: 'column', gap: 20 }}>
+            {POINTS.map(({ Icon, text }) => (
+              <div key={text} style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+                <div style={{
+                  width: 42, height: 42, borderRadius: 11, flexShrink: 0,
+                  background: '#fff', border: '1.5px solid #BFDBFE',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  boxShadow: '0 2px 8px rgba(37,99,235,.08)',
+                }}>
+                  <Icon size={18} strokeWidth={2} color="#2563EB" />
+                </div>
+                <span style={{ fontSize: 14, color: '#1E3A8A', fontWeight: 600 }}>{text}</span>
+              </div>
+            ))}
+          </div>
 
-        {/* CTA buttons */}
-        <div className="flex flex-wrap justify-center gap-4 mb-10">
-          <a
-            href="/login"
-            className="bg-white text-blue-700 font-bold px-8 py-4 rounded-xl text-base hover:bg-blue-50 transition-all hover:scale-105 shadow-lg no-underline inline-flex items-center gap-2"
-          >
-            Se connecter →
-          </a>
-          <a
-            href="#how-it-works"
-            className="border-2 border-white/50 hover:border-white text-white font-semibold px-8 py-4 rounded-xl text-base transition-all no-underline inline-flex items-center gap-2 hover:bg-white/10"
-          >
-            <span>▶</span> Découvrir la plateforme
-          </a>
-        </div>
-
-        {/* Trust badges */}
-        <div className="flex flex-wrap justify-center gap-6 text-white/80 text-sm" aria-label="Garanties">
-          {TRUST_BADGES.map((badge) => (
-            <div key={badge} className="flex items-center gap-2">
-              <span className="text-green-300 font-bold" aria-hidden="true">✓</span>
-              {badge}
-            </div>
-          ))}
         </div>
       </div>
     </div>

@@ -7,8 +7,8 @@ import { Plus, Building2, Pencil, Trash2, UserCheck, UserX, FileText } from 'luc
 const fmt = (n) => new Intl.NumberFormat('fr-FR').format(n ?? 0)
 
 const jaugeColor = (taux) => {
-  if (taux >= 90) return 'var(--color-danger-600)'
-  if (taux >= 75) return 'var(--color-warning-600)'
+  if (taux > 75) return 'var(--color-danger-600)'
+  if (taux > 50) return 'var(--color-warning-600)'
   return 'var(--color-success-600)'
 }
 

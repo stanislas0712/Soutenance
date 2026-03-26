@@ -25,10 +25,14 @@ urlpatterns = [
     path('<uuid:budget_pk>/lignes/<uuid:pk>/',
          views.LigneBudgetaireDetailView.as_view(),      name='ligne-detail'),
     path('<uuid:budget_pk>/lignes/<uuid:pk>/consommer/',
-         views.EnregistrerConsommationView.as_view(),    name='ligne-consommer'),
+         views.EnregistrerConsommationMultiView.as_view(), name='ligne-consommer'),
 
     # Vue comptable
     path('en-validation/',         views.BudgetComptableListView.as_view(),  name='budget-en-validation'),
+
+    # Rapport de clôture + virement
+    path('<uuid:pk>/rapport-cloture/',  views.RapportClotureView.as_view(),   name='budget-rapport-cloture'),
+    path('<uuid:pk>/virement/',         views.VirementCreditsView.as_view(),  name='budget-virement'),
 
     # Structure hiérarchique
     path('<uuid:pk>/arbre/',                       views.BudgetArbreView.as_view(),            name='budget-arbre'),

@@ -9,9 +9,9 @@ import { Plus, Pencil, Trash2, Building2, CalendarDays, ChevronDown, AlertTriang
 const fmt = (n) => new Intl.NumberFormat('fr-FR').format(n ?? 0)
 
 const jaugeColor = (pct) => {
-  if (pct >= 100) return 'var(--color-danger-600)'
-  if (pct >= 80)  return 'var(--color-warning-600)'
-  return 'var(--color-primary-600)'
+  if (pct > 75) return 'var(--color-danger-600)'
+  if (pct > 50) return 'var(--color-warning-600)'
+  return 'var(--color-success-600)'
 }
 
 /* ─── Page principale ──────────────────────────────────────────────────────── */

@@ -2,23 +2,26 @@ import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import {
   getBudget, deleteBudget, consommerLigne, updateBudget, soumettrebudget,
+  effectuerVirement, getLignesSelecteur,
 } from '../../api/budget'
+import { getDepenses } from '../../api/depenses'
 import { StatutBadge, AlerteBadge } from '../../components/StatusBadge'
 import LignesBudgetaires from '../../components/budget/LignesBudgetaires'
 import SelecteurLigne from '../../components/budget/SelecteurLigne'
+import { exportCSV, printPDF } from '../../utils/export'
 import {
   ArrowLeft, Trash2, Pencil, Send, DollarSign,
   CheckCircle2, AlertTriangle, Paperclip, Info,
-  Check, FileText,
+  Check, FileText, Receipt, ExternalLink, ArrowLeftRight,
+  Download, Printer,
 } from 'lucide-react'
 
 const fmt = (n) => new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 0 }).format(parseFloat(n || 0))
 
 const jaugeColor = (taux) => {
-  if (taux >= 95) return '#EF4444'
-  if (taux >= 80) return '#F59E0B'
-  if (taux >= 50) return '#22C55E'
-  return '#3B82F6'
+  if (taux > 75) return '#F43F5E'
+  if (taux > 50) return '#F59E0B'
+  return '#22C55E'
 }
 
 export default function BudgetDetail({ basePath = '/mes-budgets' }) {
@@ -30,7 +33,7 @@ export default function BudgetDetail({ basePath = '/mes-budgets' }) {
   const [hasLignes, setHasLignes] = useState(false)
 
   const [showDepenseModal, setShowDepenseModal] = useState(false)
-  const [depForm,          setDepForm]          = useState({ ligne_id: '', montant: '', note: '', file: null })
+  const [depForm,          setDepForm]          = useState({ ligne_id: '', montant: '', note: '', file: null, pieces: [] })
   const [depSaving,        setDepSaving]        = useState(false)
   const [depError,         setDepError]         = useState('')
 
@@ -43,12 +46,51 @@ export default function BudgetDetail({ basePath = '/mes-budgets' }) {
   const [soumissionSaving, setSoumissionSaving] = useState(false)
   const [soumissionError,  setSoumissionError]  = useState('')
 
+  const [depenses,       setDepenses]       = useState([])
+  const [depensesLoaded, setDepensesLoaded] = useState(false)
+
+  const [showVirement,   setShowVirement]   = useState(false)
+  const [virForm,        setVirForm]        = useState({ ligne_source: '', ligne_destination: '', montant: '', motif: '' })
+  const [virSaving,      setVirSaving]      = useState(false)
+  const [virError,       setVirError]       = useState('')
+  const [virLignes,      setVirLignes]      = useState([])
+
   const load = () => {
     getBudget(id)
       .then(b => setBudget(b.data))
       .finally(() => setLoading(false))
   }
   useEffect(() => { load() }, [id])
+
+  const loadDepenses = () => {
+    getDepenses({ budget: id })
+      .then(r => setDepenses(r.data?.data ?? []))
+      .catch(() => {})
+      .finally(() => setDepensesLoaded(true))
+  }
+
+  const openVirement = () => {
+    setVirForm({ ligne_source: '', ligne_destination: '', montant: '', motif: '' })
+    setVirError('')
+    getLignesSelecteur(id)
+      .then(r => setVirLignes(r.data?.data ?? []))
+      .catch(() => setVirLignes([]))
+    setShowVirement(true)
+  }
+  const handleVirement = async (e) => {
+    e.preventDefault()
+    setVirError(''); setVirSaving(true)
+    try {
+      await effectuerVirement(id, {
+        ligne_source:      virForm.ligne_source,
+        ligne_destination: virForm.ligne_destination,
+        montant:           parseFloat(virForm.montant),
+        motif:             virForm.motif,
+      })
+      setShowVirement(false); load()
+    } catch (err) { setVirError(err.response?.data?.detail || 'Erreur') }
+    finally { setVirSaving(false) }
+  }
 
   const handleDelete = async () => {
     if (!confirm('Supprimer définitivement ce budget ?')) return
@@ -80,7 +122,7 @@ export default function BudgetDetail({ basePath = '/mes-budgets' }) {
   }
 
   const openDepense = () => {
-    setDepForm({ ligne_id: '', montant: '', note: '', file: null })
+    setDepForm({ ligne_id: '', montant: '', note: '', file: null, pieces: [] })
     setDepError(''); setShowDepenseModal(true)
   }
   const handleDepense = async (e) => {
@@ -89,17 +131,66 @@ export default function BudgetDetail({ basePath = '/mes-budgets' }) {
     if (!depForm.ligne_id) { setDepError('Sélectionnez une ligne budgétaire.'); return }
     setDepSaving(true); setDepError('')
     try {
-      await consommerLigne(id, depForm.ligne_id, parseFloat(depForm.montant), depForm.file, depForm.note)
-      setShowDepenseModal(false); load()
+      await consommerLigne(id, depForm.ligne_id, parseFloat(depForm.montant), depForm.file, depForm.note, depForm.pieces)
+      setShowDepenseModal(false); load(); loadDepenses()
     } catch (err) { setDepError(err.response?.data?.detail || 'Erreur') }
     finally { setDepSaving(false) }
   }
+
+  // Charger les dépenses dès que le budget est approuvé
+  useEffect(() => {
+    if (budget?.statut === 'APPROUVE' && !depensesLoaded) loadDepenses()
+  }, [budget?.statut])
 
   if (loading || !budget) return <div className="page-loader"><div className="spinner" /></div>
 
   const editable  = ['BROUILLON', 'REJETE'].includes(budget.statut)
   const brouillon = budget.statut === 'BROUILLON'
   const approuve  = budget.statut === 'APPROUVE'
+
+  const handleExportCSV = () => {
+    const lignes = budget.lignes ?? []
+    const headers = ['Code', 'Désignation', 'Unité', 'Quantité', 'Prix Unitaire', 'Alloué (FCFA)', 'Consommé (FCFA)', 'Disponible (FCFA)']
+    const rows = lignes.map(l => [
+      l.code || '—',
+      l.libelle,
+      l.unite,
+      l.quantite,
+      l.prix_unitaire,
+      l.montant_alloue,
+      l.montant_consomme,
+      l.montant_disponible,
+    ])
+    if (approuve && depenses.length) {
+      rows.push([])
+      rows.push(['=== DÉPENSES ===', '', '', '', '', '', '', ''])
+      depenses.forEach(d => rows.push([
+        d.reference || '—', d.ligne_designation || '—', '—', '—', '—',
+        d.montant, d.statut, d.date_creation?.slice(0, 10) || '—',
+      ]))
+    }
+    exportCSV(`Budget_${budget.code}`, headers, rows)
+  }
+
+  const handleExportPDF = () => {
+    const lignes = budget.lignes ?? []
+    const headers = ['Code', 'Désignation', 'Unité', 'Qté', 'P.U.', 'Alloué', 'Consommé', 'Disponible']
+    const rows = lignes.map(l => [
+      l.code || '—', l.libelle, l.unite,
+      fmt(l.quantite), `${fmt(l.prix_unitaire)} F`,
+      `${fmt(l.montant_alloue)} F`, `${fmt(l.montant_consomme)} F`, `${fmt(l.montant_disponible)} F`,
+    ])
+    printPDF(`Budget ${budget.code}`, headers, rows, {
+      subtitle: budget.nom,
+      filters: `${budget.departement_nom} · Statut : ${budget.statut_display || budget.statut}`,
+      stats: [
+        { label: 'Budget global', value: `${fmt(budget.montant_global)} FCFA` },
+        { label: 'Consommé',      value: `${fmt(budget.montant_consomme)} FCFA` },
+        { label: 'Disponible',    value: `${fmt(budget.montant_disponible)} FCFA` },
+        { label: 'Taux',          value: `${Math.round(budget.taux_consommation || 0)} %` },
+      ],
+    })
+  }
 
   const alloc           = budget.allocation_detail
   const allocAlloue     = parseFloat(alloc?.montant_alloue    || 0)
@@ -112,13 +203,23 @@ export default function BudgetDetail({ basePath = '/mes-budgets' }) {
 
       {/* ── Header ───────────────────────────────────────────────────────────── */}
       <div style={{ marginBottom: 24 }}>
-        <button
-          onClick={() => navigate(basePath)}
-          className="btn btn-secondary btn-sm"
-          style={{ gap: 6, marginBottom: 16 }}
-        >
-          <ArrowLeft size={14} strokeWidth={2} /> Retour
-        </button>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+          <button
+            onClick={() => navigate(basePath)}
+            className="btn btn-secondary btn-sm"
+            style={{ gap: 6 }}
+          >
+            <ArrowLeft size={14} strokeWidth={2} /> Retour
+          </button>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button onClick={handleExportCSV} className="btn btn-secondary btn-sm" style={{ gap: 6 }}>
+              <Download size={13} strokeWidth={2} /> CSV
+            </button>
+            <button onClick={handleExportPDF} className="btn btn-secondary btn-sm" style={{ gap: 6 }}>
+              <Printer size={13} strokeWidth={2} /> PDF
+            </button>
+          </div>
+        </div>
 
         <div style={{
           background: 'linear-gradient(160deg, #0F2547 0%, #1E3A8A 60%, #1D4ED8 100%)',
@@ -205,9 +306,25 @@ export default function BudgetDetail({ basePath = '/mes-budgets' }) {
         </StatusBanner>
       )}
       {budget.statut === 'REJETE' && (
-        <StatusBanner type="danger" icon={<AlertTriangle size={15} strokeWidth={2} />}>
-          Budget rejeté — corrigez les lignes puis soumettez à nouveau.
-        </StatusBanner>
+        <>
+          <StatusBanner type="danger" icon={<AlertTriangle size={15} strokeWidth={2} />}>
+            Budget rejeté — corrigez les lignes puis soumettez à nouveau.
+          </StatusBanner>
+          {budget.motif_rejet && (
+            <div style={{
+              marginBottom: 12, padding: '12px 16px',
+              background: 'var(--color-danger-50)', border: '1px solid var(--color-danger-200)',
+              borderRadius: 'var(--radius-md)', borderLeft: '4px solid var(--color-danger-500)',
+            }}>
+              <div style={{ fontWeight: 700, fontSize: '12px', color: 'var(--color-danger-700)', marginBottom: 4 }}>
+                Motif de rejet
+              </div>
+              <div style={{ fontSize: '13px', color: 'var(--color-danger-800)', lineHeight: 1.55 }}>
+                {budget.motif_rejet}
+              </div>
+            </div>
+          )}
+        </>
       )}
 
       {/* ── Contenu principal ────────────────────────────────────────────────── */}
@@ -256,89 +373,235 @@ export default function BudgetDetail({ basePath = '/mes-budgets' }) {
               </button>
             )}
             {approuve && (
-              <button onClick={openDepense} className="btn btn-success btn-md" style={{ gap: 6 }}>
-                <DollarSign size={14} strokeWidth={2} /> Enregistrer une dépense
-              </button>
+              <>
+                <button onClick={openVirement} className="btn btn-secondary btn-md" style={{ gap: 6 }}>
+                  <ArrowLeftRight size={14} strokeWidth={2} /> Virement de crédits
+                </button>
+                <button onClick={openDepense} className="btn btn-success btn-md" style={{ gap: 6 }}>
+                  <DollarSign size={14} strokeWidth={2} /> Enregistrer une dépense
+                </button>
+              </>
             )}
           </div>
         </div>
       )}
 
-      {/* ── Modal dépense ────────────────────────────────────────────────────── */}
+      {/* ── Dépenses enregistrées (budget approuvé) ──────────────────────────── */}
+      {approuve && (
+        <div style={{ marginTop: 20 }}>
+          <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+            <div style={{
+              padding: '14px 20px', background: '#F8FAFF',
+              borderBottom: '1px solid var(--color-gray-100)',
+              display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <Receipt size={16} strokeWidth={2} style={{ color: 'var(--color-primary-600)' }} />
+                <span style={{ fontWeight: 700, fontSize: '14px', color: 'var(--color-gray-900)' }}>
+                  Dépenses enregistrées
+                </span>
+                {depenses.length > 0 && (
+                  <span style={{
+                    background: 'var(--color-primary-100)', color: 'var(--color-primary-700)',
+                    fontSize: '11px', fontWeight: 700, padding: '2px 8px', borderRadius: 20,
+                  }}>
+                    {depenses.length}
+                  </span>
+                )}
+              </div>
+            </div>
+
+            {!depensesLoaded ? (
+              <div style={{ padding: '24px', textAlign: 'center' }}>
+                <div className="spinner" style={{ margin: '0 auto 8px' }} />
+                <p style={{ fontSize: '12px', color: 'var(--color-gray-400)' }}>Chargement…</p>
+              </div>
+            ) : depenses.length === 0 ? (
+              <div style={{ padding: '28px 20px', textAlign: 'center', color: 'var(--color-gray-400)', fontSize: '13px' }}>
+                Aucune dépense enregistrée sur ce budget.
+              </div>
+            ) : (
+              <table className="data-table">
+                <thead>
+                  <tr>
+                    {['Référence', 'Ligne budgétaire', 'Montant', 'Date', 'Statut', 'Note', 'Justificatif'].map(h => (
+                      <th key={h}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {depenses.map(d => {
+                    const STATUT_STYLE = {
+                      SAISIE:  { bg: 'var(--color-warning-50)',  color: 'var(--color-warning-700)', label: 'En attente' },
+                      VALIDEE: { bg: 'var(--color-success-50)',  color: 'var(--color-success-700)', label: 'Validée'    },
+                      REJETEE: { bg: 'var(--color-danger-50)',   color: 'var(--color-danger-700)',  label: 'Rejetée'    },
+                    }
+                    const s = STATUT_STYLE[d.statut] || { bg: '#f3f4f6', color: '#374151', label: d.statut }
+                    return (
+                      <tr key={d.id}>
+                        <td><span className="code-tag">{d.reference}</span></td>
+                        <td style={{ fontSize: '12px', color: 'var(--color-gray-600)', maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {d.ligne_designation}
+                        </td>
+                        <td style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, whiteSpace: 'nowrap' }}>
+                          {fmt(d.montant)} <span style={{ fontSize: '10px', color: 'var(--color-gray-400)', fontWeight: 400 }}>FCFA</span>
+                        </td>
+                        <td style={{ fontSize: '12px', color: 'var(--color-gray-400)', fontFamily: 'var(--font-mono)', whiteSpace: 'nowrap' }}>
+                          {d.date_depense ? new Date(d.date_depense).toLocaleDateString('fr-FR') : '—'}
+                        </td>
+                        <td>
+                          <span style={{ padding: '3px 10px', borderRadius: 20, fontSize: '11px', fontWeight: 700, background: s.bg, color: s.color, whiteSpace: 'nowrap' }}>
+                            {s.label}
+                          </span>
+                        </td>
+                        <td style={{ fontSize: '12px', color: d.statut === 'REJETEE' ? 'var(--color-danger-600)' : 'var(--color-gray-500)', fontStyle: d.statut === 'REJETEE' ? 'italic' : 'normal' }}>
+                          {d.statut === 'REJETEE' && d.motif_rejet ? d.motif_rejet : (d.note || '—')}
+                        </td>
+                        <td>
+                          {d.piece_justificative_url ? (
+                            <a
+                              href={d.piece_justificative_url}
+                              target="_blank"
+                              rel="noreferrer"
+                              style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: '12px', color: 'var(--color-primary-600)', fontWeight: 600 }}
+                              onClick={e => e.stopPropagation()}
+                            >
+                              <ExternalLink size={12} strokeWidth={2} /> Voir
+                            </a>
+                          ) : (
+                            <span style={{ fontSize: '12px', color: 'var(--color-gray-300)' }}>—</span>
+                          )}
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ── Modal dépense (layout horizontal) ───────────────────────────────── */}
       {showDepenseModal && (
         <div className="modal-overlay" onClick={e => { if (e.target === e.currentTarget) setShowDepenseModal(false) }}>
-          <div className="modal-panel" onClick={e => e.stopPropagation()} style={{ maxWidth: 520 }}>
+          <div className="modal-panel" onClick={e => e.stopPropagation()} style={{ maxWidth: 860, width: '95vw' }}>
+
+            {/* Header */}
             <div className="modal-header">
               <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '15px', display: 'flex', alignItems: 'center', gap: 8 }}>
                 <DollarSign size={16} strokeWidth={2} style={{ color: 'var(--color-success-600)' }} />
                 Enregistrer une dépense
               </h2>
             </div>
+
             <form onSubmit={handleDepense}>
-              <div className="modal-body">
-                <div style={{ marginBottom: 14 }}>
-                  <label className="form-label">
-                    Ligne budgétaire <span style={{ color: 'var(--color-danger-600)' }}>*</span>
-                  </label>
-                  <SelecteurLigne
-                    budgetId={budget.id}
-                    value={depForm.ligne_id}
-                    onChange={(ligneId) => setDepForm(f => ({ ...f, ligne_id: ligneId }))}
-                    error={depError && !depForm.ligne_id ? 'Sélectionnez une ligne budgétaire' : null}
-                  />
-                </div>
-                <div style={{ marginBottom: 14 }}>
-                  <label className="form-label">Montant (FCFA) <span style={{ color: 'var(--color-danger-600)' }}>*</span></label>
-                  <input
-                    type="number" required min={0.01} step="0.01"
-                    className="form-input" style={{ fontFamily: 'var(--font-mono)' }}
-                    value={depForm.montant}
-                    onChange={e => setDepForm(f => ({ ...f, montant: e.target.value }))}
-                    placeholder="Ex : 50 000"
-                  />
-                </div>
-                <div style={{ marginBottom: 14 }}>
-                  <label className="form-label">Note / Description</label>
-                  <input
-                    className="form-input" value={depForm.note}
-                    onChange={e => setDepForm(f => ({ ...f, note: e.target.value }))}
-                    placeholder="Ex : Facture fournisseur n°…"
-                  />
-                </div>
-                <div style={{ marginBottom: 4 }}>
-                  <label className="form-label">
-                    Pièce justificative <span style={{ color: 'var(--color-danger-600)' }}>*</span>
-                  </label>
+              {/* Corps — deux colonnes */}
+              <div className="modal-body" style={{ padding: 0 }}>
+                <div style={{ display: 'flex', gap: 0 }}>
+
+                  {/* Colonne gauche — sélecteur de ligne */}
                   <div style={{
-                    border: '1.5px dashed var(--color-gray-300)', borderRadius: 'var(--radius-md)',
-                    padding: '14px', display: 'flex', alignItems: 'center', gap: 10,
-                    background: 'var(--color-gray-50)',
+                    flex: '1 1 55%', padding: '20px 20px',
+                    borderRight: '1px solid var(--color-gray-100)',
+                    maxHeight: 480, overflowY: 'auto',
                   }}>
-                    <Paperclip size={15} strokeWidth={2} style={{ color: 'var(--color-gray-400)', flexShrink: 0 }} />
-                    <input
-                      type="file" required accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx"
-                      onChange={e => setDepForm(f => ({ ...f, file: e.target.files[0] || null }))}
-                      style={{ fontSize: '13px', flex: 1 }}
+                    <label className="form-label" style={{ marginBottom: 10 }}>
+                      Ligne budgétaire <span style={{ color: 'var(--color-danger-600)' }}>*</span>
+                    </label>
+                    <SelecteurLigne
+                      budgetId={budget.id}
+                      value={depForm.ligne_id}
+                      onChange={(ligneId) => setDepForm(f => ({ ...f, ligne_id: ligneId }))}
+                      error={depError && !depForm.ligne_id ? 'Sélectionnez une ligne budgétaire' : null}
                     />
                   </div>
-                  <p className="form-hint">Formats acceptés : PDF, image, Word, Excel</p>
-                </div>
-                {depError && (
-                  <div style={{ display: 'flex', gap: 8, alignItems: 'center', padding: '8px 12px', borderRadius: 8, background: 'var(--color-danger-50)', border: '1px solid var(--color-danger-200)', marginTop: 12 }}>
-                    <AlertTriangle size={13} style={{ color: 'var(--color-danger-500)', flexShrink: 0 }} />
-                    <span style={{ color: 'var(--color-danger-700)', fontSize: '12px' }}>{depError}</span>
+
+                  {/* Colonne droite — montant, note, pièce + boutons */}
+                  <div style={{ flex: '1 1 45%', padding: '20px 20px', display: 'flex', flexDirection: 'column', gap: 14 }}>
+
+                    <div>
+                      <label className="form-label">Montant (FCFA) <span style={{ color: 'var(--color-danger-600)' }}>*</span></label>
+                      <input
+                        type="number" required min={0.01} step="0.01"
+                        className="form-input" style={{ fontFamily: 'var(--font-mono)' }}
+                        value={depForm.montant}
+                        onChange={e => setDepForm(f => ({ ...f, montant: e.target.value }))}
+                        placeholder="Ex : 50 000"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="form-label">Note / Description</label>
+                      <input
+                        className="form-input" value={depForm.note}
+                        onChange={e => setDepForm(f => ({ ...f, note: e.target.value }))}
+                        placeholder="Ex : Facture fournisseur n°…"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="form-label">
+                        Pièce justificative <span style={{ color: 'var(--color-danger-600)' }}>*</span>
+                      </label>
+                      <div style={{
+                        border: '1.5px dashed var(--color-gray-300)', borderRadius: 'var(--radius-md)',
+                        padding: '12px', display: 'flex', alignItems: 'center', gap: 10,
+                        background: 'var(--color-gray-50)',
+                      }}>
+                        <Paperclip size={15} strokeWidth={2} style={{ color: 'var(--color-gray-400)', flexShrink: 0 }} />
+                        <input
+                          type="file" required accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx"
+                          onChange={e => setDepForm(f => ({ ...f, file: e.target.files[0] || null }))}
+                          style={{ fontSize: '12px', flex: 1 }}
+                        />
+                      </div>
+                      <p className="form-hint">PDF, image, Word, Excel — pièce principale</p>
+                      <div style={{ marginTop: 10 }}>
+                        <label className="form-label">Pièces supplémentaires (optionnel)</label>
+                        <div style={{
+                          border: '1.5px dashed var(--color-gray-300)', borderRadius: 'var(--radius-md)',
+                          padding: '12px', display: 'flex', alignItems: 'center', gap: 10,
+                          background: 'var(--color-gray-50)',
+                        }}>
+                          <Paperclip size={15} strokeWidth={2} style={{ color: 'var(--color-gray-400)', flexShrink: 0 }} />
+                          <input
+                            type="file" multiple accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx"
+                            onChange={e => setDepForm(f => ({ ...f, pieces: Array.from(e.target.files) }))}
+                            style={{ fontSize: '12px', flex: 1 }}
+                          />
+                        </div>
+                        {depForm.pieces.length > 0 && (
+                          <ul style={{ marginTop: 4, fontSize: '11px', color: 'var(--color-gray-500)', listStyle: 'disc', paddingLeft: 16 }}>
+                            {depForm.pieces.map((f, i) => <li key={i}>{f.name}</li>)}
+                          </ul>
+                        )}
+                      </div>
+                    </div>
+
+                    {depError && (
+                      <div style={{ display: 'flex', gap: 8, alignItems: 'center', padding: '8px 12px', borderRadius: 8, background: 'var(--color-danger-50)', border: '1px solid var(--color-danger-200)' }}>
+                        <AlertTriangle size={13} style={{ color: 'var(--color-danger-500)', flexShrink: 0 }} />
+                        <span style={{ color: 'var(--color-danger-700)', fontSize: '12px' }}>{depError}</span>
+                      </div>
+                    )}
+
+                    {/* Boutons en bas de la colonne droite */}
+                    <div style={{ marginTop: 'auto', display: 'flex', gap: 8, paddingTop: 8, borderTop: '1px solid var(--color-gray-100)' }}>
+                      <button type="button" onClick={() => setShowDepenseModal(false)} className="btn btn-secondary btn-md" style={{ flex: 1 }}>
+                        Annuler
+                      </button>
+                      <button
+                        type="submit"
+                        disabled={depSaving || !depForm.file || !depForm.ligne_id || !depForm.montant}
+                        className="btn btn-success btn-md" style={{ flex: 1, gap: 6 }}
+                      >
+                        {depSaving ? <><span className="spinner-sm" /> Enregistrement…</> : <><Check size={14} strokeWidth={2.5} /> Confirmer</>}
+                      </button>
+                    </div>
+
                   </div>
-                )}
-              </div>
-              <div className="modal-footer">
-                <button type="button" onClick={() => setShowDepenseModal(false)} className="btn btn-secondary btn-md">Annuler</button>
-                <button
-                  type="submit"
-                  disabled={depSaving || !depForm.file || !depForm.ligne_id || !depForm.montant}
-                  className="btn btn-success btn-md" style={{ gap: 6 }}
-                >
-                  {depSaving ? <><span className="spinner-sm" /> Enregistrement…</> : <><Check size={14} strokeWidth={2.5} /> Confirmer</>}
-                </button>
+                </div>
               </div>
             </form>
           </div>
@@ -439,6 +702,100 @@ export default function BudgetDetail({ basePath = '/mes-budgets' }) {
           </div>
         </div>
       )}
+      {/* ── Modal Virement de crédits ────────────────────────────────────────── */}
+      {showVirement && (
+        <div className="modal-overlay" onClick={e => { if (e.target === e.currentTarget) setShowVirement(false) }}>
+          <div className="modal-panel" onClick={e => e.stopPropagation()} style={{ maxWidth: 520 }}>
+            <div className="modal-header">
+              <h2 style={{ fontSize: '15px', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8 }}>
+                <ArrowLeftRight size={16} strokeWidth={2} style={{ color: 'var(--color-primary-600)' }} />
+                Virement de crédits
+              </h2>
+            </div>
+            <form onSubmit={handleVirement}>
+              <div className="modal-body" style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                <div>
+                  <label className="form-label">Ligne source <span style={{ color: 'var(--color-danger-600)' }}>*</span></label>
+                  <select
+                    className="form-input" required
+                    value={virForm.ligne_source}
+                    onChange={e => setVirForm(f => ({ ...f, ligne_source: e.target.value }))}
+                  >
+                    <option value="">— Sélectionner —</option>
+                    {virLignes.filter(l => parseFloat(l.montant_disponible) > 0).map(l => (
+                      <option key={l.ligne_id} value={l.ligne_id}>
+                        {l.libelle} — Disponible : {new Intl.NumberFormat('fr-FR').format(l.montant_disponible)} FCFA
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="form-label">Ligne destination <span style={{ color: 'var(--color-danger-600)' }}>*</span></label>
+                  <select
+                    className="form-input" required
+                    value={virForm.ligne_destination}
+                    onChange={e => setVirForm(f => ({ ...f, ligne_destination: e.target.value }))}
+                  >
+                    <option value="">— Sélectionner —</option>
+                    {virLignes.filter(l => l.ligne_id !== virForm.ligne_source).map(l => (
+                      <option key={l.ligne_id} value={l.ligne_id}>
+                        {l.libelle}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="form-label">Montant (FCFA) <span style={{ color: 'var(--color-danger-600)' }}>*</span></label>
+                  <input
+                    type="number" required min={1} step="1"
+                    className="form-input" style={{ fontFamily: 'var(--font-mono)' }}
+                    value={virForm.montant}
+                    onChange={e => setVirForm(f => ({ ...f, montant: e.target.value }))}
+                    placeholder="Ex : 50 000"
+                  />
+                  {virForm.ligne_source && virForm.montant && (() => {
+                    const src = virLignes.find(l => l.ligne_id === virForm.ligne_source)
+                    if (src && parseFloat(virForm.montant) > parseFloat(src.montant_disponible)) {
+                      return (
+                        <p style={{ fontSize: '12px', color: 'var(--color-danger-600)', marginTop: 4 }}>
+                          Montant supérieur au disponible ({new Intl.NumberFormat('fr-FR').format(src.montant_disponible)} FCFA)
+                        </p>
+                      )
+                    }
+                    return null
+                  })()}
+                </div>
+                <div>
+                  <label className="form-label">Motif</label>
+                  <input
+                    className="form-input" value={virForm.motif}
+                    onChange={e => setVirForm(f => ({ ...f, motif: e.target.value }))}
+                    placeholder="Ex : Réallocation pour achat matériel urgent…"
+                  />
+                </div>
+                {virError && (
+                  <div style={{ display: 'flex', gap: 8, alignItems: 'center', padding: '8px 12px', borderRadius: 8, background: 'var(--color-danger-50)', border: '1px solid var(--color-danger-200)' }}>
+                    <AlertTriangle size={13} style={{ color: 'var(--color-danger-500)', flexShrink: 0 }} />
+                    <span style={{ color: 'var(--color-danger-700)', fontSize: '12px' }}>{virError}</span>
+                  </div>
+                )}
+              </div>
+              <div className="modal-footer">
+                <button type="button" onClick={() => setShowVirement(false)} className="btn btn-secondary btn-md">Annuler</button>
+                <button
+                  type="submit"
+                  disabled={virSaving || !virForm.ligne_source || !virForm.ligne_destination || !virForm.montant}
+                  className="btn btn-primary btn-md"
+                  style={{ gap: 6 }}
+                >
+                  {virSaving ? <><span className="spinner-sm" /> Virement…</> : <><ArrowLeftRight size={14} /> Confirmer</>}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
     </div>
   )
 }
