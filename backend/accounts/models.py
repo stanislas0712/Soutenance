@@ -78,10 +78,12 @@ class Utilisateur(AbstractBaseUser, PermissionsMixin):
                             related_name='utilisateurs',
                             verbose_name="Département"
                          )
-    actif              = models.BooleanField(default=True, verbose_name="Actif")
-    date_creation      = models.DateTimeField(auto_now_add=True)
-    derniere_connexion = models.DateTimeField(null=True, blank=True)
-    is_staff           = models.BooleanField(default=False)
+    actif                 = models.BooleanField(default=True, verbose_name="Actif")
+    bloque                = models.BooleanField(default=False, verbose_name="Compte bloqué")
+    tentatives_connexion  = models.PositiveSmallIntegerField(default=0, verbose_name="Tentatives échouées")
+    date_creation         = models.DateTimeField(auto_now_add=True)
+    derniere_connexion    = models.DateTimeField(null=True, blank=True)
+    is_staff              = models.BooleanField(default=False)
 
     objects = UtilisateurManager()
 
@@ -106,9 +108,26 @@ class Utilisateur(AbstractBaseUser, PermissionsMixin):
     def is_active(self):
         return self.actif
 
+    MAX_TENTATIVES = 3
+
     def se_connecter(self):
-        self.derniere_connexion = timezone.now()
-        self.save(update_fields=['derniere_connexion'])
+        """Connexion réussie : réinitialise le compteur de tentatives."""
+        self.derniere_connexion   = timezone.now()
+        self.tentatives_connexion = 0
+        self.save(update_fields=['derniere_connexion', 'tentatives_connexion'])
+
+    def incrementer_tentatives(self):
+        """Mauvais mot de passe : incrémente et bloque après MAX_TENTATIVES."""
+        self.tentatives_connexion += 1
+        if self.tentatives_connexion >= self.MAX_TENTATIVES:
+            self.bloque = True
+        self.save(update_fields=['tentatives_connexion', 'bloque'])
+
+    def debloquer(self):
+        """Déblocage administrateur : remet les compteurs à zéro."""
+        self.bloque               = False
+        self.tentatives_connexion = 0
+        self.save(update_fields=['bloque', 'tentatives_connexion'])
 
     # ── Propriétés de rôle ──────────────────────────────────────────────────
     @property

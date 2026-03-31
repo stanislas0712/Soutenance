@@ -12,7 +12,7 @@ import {
 
 /* ── Rôles ───────────────────────────────────────────────────────────────── */
 const ROLE_BADGE = {
-  ADMINISTRATEUR: { bg: 'rgba(59,130,246,.15)', color: '#93C5FD', label: 'Admin' },
+  ADMINISTRATEUR: { bg: 'rgba(201,168,76,.18)', color: '#D4B355', label: 'Admin' },
   GESTIONNAIRE  : { bg: 'rgba(34,197,94,.15)',  color: '#86EFAC', label: 'Gestionnaire' },
   COMPTABLE     : { bg: 'rgba(245,158,11,.15)', color: '#FCD34D', label: 'Comptable' },
 }
@@ -79,23 +79,24 @@ function NavItem({ item, collapsed }) {
   return (
     <NavLink
       to={item.to}
+      viewTransition
       title={collapsed ? item.label : undefined}
       style={({ isActive }) => ({
         display: 'flex', alignItems: 'center',
         gap: 10, padding: collapsed ? '9px 0' : '8px 11px',
         justifyContent: collapsed ? 'center' : 'flex-start',
         borderRadius: 9, marginBottom: 2,
-        color: isActive ? '#fff' : 'rgba(255,255,255,.5)',
+        color: isActive ? '#FAF7F2' : 'rgba(255,255,255,.48)',
         background: isActive
-          ? 'linear-gradient(135deg, rgba(59,130,246,.35), rgba(37,99,235,.25))'
+          ? 'linear-gradient(135deg, rgba(201,168,76,.22), rgba(184,151,63,.15))'
           : 'transparent',
         fontWeight: isActive ? 600 : 400,
         fontSize: '13.5px',
         transition: 'all .12s',
         textDecoration: 'none',
         position: 'relative',
-        boxShadow: isActive ? 'inset 0 1px 0 rgba(255,255,255,.08)' : 'none',
-        border: isActive ? '1px solid rgba(255,255,255,.1)' : '1px solid transparent',
+        boxShadow: isActive ? 'inset 0 1px 0 rgba(201,168,76,.15)' : 'none',
+        border: isActive ? '1px solid rgba(201,168,76,.2)' : '1px solid transparent',
       })}
     >
       {({ isActive }) => (
@@ -103,11 +104,11 @@ function NavItem({ item, collapsed }) {
           <IconComp
             size={16}
             strokeWidth={isActive ? 2.2 : 1.8}
-            style={{ flexShrink: 0, color: isActive ? '#93C5FD' : 'rgba(255,255,255,.45)' }}
+            style={{ flexShrink: 0, color: isActive ? '#D4B355' : 'rgba(255,255,255,.42)' }}
           />
           {!collapsed && <span style={{ flex: 1, letterSpacing: '-.01em' }}>{item.label}</span>}
           {!collapsed && isActive && (
-            <div style={{ width: 5, height: 5, borderRadius: '50%', background: '#60A5FA', flexShrink: 0 }} />
+            <div style={{ width: 5, height: 5, borderRadius: '50%', background: '#C9A84C', flexShrink: 0 }} />
           )}
         </>
       )}
@@ -120,29 +121,62 @@ export default function Layout({ children }) {
   const { user, logout, isAdmin } = useAuth()
   const navigate   = useNavigate()
   const location   = useLocation()
-  const [collapsed, setCollapsed] = useState(false)
+  const [collapsed, setCollapsed]         = useState(false)
+  const [isMobile, setIsMobile]           = useState(() => window.innerWidth < 768)
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false)
   const items   = navItems(user?.role)
   const sections = getSections(user?.role, items)
   const roleInfo = ROLE_BADGE[user?.role] || { bg: 'rgba(255,255,255,.1)', color: 'rgba(255,255,255,.7)', label: user?.role }
 
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 768)
+    window.addEventListener('resize', check)
+    return () => window.removeEventListener('resize', check)
+  }, [])
+
+  /* Close mobile sidebar on route change */
+  useEffect(() => { setMobileSidebarOpen(false) }, [location.pathname])
+
   const handleLogout = () => { logout(); navigate('/') }
+
+  const toggleSidebar = () => {
+    if (isMobile) setMobileSidebarOpen(o => !o)
+    else setCollapsed(c => !c)
+  }
 
   /* Breadcrumb label from current path */
   const currentItem = items.find(i => i.to !== '/dashboard' && location.pathname.startsWith(i.to))
     || items.find(i => i.to === location.pathname)
 
   return (
-    <div className="flex h-full bg-[#F9FAFB]">
+    <div className="flex h-full" style={{ background: '#F5F0E8' }}>
+
+      {/* ── Mobile overlay ────────────────────────────────────────────── */}
+      {isMobile && mobileSidebarOpen && (
+        <div
+          onClick={() => setMobileSidebarOpen(false)}
+          style={{
+            position: 'fixed', inset: 0, zIndex: 98,
+            background: 'rgba(0,0,0,.55)', backdropFilter: 'blur(2px)',
+          }}
+        />
+      )}
 
       {/* ── Sidebar ───────────────────────────────────────────────────── */}
       <aside
-        className="flex flex-col relative z-[100] overflow-hidden shrink-0"
+        className="flex flex-col overflow-hidden shrink-0"
         style={{
-          width: collapsed ? 60 : 'var(--sidebar-w)',
-          minWidth: collapsed ? 60 : 'var(--sidebar-w)',
-          transition: 'width .22s cubic-bezier(.4,0,.2,1), min-width .22s',
-          background: 'linear-gradient(175deg, #1E3A8A 0%, #1E40AF 55%, #2563EB 100%)',
-          boxShadow: '1px 0 0 rgba(255,255,255,.06), 4px 0 24px rgba(30,58,138,.35)',
+          position: isMobile ? 'fixed' : 'relative',
+          top: isMobile ? 0 : undefined,
+          left: isMobile ? 0 : undefined,
+          height: isMobile ? '100%' : undefined,
+          zIndex: isMobile ? 99 : 100,
+          width: isMobile ? 'var(--sidebar-w)' : (collapsed ? 60 : 'var(--sidebar-w)'),
+          minWidth: isMobile ? 'var(--sidebar-w)' : (collapsed ? 60 : 'var(--sidebar-w)'),
+          transform: isMobile ? (mobileSidebarOpen ? 'translateX(0)' : 'translateX(-100%)') : 'none',
+          transition: 'width .22s cubic-bezier(.4,0,.2,1), min-width .22s, transform .25s cubic-bezier(.4,0,.2,1)',
+          background: 'linear-gradient(175deg, #1C1917 0%, #252120 55%, #2E2A27 100%)',
+          boxShadow: '6px 0 32px rgba(10,8,6,.45), 2px 0 8px rgba(28,25,23,.3)',
         }}
       >
 
@@ -160,18 +194,18 @@ export default function Layout({ children }) {
             className="shrink-0 flex items-center justify-center"
             style={{
               width: 34, height: 34, borderRadius: 10,
-              background: 'linear-gradient(135deg, #3B82F6, #2563EB)',
-              boxShadow: '0 2px 8px rgba(59,130,246,.5)',
+              background: 'linear-gradient(135deg, #C9A84C, #8A6B1E)',
+              boxShadow: '0 2px 8px rgba(201,168,76,.4)',
             }}
           >
             <Wallet size={16} strokeWidth={2.5} color="#fff" />
           </div>
           {!collapsed && (
             <div>
-              <div style={{ fontWeight: 800, fontSize: '14.5px', color: '#fff', letterSpacing: '-.3px', lineHeight: 1.2 }}>
+              <div style={{ fontWeight: 700, fontSize: '14.5px', color: '#FAF7F2', letterSpacing: '-.2px', lineHeight: 1.2, fontFamily: 'Lora, Georgia, serif' }}>
                 BudgetFlow
               </div>
-              <div style={{ fontSize: '9.5px', color: 'rgba(255,255,255,.3)', letterSpacing: '.8px', marginTop: 1 }}>
+              <div style={{ fontSize: '9.5px', color: 'rgba(201,168,76,.6)', letterSpacing: '.8px', marginTop: 1 }}>
                 GESTION BUDGÉTAIRE
               </div>
             </div>
@@ -200,59 +234,6 @@ export default function Layout({ children }) {
           ))}
         </nav>
 
-        {/* User footer */}
-        <div
-          className="shrink-0 border-t"
-          style={{
-            padding: collapsed ? '10px 6px' : '12px',
-            borderTopColor: 'rgba(255,255,255,.06)',
-          }}
-        >
-          {!collapsed ? (
-            <>
-              <div className="flex items-center gap-[10px] px-[10px] py-2 rounded-[8px] mb-[6px]">
-                <div
-                  className="w-8 h-8 rounded-full shrink-0 flex items-center justify-center text-white font-bold text-[12px]"
-                  style={{ background: 'linear-gradient(135deg, #3B82F6, #1D4ED8)' }}
-                >
-                  {(user?.prenom?.[0] || user?.email?.[0] || '?').toUpperCase()}
-                </div>
-                <div className="flex-1 overflow-hidden">
-                  <div className="text-white font-semibold text-[13px] whitespace-nowrap overflow-hidden text-ellipsis">
-                    {user?.prenom} {user?.nom}
-                  </div>
-                  <span
-                    className="inline-block text-[10px] font-bold px-[7px] py-[1px] rounded-[20px] tracking-[.3px] mt-[2px]"
-                    style={{ background: roleInfo.bg, color: roleInfo.color }}
-                  >
-                    {roleInfo.label}
-                  </span>
-                </div>
-              </div>
-              <button
-                onClick={handleLogout}
-                className="w-full flex items-center gap-2 px-[10px] py-2 rounded-[7px] text-[13px] font-medium cursor-pointer border-none transition-all"
-                style={{ background: 'rgba(255,255,255,.05)', color: 'rgba(255,255,255,.5)' }}
-                onMouseEnter={e => { e.currentTarget.style.background = 'rgba(239,68,68,.2)'; e.currentTarget.style.color = '#FCA5A5'; }}
-                onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,.05)'; e.currentTarget.style.color = 'rgba(255,255,255,.5)'; }}
-              >
-                <LogOut size={14} />
-                Déconnexion
-              </button>
-            </>
-          ) : (
-            <button
-              onClick={handleLogout}
-              title="Déconnexion"
-              className="w-full flex items-center justify-center py-2 rounded-[7px] cursor-pointer border-none transition-all"
-              style={{ background: 'rgba(255,255,255,.05)', color: 'rgba(255,255,255,.5)' }}
-              onMouseEnter={e => { e.currentTarget.style.background = 'rgba(239,68,68,.2)'; e.currentTarget.style.color = '#FCA5A5'; }}
-              onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,.05)'; e.currentTarget.style.color = 'rgba(255,255,255,.5)'; }}
-            >
-              <LogOut size={15} />
-            </button>
-          )}
-        </div>
       </aside>
 
       {/* ── Main area ─────────────────────────────────────────────────── */}
@@ -263,14 +244,14 @@ export default function Layout({ children }) {
           className="shrink-0 flex items-center px-5 gap-[12px] z-50"
           style={{
             height: 'var(--topbar-h)',
-            background: 'linear-gradient(90deg, #1E3A8A 0%, #1E40AF 60%, #2563EB 100%)',
-            borderBottom: '1px solid rgba(255,255,255,.1)',
-            boxShadow: '0 2px 8px rgba(30,58,138,.3)',
+            background: '#141110',
+            borderBottom: '1px solid rgba(201,168,76,.12)',
+            boxShadow: '0 4px 16px rgba(10,8,6,.4), 0 1px 4px rgba(0,0,0,.2)',
           }}
         >
           {/* Toggle sidebar */}
           <button
-            onClick={() => setCollapsed(c => !c)}
+            onClick={toggleSidebar}
             aria-label={collapsed ? 'Étendre le menu' : 'Réduire le menu'}
             style={{
               width: 34, height: 34, borderRadius: 9,
@@ -298,7 +279,7 @@ export default function Layout({ children }) {
           {/* Admin Django link — outil dev uniquement */}
           {isAdmin && (
             <a
-              href="/admin/"
+              href="/manager/"
               target="_blank" rel="noreferrer"
               title="Interface d'administration technique (développeur)"
               style={{
@@ -324,7 +305,7 @@ export default function Layout({ children }) {
         </header>
 
         {/* Page content */}
-        <main className="flex-1 overflow-y-auto" style={{ padding: '28px 32px' }}>
+        <main className="flex-1 overflow-y-auto" style={{ padding: isMobile ? '16px 14px' : '32px 36px' }}>
           <div className="page-content">
             {children}
           </div>
@@ -339,10 +320,12 @@ export default function Layout({ children }) {
 
 /* ── helpers notifications ───────────────────────────────────────────────── */
 const NOTIF_META = {
-  BUDGET_APPROUVE: { icon: '✅', color: '#16A34A', bg: '#F0FDF4', border: '#BBF7D0', label: 'Approuvé'  },
-  BUDGET_REJETE:   { icon: '❌', color: '#DC2626', bg: '#FFF1F2', border: '#FECDD3', label: 'Rejeté'    },
-  BUDGET_SOUMIS:   { icon: '📤', color: '#7C3AED', bg: '#F5F3FF', border: '#DDD6FE', label: 'Soumis'    },
-  DEFAULT:         { icon: '🔔', color: '#2563EB', bg: '#EFF6FF', border: '#BFDBFE', label: 'Info'      },
+  BUDGET_APPROUVE:  { icon: '✅', color: '#16A34A', bg: '#F0FDF4', border: '#BBF7D0', label: 'Budget approuvé'  },
+  BUDGET_REJETE:    { icon: '❌', color: '#DC2626', bg: '#FFF1F2', border: '#FECDD3', label: 'Budget rejeté'    },
+  BUDGET_SOUMIS:    { icon: '📤', color: '#7C3AED', bg: '#F5F3FF', border: '#DDD6FE', label: 'Budget soumis'    },
+  DEPENSE_VALIDEE:  { icon: '💳', color: '#0891B2', bg: '#ECFEFF', border: '#A5F3FC', label: 'Dépense validée'  },
+  DEPENSE_REJETEE:  { icon: '🚫', color: '#EA580C', bg: '#FFF7ED', border: '#FED7AA', label: 'Dépense rejetée'  },
+  DEFAULT:          { icon: '🔔', color: '#2563EB', bg: '#EFF6FF', border: '#BFDBFE', label: 'Info'             },
 }
 const notifMeta = (type) => NOTIF_META[type] || NOTIF_META.DEFAULT
 
@@ -358,14 +341,19 @@ function fmtDate(iso) {
 
 /* ── NotificationBell ────────────────────────────────────────────────────── */
 function NotificationBell({ navigate }) {
-  const [notifs,   setNotifs]   = useState([])
-  const [open,     setOpen]     = useState(false)
-  const [loading,  setLoading]  = useState(false)
-  const btnRef = useRef(null)
+
+  const [notifs,    setNotifs]    = useState([])
+  const [nbNonLues, setNbNonLues] = useState(0)
+  const [open,      setOpen]      = useState(false)
+  const [loading,   setLoading]   = useState(false)
+  const btnRef   = useRef(null)
   const panelRef = useRef(null)
 
   const loadNotifs = () => {
-    getNotifications().then(r => setNotifs(r.data?.data ?? [])).catch(() => {})
+    getNotifications().then(r => {
+      setNotifs(r.data?.data ?? [])
+      setNbNonLues(r.data?.nb_non_lues ?? 0)
+    }).catch(() => {})
   }
 
   useEffect(() => {
@@ -385,8 +373,6 @@ function NotificationBell({ navigate }) {
     return () => document.removeEventListener('mousedown', h)
   }, [])
 
-  const nbNonLues = notifs.filter(n => !n.lu).length
-
   const handleOpen = () => {
     setOpen(o => !o)
     loadNotifs()
@@ -396,6 +382,7 @@ function NotificationBell({ navigate }) {
     setLoading(true)
     await marquerToutesLues()
     setNotifs(ns => ns.map(n => ({ ...n, lu: true })))
+    setNbNonLues(0)
     setLoading(false)
   }
 
@@ -403,6 +390,7 @@ function NotificationBell({ navigate }) {
     if (!notif.lu) {
       await marquerLue(notif.id)
       setNotifs(ns => ns.map(n => n.id === notif.id ? { ...n, lu: true } : n))
+      setNbNonLues(c => Math.max(0, c - 1))
     }
     setOpen(false)
     if (notif.lien) navigate(notif.lien)
@@ -430,7 +418,7 @@ function NotificationBell({ navigate }) {
           <span style={{
             position: 'absolute', top: -4, right: -4,
             minWidth: 17, height: 17, borderRadius: 9999,
-            background: '#EF4444', border: '2px solid #1E3A8A',
+            background: '#EF4444', border: '2px solid #1C1917',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             fontSize: '9px', fontWeight: 800, color: '#fff', padding: '0 3px',
           }}>
@@ -446,8 +434,8 @@ function NotificationBell({ navigate }) {
           style={{
             position: 'fixed',
             top: 'calc(var(--topbar-h) + 8px)',
-            right: 20,
-            width: 400,
+            right: 8,
+            width: 'min(400px, calc(100vw - 16px))',
             maxHeight: 'calc(100vh - var(--topbar-h) - 24px)',
             background: '#fff',
             borderRadius: 16,
@@ -463,7 +451,7 @@ function NotificationBell({ navigate }) {
           {/* ── Header ── */}
           <div style={{
             padding: '16px 18px 14px',
-            background: 'linear-gradient(135deg, #1E3A8A 0%, #2563EB 100%)',
+            background: 'linear-gradient(135deg, #1C1917 0%, #2E2A27 100%)',
             flexShrink: 0,
           }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -623,8 +611,14 @@ function NotificationBell({ navigate }) {
 
 /* ── AvatarMenu ──────────────────────────────────────────────────────────── */
 function AvatarMenu({ user, roleInfo, onLogout, navigate }) {
-  const [open, setOpen] = useState(false)
+  const [open, setOpen]       = useState(false)
+  const [isSmall, setIsSmall] = useState(() => window.innerWidth < 480)
   const ref = useRef(null)
+  useEffect(() => {
+    const check = () => setIsSmall(window.innerWidth < 480)
+    window.addEventListener('resize', check)
+    return () => window.removeEventListener('resize', check)
+  }, [])
 
   useEffect(() => {
     const h = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false) }
@@ -650,18 +644,20 @@ function AvatarMenu({ user, roleInfo, onLogout, navigate }) {
       >
         <div
           className="w-[30px] h-[30px] rounded-full shrink-0 flex items-center justify-center text-white font-bold text-[11px]"
-          style={{ background: 'linear-gradient(135deg, #3B82F6, #1D4ED8)' }}
+          style={{ background: 'linear-gradient(135deg, #C9A84C, #8A6B1E)' }}
         >
           {initials}
         </div>
-        <div className="text-left">
-          <div className="font-semibold text-[13px] leading-[1.2]" style={{ color: '#fff' }}>
-            {user?.prenom} {user?.nom}
+        {!isSmall && (
+          <div className="text-left">
+            <div className="font-semibold text-[13px] leading-[1.2]" style={{ color: '#fff' }}>
+              {user?.prenom} {user?.nom}
+            </div>
+            <div className="text-[11px] mt-[1px]" style={{ color: 'rgba(255,255,255,.6)' }}>
+              {user?.email}
+            </div>
           </div>
-          <div className="text-[11px] mt-[1px]" style={{ color: 'rgba(255,255,255,.6)' }}>
-            {user?.email}
-          </div>
-        </div>
+        )}
         <ChevronDown
           size={13}
           strokeWidth={2.5}
@@ -683,7 +679,7 @@ function AvatarMenu({ user, roleInfo, onLogout, navigate }) {
             <div className="text-[12px] text-[#6B7280] mb-[6px]">
               {user?.email}
             </div>
-            <span className="inline-block text-[10px] font-bold px-2 py-[2px] rounded-[20px] bg-[#EFF6FF] text-[#1D4ED8] tracking-[.3px]">
+            <span className="inline-block text-[10px] font-bold px-2 py-[2px] rounded-[20px] tracking-[.3px]" style={{ background: '#FEF9EC', color: '#78350F', border: '1px solid #F3D07A' }}>
               {roleInfo?.label || user?.role}
             </span>
           </div>

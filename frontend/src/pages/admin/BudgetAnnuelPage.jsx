@@ -224,7 +224,7 @@ function AllocationsPanel({ budgetAnnuel, onRefresh }) {
       {/* Header panel */}
       <div
         className="rounded-[var(--radius-lg)] px-6 py-5 mb-5 text-white relative overflow-hidden"
-        style={{ background: 'linear-gradient(160deg, #0F2547 0%, #1E3A8A 60%, #1D4ED8 100%)' }}
+        style={{ background: 'linear-gradient(160deg, #1C1917 0%, #252120 60%, #2E2A27 100%)' }}
       >
         <div className="absolute rounded-full pointer-events-none" style={{ top: -30, right: -30, width: 140, height: 140, background: 'rgba(255,255,255,.05)' }} />
         <div className="relative">
@@ -251,9 +251,9 @@ function AllocationsPanel({ budgetAnnuel, onRefresh }) {
           {/* KPIs inline */}
           <div className="grid grid-cols-3 gap-[10px]">
             {[
-              { label: 'Global',  value: fmt(budgetAnnuel.montant_global), color: '#93C5FD' },
-              { label: 'Alloué',  value: fmt(totalAlloue),                 color: '#FCD34D' },
-              { label: 'Restant', value: fmt(disponible),                  color: disponible < 0 ? '#FCA5A5' : '#6EE7B7' },
+              { label: 'Global',  value: fmt(budgetAnnuel.montant_global), color: '#FFFFFF' },
+              { label: 'Alloué',  value: fmt(totalAlloue),                 color: 'rgba(255,255,255,.65)' },
+              { label: 'Restant', value: fmt(disponible),                  color: disponible < 0 ? '#EF4444' : '#22C55E' },
             ].map(k => (
               <div key={k.label} className="rounded-[9px] px-[14px] py-[10px]" style={{ background: 'rgba(255,255,255,.08)' }}>
                 <div className="text-[10px] opacity-65 uppercase tracking-[.5px] mb-1">{k.label}</div>

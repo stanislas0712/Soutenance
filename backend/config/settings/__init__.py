@@ -112,6 +112,27 @@ STATICFILES_DIRS = [
 # Default primary key field type
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
+# ── Hashage Argon2 (recommandé OWASP) ─────────────────────────────────────────
+PASSWORD_HASHERS = [
+    'django.contrib.auth.hashers.Argon2PasswordHasher',
+    'django.contrib.auth.hashers.PBKDF2PasswordHasher',   # fallback pour anciens hash
+]
+
+# ── Sécurité — toujours actifs ────────────────────────────────────────────────
+SECURE_CONTENT_TYPE_NOSNIFF = True   # empêche MIME-sniffing (XSS)
+X_FRAME_OPTIONS             = 'DENY' # clickjacking
+SECURE_BROWSER_XSS_FILTER   = True   # header X-XSS-Protection
+
+# ── Sécurité — uniquement en production (HTTPS) ───────────────────────────────
+if not DEBUG:
+    SECURE_SSL_REDIRECT              = True
+    SECURE_HSTS_SECONDS              = 31_536_000  # 1 an
+    SECURE_HSTS_INCLUDE_SUBDOMAINS   = True
+    SECURE_HSTS_PRELOAD              = True
+    SESSION_COOKIE_SECURE            = True
+    CSRF_COOKIE_SECURE               = True
+    SECURE_PROXY_SSL_HEADER          = ('HTTP_X_FORWARDED_PROTO', 'https')
+
 # Modèle utilisateur personnalisé
 AUTH_USER_MODEL = 'accounts.Utilisateur'
 
@@ -133,8 +154,11 @@ REST_FRAMEWORK = {
 
 # Simple JWT
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),
+    'ACCESS_TOKEN_LIFETIME':  timedelta(hours=8),
     'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
+    'ALGORITHM': 'HS256',
+    'AUTH_HEADER_TYPES': ('Bearer',),
+    'UPDATE_LAST_LOGIN': False,
 }
 
 
@@ -213,6 +237,18 @@ LOGGING = {
 SKIP_CLAUDE_API = os.getenv('SKIP_CLAUDE_API', 'True').lower() in ('true', '1', 'yes')
 ANTHROPIC_API_KEY = os.getenv('ANTHROPIC_API_KEY', '')
 
+# ── Email / SMTP ───────────────────────────────────────────────────────────────
+EMAIL_BACKEND      = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST         = os.getenv('EMAIL_HOST', 'smtp.gmail.com')
+EMAIL_PORT         = int(os.getenv('EMAIL_PORT', 587))
+EMAIL_USE_TLS      = os.getenv('EMAIL_USE_TLS', 'True') == 'True'
+EMAIL_HOST_USER    = os.getenv('EMAIL_HOST_USER', '')
+EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD', '')
+DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', f'BudgetFlow <{os.getenv("EMAIL_HOST_USER", "noreply@budgetflow.bf")}>')
+
+# URL du frontend React (utilisé dans les liens des emails)
+FRONTEND_URL = os.getenv('FRONTEND_URL', 'http://localhost:5173')
+
 # ─── Jazzmin ──────────────────────────────────────────────────────────────────
 JAZZMIN_SETTINGS = {
     # Branding
@@ -244,7 +280,8 @@ JAZZMIN_SETTINGS = {
                 {'name': 'Budgets annuels',  'url': 'admin:budget_budgetannuel_changelist'},
                 {'name': 'Allocations',      'url': 'admin:budget_allocationdepartementale_changelist'},
                 {'name': 'Budgets',          'url': 'admin:budget_budget_changelist'},
-                {'name': 'Lignes',           'url': 'admin:budget_lignebudgetaire_changelist'},
+                {'name': 'Lignes budgétaires', 'url': 'admin:budget_lignebudgetaire_changelist'},
+                {'name': 'Dépenses',         'url': 'admin:budget_consommationligne_changelist'},
             ],
         },
         {'name': "Audit", 'url': 'admin:audit_logaudit_changelist'},
@@ -269,6 +306,7 @@ JAZZMIN_SETTINGS = {
         'budget.AllocationDepartementale',
         'budget.Budget',
         'budget.LigneBudgetaire',
+        'budget.ConsommationLigne',
         'audit',
         'audit.LogAudit',
     ],
@@ -279,16 +317,17 @@ JAZZMIN_SETTINGS = {
 
     # Icônes FontAwesome
     'icons': {
-        'accounts':                         'fas fa-users-cog',
-        'accounts.Utilisateur':             'fas fa-user-tie',
-        'accounts.Departement':             'fas fa-building',
-        'budget':                           'fas fa-chart-line',
-        'budget.BudgetAnnuel':              'fas fa-calendar-alt',
-        'budget.AllocationDepartementale':  'fas fa-wallet',
-        'budget.Budget':                    'fas fa-file-invoice-dollar',
-        'budget.LigneBudgetaire':           'fas fa-list-ul',
-        'audit':                            'fas fa-shield-alt',
-        'audit.LogAudit':                   'fas fa-history',
+        'accounts':                              'fas fa-users-cog',
+        'accounts.Utilisateur':                  'fas fa-user-tie',
+        'accounts.Departement':                  'fas fa-building',
+        'budget':                                'fas fa-chart-line',
+        'budget.BudgetAnnuel':                   'fas fa-calendar-alt',
+        'budget.AllocationDepartementale':       'fas fa-wallet',
+        'budget.Budget':                         'fas fa-file-invoice-dollar',
+        'budget.LigneBudgetaire':                'fas fa-list-ul',
+        'budget.ConsommationLigne':              'fas fa-receipt',
+        'audit':                                 'fas fa-shield-alt',
+        'audit.LogAudit':                        'fas fa-history',
     },
     'default_icon_parents':  'fas fa-folder-open',
     'default_icon_children': 'fas fa-circle',
@@ -301,11 +340,15 @@ JAZZMIN_SETTINGS = {
     },
 
     # UI
-    'related_modal_active': True,
+    'related_modal_active':  True,
     'use_google_fonts_cdn':  False,
     'show_ui_builder':       False,
     'language_chooser':      False,
     'changeform_format':     'horizontal_tabs',
+    'show_recent_actions':   True,
+
+    # CSS personnalisé BudgetFlow
+    'custom_css': 'jazzmin/css/custom.css',
 }
 
 JAZZMIN_UI_TWEAKS = {
@@ -325,8 +368,8 @@ JAZZMIN_UI_TWEAKS = {
     'sidebar_nav_legacy_style':   False,
     'sidebar_nav_flat_style':     False,
 
-    # Thème — flatly = moderne, propre, professionnel
-    'theme':           'flatly',
+    # Thème base propre, le CSS custom fait la charte ink×gold
+    'theme':           'litera',
     'dark_mode_theme': None,
 
     # Layout

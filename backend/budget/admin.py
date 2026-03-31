@@ -1,5 +1,6 @@
 from django.contrib import admin
-from .models import BudgetAnnuel, AllocationDepartementale, Budget, LigneBudgetaire
+from django.utils.html import format_html
+from .models import BudgetAnnuel, AllocationDepartementale, Budget, LigneBudgetaire, ConsommationLigne
 
 
 class AllocationInline(admin.TabularInline):
@@ -45,3 +46,37 @@ class LigneBudgetaireAdmin(admin.ModelAdmin):
     list_display    = ['budget', 'libelle', 'section', 'montant_alloue', 'montant_consomme', 'montant_disponible']
     list_filter     = ['section', 'budget']
     readonly_fields = ['montant_alloue', 'montant_disponible', 'date_creation']
+
+
+@admin.register(ConsommationLigne)
+class ConsommationLigneAdmin(admin.ModelAdmin):
+    list_display    = ['reference', 'ligne_budget', 'montant', 'statut_badge', 'enregistre_par', 'validateur', 'date']
+    list_filter     = ['statut', 'date']
+    search_fields   = ['reference', 'ligne__budget__code', 'ligne__budget__nom', 'enregistre_par__nom', 'enregistre_par__prenom']
+    readonly_fields = ['reference', 'date']
+    ordering        = ['-date']
+
+    @admin.display(description='Budget / Ligne')
+    def ligne_budget(self, obj):
+        if obj.ligne and obj.ligne.budget:
+            return format_html(
+                '<span style="font-weight:600">{}</span> — {}',
+                obj.ligne.budget.code, obj.ligne.libelle
+            )
+        return '—'
+
+    @admin.display(description='Statut')
+    def statut_badge(self, obj):
+        colors = {
+            'SAISIE':  ('#FEF3C7', '#D97706'),
+            'VALIDEE': ('#F0FDF4', '#16A34A'),
+            'REJETEE': ('#FEF2F2', '#DC2626'),
+        }
+        bg, color = colors.get(obj.statut, ('#F3F4F6', '#6B7280'))
+        return format_html(
+            '<span style="background:{};color:{};padding:2px 10px;border-radius:99px;font-size:11px;font-weight:700">{}</span>',
+            bg, color, obj.statut
+        )
+
+    def has_add_permission(self, request):
+        return False

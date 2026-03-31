@@ -69,7 +69,7 @@ export default function Footer() {
   const currentYear = new Date().getFullYear()
 
   return (
-    <footer className="bg-[#0F172A] text-gray-400 py-16 px-6" aria-label="Pied de page">
+    <footer className="text-gray-400 py-16 px-6" style={{ background: '#1C1917' }} aria-label="Pied de page">
       <div className="max-w-6xl mx-auto">
         {/* Top grid */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-12 pb-12 border-b border-gray-800">
@@ -77,10 +77,10 @@ export default function Footer() {
           <div className="col-span-2 md:col-span-1">
             {/* Logo */}
             <div className="flex items-center gap-2.5 mb-4">
-              <div className="rounded-xl bg-blue-600 w-9 h-9 flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
+              <div className="rounded-xl w-9 h-9 flex items-center justify-center text-white font-bold text-sm flex-shrink-0" style={{ background: 'linear-gradient(135deg, #C9A84C, #8A6B1E)' }}>
                 B
               </div>
-              <span className="text-lg font-bold text-white tracking-tight">
+              <span className="text-lg font-bold text-white tracking-tight" style={{ fontFamily: 'Lora, Georgia, serif' }}>
                 Budget<span className="font-extrabold">Flow</span>
               </span>
             </div>
@@ -97,7 +97,7 @@ export default function Footer() {
                 <a
                   key={label}
                   href={href}
-                  className="w-9 h-9 rounded-lg bg-gray-800 hover:bg-blue-600 text-gray-400 hover:text-white flex items-center justify-center transition-colors no-underline border border-gray-700 hover:border-blue-600"
+                  className="w-9 h-9 rounded-lg text-gray-400 hover:text-white flex items-center justify-center transition-colors no-underline" style={{ background: 'rgba(255,255,255,.07)', border: '1px solid rgba(255,255,255,.1)' }}
                   aria-label={label}
                   role="listitem"
                 >

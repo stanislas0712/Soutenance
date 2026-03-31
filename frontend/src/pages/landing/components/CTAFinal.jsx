@@ -13,11 +13,11 @@ export default function CTAFinal() {
   return (
     <div
       className="py-20 px-6 relative overflow-hidden"
-      style={{ background: 'linear-gradient(160deg, #EFF6FF 0%, #DBEAFE 50%, #EFF6FF 100%)' }}
+      style={{ background: 'linear-gradient(160deg, #F5F0E8 0%, #EDE9E3 50%, #F5F0E8 100%)' }}
     >
       {/* Déco */}
-      <div className="absolute top-0 left-0 w-64 h-64 rounded-full -translate-x-1/2 -translate-y-1/2 pointer-events-none" style={{ background: 'rgba(59,130,246,.06)' }} />
-      <div className="absolute bottom-0 right-0 w-80 h-80 rounded-full translate-x-1/2 translate-y-1/2 pointer-events-none" style={{ background: 'rgba(37,99,235,.05)' }} />
+      <div className="absolute top-0 left-0 w-64 h-64 rounded-full -translate-x-1/2 -translate-y-1/2 pointer-events-none" style={{ background: 'rgba(201,168,76,.06)' }} />
+      <div className="absolute bottom-0 right-0 w-80 h-80 rounded-full translate-x-1/2 translate-y-1/2 pointer-events-none" style={{ background: 'rgba(201,168,76,.04)' }} />
 
       <div
         ref={ref}
@@ -29,10 +29,10 @@ export default function CTAFinal() {
 
           {/* Texte gauche */}
           <div style={{ flex: '1 1 380px' }}>
-            <p style={{ fontSize: 12, fontWeight: 700, color: '#2563EB', textTransform: 'uppercase', letterSpacing: '.8px', marginBottom: 14 }}>
+            <p style={{ fontSize: 12, fontWeight: 700, color: '#B8973F', textTransform: 'uppercase', letterSpacing: '.8px', marginBottom: 14 }}>
               Prêt à commencer ?
             </p>
-            <h2 style={{ fontSize: 'clamp(1.6rem, 2.8vw, 2.2rem)', fontWeight: 900, color: '#1E3A8A', lineHeight: 1.2, letterSpacing: '-.03em', marginBottom: 16 }}>
+            <h2 style={{ fontSize: 'clamp(1.6rem, 2.8vw, 2.2rem)', fontWeight: 700, color: '#1C1917', lineHeight: 1.2, letterSpacing: '-.02em', marginBottom: 16, fontFamily: 'Lora, Georgia, serif' }}>
               Accédez à votre espace<br />de gestion budgétaire
             </h2>
             <p style={{ fontSize: 15, color: '#4B5563', lineHeight: 1.7, marginBottom: 28 }}>
@@ -44,14 +44,14 @@ export default function CTAFinal() {
               href="/login"
               style={{
                 display: 'inline-flex', alignItems: 'center', gap: 9,
-                background: 'linear-gradient(135deg, #2563EB, #1D4ED8)',
-                color: '#fff', fontWeight: 700, fontSize: 15,
+                background: 'linear-gradient(135deg, #292524, #1C1917)',
+                color: '#FAF7F2', fontWeight: 700, fontSize: 15,
                 padding: '14px 32px', borderRadius: 12, textDecoration: 'none',
-                boxShadow: '0 4px 18px rgba(37,99,235,.3)',
+                boxShadow: '0 4px 18px rgba(28,25,23,.25)',
                 transition: 'transform .2s, box-shadow .2s',
               }}
-              onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 8px 28px rgba(37,99,235,.4)' }}
-              onMouseLeave={e => { e.currentTarget.style.transform = ''; e.currentTarget.style.boxShadow = '0 4px 18px rgba(37,99,235,.3)' }}
+              onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 8px 28px rgba(28,25,23,.35)' }}
+              onMouseLeave={e => { e.currentTarget.style.transform = ''; e.currentTarget.style.boxShadow = '0 4px 18px rgba(28,25,23,.25)' }}
             >
               Se connecter <ArrowRight size={16} strokeWidth={2.5} />
             </a>
@@ -63,13 +63,13 @@ export default function CTAFinal() {
               <div key={text} style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
                 <div style={{
                   width: 42, height: 42, borderRadius: 11, flexShrink: 0,
-                  background: '#fff', border: '1.5px solid #BFDBFE',
+                  background: '#FEFCF9', border: '1.5px solid #E7E5E4',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  boxShadow: '0 2px 8px rgba(37,99,235,.08)',
+                  boxShadow: '0 2px 8px rgba(28,25,23,.06)',
                 }}>
-                  <Icon size={18} strokeWidth={2} color="#2563EB" />
+                  <Icon size={18} strokeWidth={2} color="#B8973F" />
                 </div>
-                <span style={{ fontSize: 14, color: '#1E3A8A', fontWeight: 600 }}>{text}</span>
+                <span style={{ fontSize: 14, color: '#1C1917', fontWeight: 600 }}>{text}</span>
               </div>
             ))}
           </div>

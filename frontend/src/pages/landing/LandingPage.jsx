@@ -18,7 +18,7 @@ export default function LandingPage() {
   }, [])
 
   return (
-    <div style={{ fontFamily: 'Roboto, system-ui, sans-serif', background: '#fff', color: '#111827', overflowX: 'hidden' }}>
+    <div style={{ fontFamily: "'DM Sans', system-ui, sans-serif", background: '#FEFCF9', color: '#1C1917', overflowX: 'hidden' }}>
       <Navbar />
       <main>
         <Hero />

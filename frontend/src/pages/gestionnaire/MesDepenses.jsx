@@ -32,6 +32,7 @@ export default function MesDepenses() {
   const [filtre,       setFiltre]       = useState('')
   const [search,       setSearch]       = useState('')
   const [detailModal,  setDetailModal]  = useState(null)
+  const [visibleCount, setVisibleCount] = useState(10)
 
   const [allDepenses, setAllDepenses] = useState([])
 
@@ -64,7 +65,7 @@ export default function MesDepenses() {
   }
 
   const q = search.trim().toLowerCase()
-  const visible = q
+  const filtered = q
     ? depenses.filter(d =>
         d.reference?.toLowerCase().includes(q) ||
         d.budget_reference?.toLowerCase().includes(q) ||
@@ -72,6 +73,8 @@ export default function MesDepenses() {
         d.note?.toLowerCase().includes(q)
       )
     : depenses
+  const visible = filtered.slice(0, visibleCount)
+  const hasMore = visibleCount < filtered.length
 
   return (
     <div>
@@ -146,7 +149,7 @@ export default function MesDepenses() {
           <input
             className="search-input"
             value={search}
-            onChange={e => setSearch(e.target.value)}
+            onChange={e => { setSearch(e.target.value); setVisibleCount(10) }}
             placeholder="Rechercher référence, budget, ligne…"
           />
         </div>
@@ -154,7 +157,7 @@ export default function MesDepenses() {
           {FILTRES.map(f => (
             <button
               key={f.key}
-              onClick={() => setFiltre(f.key)}
+              onClick={() => { setFiltre(f.key); setVisibleCount(10) }}
               className={`filter-pill${filtre === f.key ? ' active' : ''}`}
             >
               {f.label}
@@ -170,7 +173,7 @@ export default function MesDepenses() {
           ))}
           {(filtre || search) && (
             <button
-              onClick={() => { setFiltre(''); setSearch('') }}
+              onClick={() => { setFiltre(''); setSearch(''); setVisibleCount(10) }}
               className="btn btn-secondary btn-sm"
               style={{ gap: 5, marginLeft: 4 }}
             >
@@ -198,7 +201,7 @@ export default function MesDepenses() {
           <div className="spinner" style={{ margin: '0 auto 12px' }} />
           <p style={{ fontSize: '13px', color: 'var(--color-gray-400)' }}>Chargement…</p>
         </div>
-      ) : visible.length === 0 ? (
+      ) : filtered.length === 0 ? (
         <div className="empty-state">
           <div className="empty-icon">
             <CreditCard size={28} strokeWidth={1.5} style={{ color: 'var(--color-gray-400)' }} />
@@ -279,6 +282,25 @@ export default function MesDepenses() {
         <DepenseDetailModal dep={detailModal} onClose={() => setDetailModal(null)} />
       )}
 
+      {/* Charger plus */}
+      {!loading && hasMore && (
+        <div className="flex flex-col items-center gap-[6px] mt-[20px]">
+          <button
+            onClick={() => setVisibleCount(c => c + 10)}
+            className="btn btn-secondary btn-md gap-[7px]"
+            style={{ minWidth: 180 }}
+          >
+            Charger plus
+            <span style={{ background: 'var(--color-gray-200)', color: 'var(--color-gray-600)', fontSize: '11px', padding: '1px 7px', borderRadius: 8, fontWeight: 700, fontFamily: 'var(--font-mono)' }}>
+              +{Math.min(10, filtered.length - visibleCount)}
+            </span>
+          </button>
+          <p style={{ fontSize: '11px', color: 'var(--color-gray-400)' }}>
+            {visibleCount} sur {filtered.length} dépenses affichées
+          </p>
+        </div>
+      )}
+
       {/* Info */}
       {!loading && visible.length > 0 && (
         <div style={{
@@ -348,11 +370,19 @@ function DepenseDetailModal({ dep, onClose }) {
         <div style={{ padding: '22px 28px', display: 'flex', flexDirection: 'column', gap: 0 }}>
 
           {/* Grille infos */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px 32px', marginBottom: 20 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(220px,100%), 1fr))', gap: '16px 32px', marginBottom: 20 }}>
             <InfoFieldG icon={<Tag size={13} />}      label="Référence"         value={dep.reference} mono />
             <InfoFieldG icon={<Building2 size={13} />} label="Budget"           value={`${dep.budget_reference}${dep.budget_nom && dep.budget_nom !== '—' ? ` — ${dep.budget_nom}` : ''}`} />
             <InfoFieldG icon={<Receipt size={13} />}   label="Ligne budgétaire" value={dep.ligne_designation} />
             <InfoFieldG icon={<Calendar size={13} />}  label="Date"             value={fmtD(dep.date_depense)} mono />
+            <InfoFieldG icon={<User size={13} />}      label="Saisi par"        value={dep.enregistre_par} />
+            {dep.validateur_nom && (
+              <InfoFieldG
+                icon={<User size={13} />}
+                label={dep.statut === 'REJETEE' ? 'Rejeté par' : 'Validé par'}
+                value={dep.validateur_nom}
+              />
+            )}
             {dep.fournisseur && dep.fournisseur !== '—' && (
               <InfoFieldG icon={<User size={13} />} label="Fournisseur" value={dep.fournisseur} />
             )}

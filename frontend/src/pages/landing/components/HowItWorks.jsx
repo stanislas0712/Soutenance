@@ -118,7 +118,7 @@ export default function HowItWorks() {
             headerVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'
           }`}
         >
-          <p className="text-sm font-semibold text-blue-600 uppercase tracking-widest mb-4">
+          <p className="text-sm font-semibold uppercase tracking-widest mb-4" style={{ color: '#B8973F' }}>
             Comment ça marche
           </p>
           <h2 id="how-it-works-title" className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-4 tracking-tight">

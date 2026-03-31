@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
+import { useAuth } from '../../context/AuthContext'
 import {
   getBudget, deleteBudget, consommerLigne, updateBudget, soumettrebudget,
   effectuerVirement, getLignesSelecteur,
@@ -27,6 +28,7 @@ const jaugeColor = (taux) => {
 export default function BudgetDetail({ basePath = '/mes-budgets' }) {
   const { id }   = useParams()
   const navigate = useNavigate()
+  const { isAdmin } = useAuth()
 
   const [budget,    setBudget]    = useState(null)
   const [loading,   setLoading]   = useState(true)
@@ -127,7 +129,7 @@ export default function BudgetDetail({ basePath = '/mes-budgets' }) {
   }
   const handleDepense = async (e) => {
     e.preventDefault()
-    if (!depForm.file)     { setDepError('La pièce justificative est obligatoire.'); return }
+    // pièce justificative recommandée mais non bloquante
     if (!depForm.ligne_id) { setDepError('Sélectionnez une ligne budgétaire.'); return }
     setDepSaving(true); setDepError('')
     try {
@@ -222,10 +224,10 @@ export default function BudgetDetail({ basePath = '/mes-budgets' }) {
         </div>
 
         <div style={{
-          background: 'linear-gradient(160deg, #0F2547 0%, #1E3A8A 60%, #1D4ED8 100%)',
+          background: 'linear-gradient(160deg, #1C1917 0%, #252120 60%, #2E2A27 100%)',
           borderRadius: 'var(--radius-lg)', padding: '24px 28px',
           color: '#fff', position: 'relative', overflow: 'hidden',
-          boxShadow: '0 8px 28px rgba(30,58,138,.3)',
+          boxShadow: '0 8px 28px rgba(28,25,23,.4)',
         }}>
           <div style={{ position: 'absolute', top: -50, right: -50, width: 200, height: 200, borderRadius: '50%', background: 'rgba(255,255,255,.05)' }} />
           <div style={{ position: 'absolute', bottom: -30, right: 80, width: 120, height: 120, borderRadius: '50%', background: 'rgba(255,255,255,.04)' }} />
@@ -246,6 +248,20 @@ export default function BudgetDetail({ basePath = '/mes-budgets' }) {
               {budget.date_debut && ` · ${budget.date_debut} → ${budget.date_fin}`}
               {budget.annee && ` · Exercice ${budget.annee}`}
             </p>
+            <div style={{ display: 'flex', gap: 16, marginTop: 8, flexWrap: 'wrap' }}>
+              {budget.gestionnaire_detail && (
+                <span style={{ fontSize: '12px', opacity: .8, display: 'flex', alignItems: 'center', gap: 5 }}>
+                  <span style={{ opacity: .6 }}>Gestionnaire :</span>
+                  <strong>{budget.gestionnaire_detail.prenom} {budget.gestionnaire_detail.nom}</strong>
+                </span>
+              )}
+              {budget.comptable_detail && (
+                <span style={{ fontSize: '12px', opacity: .8, display: 'flex', alignItems: 'center', gap: 5 }}>
+                  <span style={{ opacity: .6 }}>{budget.statut === 'APPROUVE' ? 'Approuvé par :' : budget.statut === 'REJETE' ? 'Rejeté par :' : 'Traité par :'}</span>
+                  <strong>{budget.comptable_detail.prenom} {budget.comptable_detail.nom}</strong>
+                </span>
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -285,12 +301,12 @@ export default function BudgetDetail({ basePath = '/mes-budgets' }) {
       )}
 
       {/* ── Bandeaux de statut ───────────────────────────────────────────────── */}
-      {brouillon && !hasLignes && (
+      {!isAdmin && brouillon && !hasLignes && (
         <StatusBanner type="info" icon={<FileText size={15} strokeWidth={2} />}>
           Budget en brouillon — ajoutez au moins une ligne budgétaire pour pouvoir le soumettre.
         </StatusBanner>
       )}
-      {brouillon && hasLignes && (
+      {!isAdmin && brouillon && hasLignes && (
         <StatusBanner type="primary" icon={<Info size={15} strokeWidth={2} />}>
           Budget prêt — cliquez sur <strong>Soumettre</strong> pour l'envoyer en validation.
         </StatusBanner>
@@ -300,7 +316,7 @@ export default function BudgetDetail({ basePath = '/mes-budgets' }) {
           Budget soumis — en attente de validation par le comptable.
         </StatusBanner>
       )}
-      {approuve && (
+      {!isAdmin && approuve && (
         <StatusBanner type="success" icon={<CheckCircle2 size={15} strokeWidth={2} />}>
           Budget approuvé — enregistrez les dépenses réelles avec leurs pièces justificatives.
         </StatusBanner>
@@ -340,14 +356,14 @@ export default function BudgetDetail({ basePath = '/mes-budgets' }) {
         <div style={{ flex: 1, minWidth: 0 }}>
           <LignesBudgetaires
             budgetId={budget.id}
-            readOnly={!editable}
+            readOnly={isAdmin || !editable}
             onTotalChange={(total) => setHasLignes(total > 0)}
           />
         </div>
       </div>
 
       {/* ── Barre d'actions ──────────────────────────────────────────────────── */}
-      {(editable || approuve) && (
+      {!isAdmin && (editable || approuve) && (
         <div style={{
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
           marginTop: 20, padding: '14px 18px',
@@ -496,15 +512,16 @@ export default function BudgetDetail({ basePath = '/mes-budgets' }) {
             </div>
 
             <form onSubmit={handleDepense}>
-              {/* Corps — deux colonnes */}
+              {/* Corps — deux colonnes (stacked sur mobile) */}
               <div className="modal-body" style={{ padding: 0 }}>
-                <div style={{ display: 'flex', gap: 0 }}>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 0 }}>
 
                   {/* Colonne gauche — sélecteur de ligne */}
                   <div style={{
-                    flex: '1 1 55%', padding: '20px 20px',
+                    flex: '1 1 300px', padding: '20px 20px',
                     borderRight: '1px solid var(--color-gray-100)',
                     maxHeight: 480, overflowY: 'auto',
+                    minWidth: 0,
                   }}>
                     <label className="form-label" style={{ marginBottom: 10 }}>
                       Ligne budgétaire <span style={{ color: 'var(--color-danger-600)' }}>*</span>
@@ -518,7 +535,7 @@ export default function BudgetDetail({ basePath = '/mes-budgets' }) {
                   </div>
 
                   {/* Colonne droite — montant, note, pièce + boutons */}
-                  <div style={{ flex: '1 1 45%', padding: '20px 20px', display: 'flex', flexDirection: 'column', gap: 14 }}>
+                  <div style={{ flex: '1 1 260px', padding: '20px 20px', display: 'flex', flexDirection: 'column', gap: 14, minWidth: 0 }}>
 
                     <div>
                       <label className="form-label">Montant (FCFA) <span style={{ color: 'var(--color-danger-600)' }}>*</span></label>
@@ -542,7 +559,7 @@ export default function BudgetDetail({ basePath = '/mes-budgets' }) {
 
                     <div>
                       <label className="form-label">
-                        Pièce justificative <span style={{ color: 'var(--color-danger-600)' }}>*</span>
+                        Pièce(s) justificative(s) <span style={{ color: 'var(--color-danger-600)' }}>*</span>
                       </label>
                       <div style={{
                         border: '1.5px dashed var(--color-gray-300)', borderRadius: 'var(--radius-md)',
@@ -551,32 +568,22 @@ export default function BudgetDetail({ basePath = '/mes-budgets' }) {
                       }}>
                         <Paperclip size={15} strokeWidth={2} style={{ color: 'var(--color-gray-400)', flexShrink: 0 }} />
                         <input
-                          type="file" required accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx"
-                          onChange={e => setDepForm(f => ({ ...f, file: e.target.files[0] || null }))}
+                          type="file"
+                          multiple
+                          accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx"
+                          onChange={e => {
+                            const files = Array.from(e.target.files)
+                            setDepForm(f => ({ ...f, file: files[0] || null, pieces: files.slice(1) }))
+                          }}
                           style={{ fontSize: '12px', flex: 1 }}
                         />
                       </div>
-                      <p className="form-hint">PDF, image, Word, Excel — pièce principale</p>
-                      <div style={{ marginTop: 10 }}>
-                        <label className="form-label">Pièces supplémentaires (optionnel)</label>
-                        <div style={{
-                          border: '1.5px dashed var(--color-gray-300)', borderRadius: 'var(--radius-md)',
-                          padding: '12px', display: 'flex', alignItems: 'center', gap: 10,
-                          background: 'var(--color-gray-50)',
-                        }}>
-                          <Paperclip size={15} strokeWidth={2} style={{ color: 'var(--color-gray-400)', flexShrink: 0 }} />
-                          <input
-                            type="file" multiple accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx"
-                            onChange={e => setDepForm(f => ({ ...f, pieces: Array.from(e.target.files) }))}
-                            style={{ fontSize: '12px', flex: 1 }}
-                          />
-                        </div>
-                        {depForm.pieces.length > 0 && (
-                          <ul style={{ marginTop: 4, fontSize: '11px', color: 'var(--color-gray-500)', listStyle: 'disc', paddingLeft: 16 }}>
-                            {depForm.pieces.map((f, i) => <li key={i}>{f.name}</li>)}
-                          </ul>
-                        )}
-                      </div>
+                      <p className="form-hint">PDF, image, Word, Excel — sélection multiple possible</p>
+                      {depForm.file && (
+                        <ul style={{ marginTop: 4, fontSize: '11px', color: 'var(--color-gray-500)', listStyle: 'disc', paddingLeft: 16 }}>
+                          {[depForm.file, ...depForm.pieces].map((f, i) => <li key={i}>{f.name}</li>)}
+                        </ul>
+                      )}
                     </div>
 
                     {depError && (
@@ -593,7 +600,7 @@ export default function BudgetDetail({ basePath = '/mes-budgets' }) {
                       </button>
                       <button
                         type="submit"
-                        disabled={depSaving || !depForm.file || !depForm.ligne_id || !depForm.montant}
+                        disabled={depSaving || !depForm.ligne_id || !depForm.montant}
                         className="btn btn-success btn-md" style={{ flex: 1, gap: 6 }}
                       >
                         {depSaving ? <><span className="spinner-sm" /> Enregistrement…</> : <><Check size={14} strokeWidth={2.5} /> Confirmer</>}

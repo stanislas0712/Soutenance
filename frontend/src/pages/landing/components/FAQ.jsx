@@ -59,13 +59,12 @@ function AccordionItem({ item, isOpen, onToggle, index, visible }) {
         aria-expanded={isOpen}
         aria-controls={`faq-answer-${index}`}
       >
-        <span className={`font-medium ${isOpen ? 'text-blue-600' : 'text-gray-900'} transition-colors duration-200 pr-4`}>
+        <span className={`font-medium transition-colors duration-200 pr-4`} style={{ color: isOpen ? '#B8973F' : '#1C1917' }}>
           {item.question}
         </span>
         <ChevronDown
-          className={`w-5 h-5 flex-shrink-0 transition-transform duration-200 ${
-            isOpen ? 'rotate-180 text-blue-600' : 'text-gray-400'
-          }`}
+          className="w-5 h-5 flex-shrink-0 transition-transform duration-200"
+          style={{ transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)', color: isOpen ? '#B8973F' : '#9CA3AF' }}
           aria-hidden="true"
         />
       </button>
@@ -97,7 +96,7 @@ export default function FAQ() {
             visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'
           }`}
         >
-          <p className="text-sm font-semibold text-blue-600 uppercase tracking-widest mb-4">
+          <p className="text-sm font-semibold uppercase tracking-widest mb-4" style={{ color: '#B8973F' }}>
             FAQ
           </p>
           <h2 id="faq-title" className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-4 tracking-tight">
@@ -126,7 +125,7 @@ export default function FAQ() {
         <div className="text-center mt-10 p-6 bg-slate-50 rounded-2xl border border-gray-100">
           <p className="text-sm text-gray-500">
             Vous ne trouvez pas la réponse à votre question ?{' '}
-            <a href="/" className="text-blue-600 font-semibold hover:text-blue-700 no-underline transition-colors">
+            <a href="/" className="font-semibold no-underline transition-colors" style={{ color: '#B8973F' }}>
               Contactez notre équipe support
             </a>{' '}
             — nous répondons en moins de 2 heures en jours ouvrés.

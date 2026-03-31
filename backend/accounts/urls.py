@@ -13,8 +13,14 @@ urlpatterns = [
     path('utilisateurs/', views.UtilisateurListCreateView.as_view(), name='utilisateur-list'),
     path('utilisateurs/<uuid:pk>/', views.UtilisateurDetailView.as_view(), name='utilisateur-detail'),
     path('utilisateurs/<uuid:pk>/reset-password/', views.AdminResetPasswordView.as_view(), name='admin-reset-password'),
+    path('utilisateurs/<uuid:pk>/debloquer/',      views.DebloquerUtilisateurView.as_view(), name='utilisateur-debloquer'),
+    path('utilisateurs/<uuid:pk>/activite/',       views.UtilisateurActiviteView.as_view(), name='utilisateur-activite'),
 
     # Départements (admin)
     path('departements/', views.DepartementListCreateView.as_view(), name='departement-list'),
     path('departements/<uuid:pk>/', views.DepartementDetailView.as_view(), name='departement-detail'),
+
+    # Mot de passe oublié (public)
+    path('forgot-password/', views.ForgotPasswordView.as_view(), name='forgot-password'),
+    path('reset-password/', views.ResetPasswordConfirmView.as_view(), name='reset-password-confirm'),
 ]

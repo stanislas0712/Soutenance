@@ -18,9 +18,10 @@ class UtilisateurSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'matricule', 'email', 'nom', 'prenom', 'photo',
             'role', 'role_display', 'departement', 'departement_detail',
-            'actif', 'date_creation', 'derniere_connexion',
+            'actif', 'bloque', 'tentatives_connexion',
+            'date_creation', 'derniere_connexion',
         ]
-        read_only_fields = ['id', 'date_creation', 'derniere_connexion']
+        read_only_fields = ['id', 'date_creation', 'derniere_connexion', 'bloque', 'tentatives_connexion']
 
 
 class CreerUtilisateurSerializer(serializers.ModelSerializer):

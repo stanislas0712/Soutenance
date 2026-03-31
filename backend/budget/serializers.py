@@ -192,6 +192,7 @@ class BudgetListSerializer(serializers.ModelSerializer):
     departement_detail  = DepartementSerializer(source='departement', read_only=True)
     departement_nom     = serializers.CharField(source='departement.nom', read_only=True, default=None)
     gestionnaire_nom    = serializers.SerializerMethodField()
+    comptable_nom       = serializers.SerializerMethodField()
     taux_consommation   = serializers.SerializerMethodField()
     niveau_alerte       = serializers.CharField(source='verifier_seuil_alerte', read_only=True)
     annee               = serializers.SerializerMethodField()
@@ -211,7 +212,7 @@ class BudgetListSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'code', 'nom',
             'departement', 'departement_detail', 'departement_nom',
-            'gestionnaire_nom', 'annee', 'periode_display',
+            'gestionnaire_nom', 'comptable_nom', 'annee', 'periode_display',
             'montant_global', 'montant_consomme', 'montant_disponible',
             'montant_global_fmt', 'montant_consomme_fmt', 'montant_disponible_fmt',
             'statut', 'statut_display', 'statut_config', 'niveau_alerte',
@@ -235,6 +236,11 @@ class BudgetListSerializer(serializers.ModelSerializer):
     def get_gestionnaire_nom(self, obj):
         if obj.gestionnaire:
             return f"{obj.gestionnaire.prenom} {obj.gestionnaire.nom}"
+        return None
+
+    def get_comptable_nom(self, obj):
+        if obj.comptable:
+            return f"{obj.comptable.prenom} {obj.comptable.nom}"
         return None
 
     def get_montant_global_fmt(self, obj):

@@ -11,7 +11,7 @@ import {
 } from 'recharts'
 import {
   ArrowRight, CheckCircle2, Clock,
-  Building2, TrendingUp, Wallet, ShieldAlert,
+  Building2, TrendingUp, Wallet, ShieldAlert, Users, Target,
 } from 'lucide-react'
 
 const fmt     = n => new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 0 }).format(parseFloat(n || 0))
@@ -120,25 +120,25 @@ export default function AdminDashboard() {
 
       {/* ── Hero header ───────────────────────────────────────────────────── */}
       <div style={{
-        background: 'linear-gradient(135deg, #0F2547 0%, #1E3A8A 55%, #2563EB 100%)',
+        background: 'linear-gradient(135deg, #1C1917 0%, #252120 55%, #2E2A27 100%)',
         borderRadius: 18, padding: '28px 32px', marginBottom: 24,
         position: 'relative', overflow: 'hidden',
-        boxShadow: '0 8px 32px rgba(13,27,62,.3)',
+        boxShadow: '0 8px 32px rgba(10,8,6,.35)',
       }}>
         {/* Decoration circles */}
-        <div style={{ position:'absolute', top:-60, right:-40, width:220, height:220, borderRadius:'50%', background:'rgba(99,102,241,.12)', pointerEvents:'none' }} />
-        <div style={{ position:'absolute', bottom:-40, right:140, width:140, height:140, borderRadius:'50%', background:'rgba(99,102,241,.08)', pointerEvents:'none' }} />
+        <div style={{ position:'absolute', top:-60, right:-40, width:220, height:220, borderRadius:'50%', background:'rgba(201,168,76,.07)', pointerEvents:'none' }} />
+        <div style={{ position:'absolute', bottom:-40, right:140, width:140, height:140, borderRadius:'50%', background:'rgba(201,168,76,.05)', pointerEvents:'none' }} />
 
         <div style={{ position:'relative', display:'flex', justifyContent:'space-between', alignItems:'flex-start', flexWrap:'wrap', gap:20 }}>
           <div>
-            <div style={{ fontSize:12, fontWeight:700, color:'rgba(165,180,252,.7)', letterSpacing:'.8px', textTransform:'uppercase', marginBottom:6 }}>
+            <div style={{ fontSize:12, fontWeight:700, color:'rgba(201,168,76,.6)', letterSpacing:'.8px', textTransform:'uppercase', marginBottom:6 }}>
               TABLEAU DE BORD ADMINISTRATEUR
             </div>
-            <h1 style={{ fontWeight:800, fontSize:'1.6rem', color:'#fff', letterSpacing:'-.03em', marginBottom:6 }}>
+            <h1 style={{ fontWeight:700, fontSize:'1.6rem', color:'#FAF7F2', letterSpacing:'-.02em', marginBottom:6, fontFamily:'Lora, Georgia, serif' }}>
               Gestion Budgétaire — Exercice {ba?.annee ?? new Date().getFullYear()}
             </h1>
-            <p style={{ fontSize:13, color:'rgba(255,255,255,.5)', marginBottom:0 }}>{now}</p>
-            <div style={{ display:'inline-flex', alignItems:'center', gap:5, background:'rgba(255,255,255,.12)', borderRadius:9999, padding:'3px 12px', border:'1px solid rgba(255,255,255,.2)', marginTop:6 }}>
+            <p style={{ fontSize:13, color:'rgba(255,255,255,.45)', marginBottom:0 }}>{now}</p>
+            <div style={{ display:'inline-flex', alignItems:'center', gap:5, background:'rgba(201,168,76,.12)', borderRadius:9999, padding:'3px 12px', border:'1px solid rgba(201,168,76,.25)', marginTop:6 }}>
               <div style={{ width:6, height:6, borderRadius:'50%', background:'#4ADE80' }} />
               <span style={{ fontSize:'11px', fontWeight:700, color:'rgba(255,255,255,.85)', letterSpacing:'.4px' }}>ADMINISTRATEUR</span>
             </div>
@@ -147,10 +147,10 @@ export default function AdminDashboard() {
           {/* Mini stats inline */}
           <div style={{ display:'flex', gap:24, flexWrap:'wrap' }}>
             {[
-              { label:'Budgets',    value: totalBudgets,    color:'#A5B4FC' },
-              { label:'Approuvés',  value: budgetsApprouves, color:'#6EE7B7' },
-              { label:'En attente', value: budgetsSoumis,    color:'#FDE68A' },
-              { label:'Rejetés',    value: budgetsRejetes,   color:'#FCA5A5' },
+              { label:'Budgets',    value: totalBudgets,     color:'#FFFFFF' },
+              { label:'Approuvés',  value: budgetsApprouves, color:'#22C55E' },
+              { label:'En attente', value: budgetsSoumis,    color:'rgba(255,255,255,.65)' },
+              { label:'Rejetés',    value: budgetsRejetes,   color:'#EF4444' },
             ].map(s => (
               <div key={s.label} style={{ textAlign:'center' }}>
                 <div style={{ fontWeight:800, fontSize:'1.6rem', color:s.color, lineHeight:1, letterSpacing:'-.04em' }}>{s.value}</div>
@@ -164,7 +164,7 @@ export default function AdminDashboard() {
         <div style={{ position:'relative', marginTop:24, paddingTop:18, borderTop:'1px solid rgba(255,255,255,.08)' }}>
           <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:8 }}>
             <span style={{ fontSize:12, color:'rgba(255,255,255,.5)', fontWeight:600 }}>Taux de consommation global</span>
-            <span style={{ fontSize:15, fontWeight:800, color: tauxGlobal >= 85 ? '#FCA5A5' : '#A5B4FC', fontFamily:'var(--font-mono)' }}>
+            <span style={{ fontSize:15, fontWeight:800, color: tauxGlobal >= 90 ? '#EF4444' : tauxGlobal >= 75 ? '#F97316' : '#22C55E', fontFamily:'var(--font-kpi)' }}>
               {tauxGlobal}%
             </span>
           </div>
@@ -172,7 +172,7 @@ export default function AdminDashboard() {
             <div style={{
               height:'100%', borderRadius:99,
               width:`${Math.min(tauxGlobal,100)}%`,
-              background:`linear-gradient(90deg, #6366F1, ${jaugeColor(tauxGlobal)})`,
+              background: tauxGlobal >= 90 ? '#EF4444' : tauxGlobal >= 75 ? '#F97316' : '#22C55E',
               transition:'width .7s ease',
             }} />
           </div>
@@ -186,45 +186,50 @@ export default function AdminDashboard() {
       {/* ── KPI grid ─────────────────────────────────────────────────────── */}
       <div className="kpi-grid">
         <KpiCard
-          icon="🏛️" label="Enveloppe annuelle"
-          value={`${fmt(enveloppeGlobale)} F`}
-          sub={`${fmt(enveloppeAllouee)} F alloués aux depts`}
-          color="var(--color-primary-600)" bgColor="var(--color-primary-50)"
+          icon={<Wallet size={22} strokeWidth={1.8} />}
+          label="Budget Total Alloué"
+          value={enveloppeGlobale >= 1e6 ? `${(enveloppeGlobale/1e6).toFixed(1)}M` : `${fmt(enveloppeGlobale)} F`}
+          trendText={`${fmt(enveloppeAllouee)} F alloués depts`}
+          color="#2563EB" bgColor="#DBEAFE"
           sparklineData={evolutionData.map(d => d.montant)}
         />
         <KpiCard
-          icon="✅" label="Budgets approuvés"
-          value={budgetsApprouves}
-          sub={`${Math.round(budgetsApprouves/Math.max(totalBudgets,1)*100)}% du total`}
-          color="var(--color-success-600)" bgColor="var(--color-success-50)"
+          icon={<TrendingUp size={22} strokeWidth={1.8} />}
+          label="Budget Consommé"
+          value={montantConsom >= 1e6 ? `${(montantConsom/1e6).toFixed(1)}M` : `${fmt(montantConsom)} F`}
+          trendText={`${Math.round(budgetsApprouves/Math.max(totalBudgets,1)*100)}% budgets approuvés`}
+          color="#7C3AED" bgColor="#EDE9FE"
           onClick={() => navigate('/budgets')}
-          sparklineData={evolutionData.map(d => d.budgets)}
-        />
-        <KpiCard
-          icon="⏳" label="En attente validation"
-          value={budgetsSoumis}
-          sub="À traiter en priorité"
-          color="var(--color-info-600)" bgColor="var(--color-info-50)"
-          onClick={() => navigate('/budgets')}
-        />
-        <KpiCard
-          icon="📊" label="Taux consommation"
-          value={`${tauxGlobal} %`}
-          sub={`${fmt(montantConsom)} FCFA utilisés`}
-          color={jaugeColor(tauxGlobal)} bgColor="var(--color-warning-50)"
           sparklineData={evolutionData.map(d => d.consomme)}
         />
         <KpiCard
-          icon="👥" label="Utilisateurs"
+          icon={<Clock size={22} strokeWidth={1.8} />}
+          label="Budgets En Attente"
+          value={budgetsSoumis}
+          trendText={budgetsSoumis > 0 ? `${budgetsSoumis} à valider` : 'Aucun en attente'}
+          color="#D97706" bgColor="#FEF3C7"
+          onClick={() => navigate('/budgets')}
+        />
+        <KpiCard
+          icon={<Target size={22} strokeWidth={1.8} />}
+          label="Taux Réalisation"
+          value={`${tauxGlobal}%`}
+          trendText={`${fmt(montantConsom)} FCFA utilisés`}
+          color="#16A34A" bgColor="#DCFCE7"
+          sparklineData={evolutionData.map(d => d.budgets)}
+        />
+        <KpiCard
+          icon={<Users size={22} strokeWidth={1.8} />}
+          label="Utilisateurs"
           value={users.length}
-          sub={`${users.filter(u=>u.role==='GESTIONNAIRE').length} gestionnaires`}
+          trendText={`${users.filter(u=>u.role==='GESTIONNAIRE').length} gestionnaires`}
           color="#7C3AED" bgColor="#F5F3FF"
           onClick={() => navigate('/utilisateurs')}
         />
       </div>
 
       {/* ── Charts ───────────────────────────────────────────────────────── */}
-      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:18, marginBottom:22 }}>
+      <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(min(300px,100%), 1fr))', gap:18, marginBottom:22 }}>
 
         {/* Consommation par département */}
         <div className="card" style={{ padding:'20px 24px' }}>
@@ -306,7 +311,7 @@ export default function AdminDashboard() {
       </div>
 
       {/* ── Action panels ────────────────────────────────────────────────── */}
-      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:18, marginBottom:22 }}>
+      <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(min(300px,100%), 1fr))', gap:18, marginBottom:22 }}>
 
         {/* Budgets en attente de validation */}
         <div className="card" style={{ overflow:'hidden' }}>

@@ -48,10 +48,10 @@ export default function Navbar() {
         <div className="max-w-7xl mx-auto px-6 h-full flex items-center justify-between gap-8">
           {/* Logo */}
           <a href="/" className="flex items-center gap-2.5 flex-shrink-0 no-underline" aria-label="BudgetFlow - Accueil">
-            <div className="rounded-xl bg-blue-600 w-9 h-9 flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
+            <div className="rounded-xl w-9 h-9 flex items-center justify-center text-white font-bold text-sm flex-shrink-0" style={{ background: 'linear-gradient(135deg, #C9A84C, #8A6B1E)' }}>
               B
             </div>
-            <span className="text-lg font-bold text-blue-600 tracking-tight">
+            <span className="text-lg font-bold tracking-tight" style={{ color: '#1C1917', fontFamily: 'Lora, Georgia, serif' }}>
               Budget<span className="font-extrabold">Flow</span>
             </span>
           </a>
@@ -62,7 +62,7 @@ export default function Navbar() {
               <a
                 key={link.href}
                 href={link.href}
-                className="text-sm font-medium text-gray-600 hover:text-blue-600 hover:bg-blue-50 px-3.5 py-2 rounded-lg transition-colors no-underline"
+                className="text-sm font-medium text-gray-600 hover:text-[#B8973F] hover:bg-[#FEF9EC] px-3.5 py-2 rounded-lg transition-colors no-underline"
                 onClick={(e) => handleNavClick(e, link.href)}
               >
                 {link.label}
@@ -74,7 +74,7 @@ export default function Navbar() {
           <div className="hidden md:flex items-center gap-2 flex-shrink-0">
             <a
               href="/login"
-              className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-5 py-2 rounded-lg transition-colors no-underline whitespace-nowrap"
+              className="text-white text-sm font-semibold px-5 py-2 rounded-lg transition-all no-underline whitespace-nowrap" style={{ background: 'linear-gradient(135deg, #292524, #1C1917)' }}
             >
               Accéder à la plateforme
             </a>
@@ -137,7 +137,7 @@ export default function Navbar() {
             <a
               key={link.href}
               href={link.href}
-              className="text-base font-medium text-gray-700 hover:text-blue-600 hover:bg-blue-50 px-4 py-3.5 rounded-xl transition-colors no-underline border-b border-gray-50 last:border-b-0"
+              className="text-base font-medium text-gray-700 hover:text-[#B8973F] hover:bg-[#FEF9EC] px-4 py-3.5 rounded-xl transition-colors no-underline border-b border-gray-50 last:border-b-0"
               onClick={(e) => handleNavClick(e, link.href)}
             >
               {link.label}
@@ -149,7 +149,7 @@ export default function Navbar() {
         <div className="flex flex-col gap-3 mt-6">
           <a
             href="/login"
-            className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-4 py-3 rounded-xl transition-colors no-underline text-center"
+            className="text-white text-sm font-semibold px-4 py-3 rounded-xl transition-all no-underline text-center" style={{ background: 'linear-gradient(135deg, #292524, #1C1917)' }}
           >
             Accéder à la plateforme
           </a>

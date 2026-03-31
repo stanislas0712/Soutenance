@@ -17,7 +17,7 @@ function StatItem({ prefix = '', end, suffix = '', label, sublabel = '', isStati
         visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-5'
       }`}
     >
-      <div className="text-4xl md:text-5xl font-extrabold text-blue-600 mb-2 tracking-tight">
+      <div className="text-4xl md:text-5xl font-extrabold mb-2 tracking-tight" style={{ color: '#B8973F', fontFamily: "'Syne', sans-serif" }}>
         {isStatic ? staticValue : `${prefix}${count}${suffix}`}
       </div>
       <div className="text-sm font-semibold text-gray-700 mb-1">{label}</div>

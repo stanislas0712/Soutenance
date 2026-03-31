@@ -33,7 +33,7 @@ export default function Hero() {
 
       <section
         className="pt-24 pb-16 px-6 overflow-hidden"
-        style={{ background: 'linear-gradient(180deg, #F0F9FF 0%, #ffffff 60%)' }}
+        style={{ background: 'linear-gradient(180deg, #F5F0E8 0%, #FEFCF9 60%)' }}
         aria-label="Section principale"
       >
         <div className="max-w-7xl mx-auto flex flex-col lg:flex-row items-center gap-16">
@@ -41,7 +41,7 @@ export default function Hero() {
           {/* Left column */}
           <div className="w-full lg:w-3/5 hero-left">
             {/* Badge */}
-            <div className="inline-flex items-center gap-2 bg-blue-50 text-blue-700 text-xs font-semibold px-4 py-2 rounded-full border border-blue-100 mb-6">
+            <div className="inline-flex items-center gap-2 text-xs font-semibold px-4 py-2 rounded-full mb-6" style={{ background: '#FEF9EC', color: '#78350F', border: '1px solid #F3D07A' }}>
               <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#10B981', display: 'inline-block', boxShadow: '0 0 5px #10B981' }} />
               Intelligence Artificielle intégrée
             </div>
@@ -49,7 +49,7 @@ export default function Hero() {
             {/* H1 */}
             <h1 className="text-4xl lg:text-5xl font-extrabold leading-tight text-gray-900 mb-6">
               La gestion budgétaire{' '}
-              <span className="text-blue-600 underline decoration-wavy decoration-blue-300 underline-offset-4">
+              <span className="underline underline-offset-4" style={{ color: '#B8973F', textDecorationColor: '#D4B355', textDecorationStyle: 'wavy' }}>
                 intelligente
               </span>{' '}
               pour les institutions publiques
@@ -75,13 +75,13 @@ export default function Hero() {
             <div className="flex flex-wrap gap-4 mb-12">
               <a
                 href="/login"
-                className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-8 py-3.5 rounded-xl text-base transition-all hover:scale-105 shadow-lg shadow-blue-200 no-underline inline-flex items-center gap-2"
+                className="text-white font-semibold px-8 py-3.5 rounded-xl text-base transition-all hover:scale-105 no-underline inline-flex items-center gap-2" style={{ background: 'linear-gradient(135deg, #292524, #1C1917)', boxShadow: '0 4px 16px rgba(28,25,23,.25)' }}
               >
                 Accéder à la plateforme →
               </a>
               <a
                 href="#how-it-works"
-                className="flex items-center gap-2 border-2 border-gray-200 hover:border-blue-300 text-gray-700 font-semibold px-8 py-3.5 rounded-xl text-base transition-all no-underline bg-white hover:bg-gray-50"
+                className="flex items-center gap-2 border-2 text-gray-700 font-semibold px-8 py-3.5 rounded-xl text-base transition-all no-underline" style={{ borderColor: '#E7E5E4', background: '#FEFCF9' }}
               >
                 <span>▶</span> Voir comment ça marche
               </a>
@@ -92,15 +92,15 @@ export default function Hero() {
           <div className="w-full lg:w-2/5 relative hero-right flex justify-center">
             {/* Background decorative circle */}
             <div
-              className="absolute -top-10 -right-10 w-96 h-96 bg-blue-50 rounded-full -z-10"
+              className="absolute -top-10 -right-10 w-96 h-96 rounded-full -z-10" style={{ background: '#F0EDE8' }}
               aria-hidden="true"
             />
 
             <div className="relative w-full max-w-md">
               {/* Hero image */}
               <img
-                src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=800&q=80"
-                alt="Professionnelle africaine en bureau"
+                src="/gestion.jpg"
+                alt="Professionnel en bureau"
                 className="rounded-2xl shadow-2xl object-cover w-full hero-image-float"
                 style={{ aspectRatio: '4/3' }}
                 loading="eager"
@@ -108,13 +108,13 @@ export default function Hero() {
 
               {/* Float card top-right: Budget approuvé */}
               <div className="float-card-tr absolute -top-4 -right-4 bg-white rounded-2xl shadow-xl p-4 flex items-center gap-3 border border-gray-100">
-                <div className="w-9 h-9 rounded-xl bg-blue-100 flex items-center justify-center flex-shrink-0">
-                  <span className="text-blue-600 text-sm font-bold">✓</span>
+                <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: '#FEF9EC', border: '1px solid #F3D07A' }}>
+                  <span className="text-sm font-bold" style={{ color: '#B8973F' }}>✓</span>
                 </div>
                 <div>
                   <p className="text-xs text-gray-400 font-medium leading-none mb-0.5">Nouveau</p>
                   <p className="text-sm font-bold text-gray-900 whitespace-nowrap leading-none">
-                    Budget approuvé <span className="text-blue-600">+3</span>
+                    Budget approuvé <span style={{ color: '#B8973F' }}>+3</span>
                   </p>
                 </div>
               </div>

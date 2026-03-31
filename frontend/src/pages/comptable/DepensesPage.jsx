@@ -20,6 +20,7 @@ export default function DepensesPage() {
   const [search,       setSearch]       = useState('')
   const [detailModal,  setDetailModal]  = useState(null)
   const [rejetModal,   setRejetModal]   = useState(null)
+  const [visibleCount, setVisibleCount] = useState(10)
   const qc = useQueryClient()
 
   const { data, isLoading } = useQuery({
@@ -37,7 +38,9 @@ export default function DepensesPage() {
     onSuccess: () => { qc.invalidateQueries(['depenses']); setRejetModal(null); setDetailModal(null) },
   })
 
-  const depenses    = Array.isArray(data?.data) ? data.data : (data?.data?.results || data?.results || [])
+  const depenses       = Array.isArray(data?.data) ? data.data : (data?.data?.results || data?.results || [])
+  const visibleDep     = depenses.slice(0, visibleCount)
+  const hasMore        = visibleCount < depenses.length
 
   const { data: allData } = useQuery({
     queryKey: ['depenses-all'],
@@ -127,7 +130,7 @@ export default function DepensesPage() {
           <input
             className="search-input"
             value={search}
-            onChange={e => setSearch(e.target.value)}
+            onChange={e => { setSearch(e.target.value); setVisibleCount(10) }}
             placeholder="Rechercher fournisseur, référence, note…"
           />
         </div>
@@ -135,7 +138,7 @@ export default function DepensesPage() {
           {FILTRES.map(({ val, label }) => (
             <button
               key={val}
-              onClick={() => setFiltreStatut(val)}
+              onClick={() => { setFiltreStatut(val); setVisibleCount(10) }}
               className={`filter-pill${filtreStatut === val ? ' active' : ''}`}
             >
               {label}
@@ -173,13 +176,13 @@ export default function DepensesPage() {
           <table className="data-table">
             <thead>
               <tr>
-                {['Référence', 'Budget / Ligne', 'Montant', 'Saisi par', 'Date', 'Statut', 'Actions'].map(h => (
+                {['Référence', 'Budget / Ligne', 'Montant', 'Saisi par', 'Validé / Rejeté par', 'Date', 'Statut', 'Actions'].map(h => (
                   <th key={h}>{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
-              {depenses.map(d => (
+              {visibleDep.map(d => (
                 <tr
                   key={d.id}
                   className="cursor-pointer"
@@ -198,6 +201,9 @@ export default function DepensesPage() {
                     {fmt(d.montant)} <span className="text-[10px] text-gray-400 font-normal">FCFA</span>
                   </td>
                   <td className="text-gray-500 text-[12px]">{d.enregistre_par || '—'}</td>
+                  <td className="text-[12px]" style={{ color: d.validateur_nom ? (d.statut === 'REJETEE' ? 'var(--color-danger-600)' : 'var(--color-success-700)') : 'var(--color-gray-300)' }}>
+                    {d.validateur_nom || '—'}
+                  </td>
                   <td className="text-gray-400 text-[12px] font-mono">
                     {d.date_depense ? new Date(d.date_depense).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'}
                   </td>
@@ -213,6 +219,24 @@ export default function DepensesPage() {
           </table>
         )}
       </div>
+
+      {!isLoading && hasMore && (
+        <div className="flex flex-col items-center gap-[6px] mt-[20px]">
+          <button
+            onClick={() => setVisibleCount(c => c + 10)}
+            className="btn btn-secondary btn-md gap-[7px]"
+            style={{ minWidth: 180 }}
+          >
+            Charger plus
+            <span style={{ background: 'var(--color-gray-200)', color: 'var(--color-gray-600)', fontSize: '11px', padding: '1px 7px', borderRadius: 8, fontWeight: 700, fontFamily: 'var(--font-mono)' }}>
+              +{Math.min(10, depenses.length - visibleCount)}
+            </span>
+          </button>
+          <p style={{ fontSize: '11px', color: 'var(--color-gray-400)' }}>
+            {visibleCount} sur {depenses.length} dépenses affichées
+          </p>
+        </div>
+      )}
 
       {detailModal && (
         <DepenseDetailModal
@@ -291,12 +315,19 @@ function DepenseDetailModal({ dep, onValider, onRejeter, onClose, validating }) 
         <div style={{ padding: '22px 28px', display: 'flex', flexDirection: 'column', gap: 0 }}>
 
           {/* Grille 2 colonnes */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px 32px', marginBottom: 20 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(220px,100%), 1fr))', gap: '16px 32px', marginBottom: 20 }}>
             <InfoField icon={<Tag size={13} />}       label="Référence"         value={dep.reference} mono />
             <InfoField icon={<Building2 size={13} />} label="Budget"            value={`${dep.budget_reference}${dep.budget_nom && dep.budget_nom !== '—' ? ` — ${dep.budget_nom}` : ''}`} />
             <InfoField icon={<Receipt size={13} />}   label="Ligne budgétaire"  value={dep.ligne_designation} />
             <InfoField icon={<Calendar size={13} />}  label="Date d'enregistrement" value={fmtDate(dep.date_depense)} mono />
             <InfoField icon={<User size={13} />}      label="Saisi par"         value={dep.enregistre_par} />
+            {dep.validateur_nom && (
+              <InfoField
+                icon={<CheckCircle2 size={13} />}
+                label={dep.statut === 'REJETEE' ? 'Rejeté par' : 'Validé par'}
+                value={dep.validateur_nom}
+              />
+            )}
             {dep.fournisseur && dep.fournisseur !== '—' && (
               <InfoField icon={<FileText size={13} />} label="Fournisseur" value={dep.fournisseur} />
             )}

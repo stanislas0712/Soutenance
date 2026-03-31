@@ -1,23 +1,60 @@
 import { useEffect, useState, useMemo } from 'react'
-import { getUtilisateurs, createUtilisateur, updateUtilisateur, deleteUtilisateur, adminResetPassword } from '../../api/accounts'
-import { Plus, KeyRound, Trash2, UserCheck, UserX, Building2, Search, X } from 'lucide-react'
-import { RoleBadge } from '../../components/StatusBadge'
+import { useNavigate } from 'react-router-dom'
+import { getUtilisateurs, createUtilisateur, updateUtilisateur, deleteUtilisateur, adminResetPassword, getUtilisateurActivite } from '../../api/accounts'
+import { Plus, KeyRound, Trash2, UserCheck, UserX, Building2, Search, X, Activity, Wallet, CreditCard, CheckCircle2, ChevronRight } from 'lucide-react'
+import { RoleBadge, StatutBadge } from '../../components/StatusBadge'
+
+const fmt = n => new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 0 }).format(parseFloat(n || 0))
+const fmtDate = iso => iso ? new Date(iso).toLocaleDateString('fr-FR') : '—'
+
+const STATUT_COLOR = {
+  BROUILLON: '#9CA3AF', SOUMIS: '#D97706', APPROUVE: '#16A34A',
+  REJETE: '#EF4444', SAISIE: '#D97706', VALIDEE: '#16A34A', REJETEE: '#EF4444',
+}
 
 const ROLES = ['ADMINISTRATEUR', 'GESTIONNAIRE', 'COMPTABLE']
 
+function TabBtn({ label, icon, count, active, onClick }) {
+  return (
+    <button
+      onClick={onClick}
+      style={{
+        padding: '10px 18px', border: 'none', background: 'transparent',
+        borderBottom: active ? '2px solid #C9A84C' : '2px solid transparent',
+        cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6,
+        fontSize: 13, fontWeight: active ? 700 : 500,
+        color: active ? '#1C1917' : '#6B7280',
+        transition: 'all .15s',
+      }}
+    >
+      {icon} {label}
+      {count !== undefined && (
+        <span style={{ background: active ? '#FEF9EC' : '#F3F4F6', color: active ? '#78350F' : '#6B7280', fontSize: 10, fontWeight: 700, padding: '1px 6px', borderRadius: 99, border: active ? '1px solid #F3D07A' : 'none' }}>
+          {count ?? '…'}
+        </span>
+      )}
+    </button>
+  )
+}
+
 export default function UtilisateursPage() {
+  const navigate = useNavigate()
   const [users,      setUsers]      = useState([])
   const [loading,    setLoading]    = useState(true)
-  const [modal,      setModal]      = useState(null)   // null | 'create' | 'resetPwd'
+  const [modal,      setModal]      = useState(null)   // null | 'create' | 'resetPwd' | 'activite'
   const [targetUser, setTargetUser] = useState(null)
   const [saving,     setSaving]     = useState(false)
   const [error,      setError]      = useState('')
   const [success,    setSuccess]    = useState('')
   const [createForm, setCreateForm] = useState({ email: '', matricule: '', nom: '', prenom: '', role: 'GESTIONNAIRE', password: '' })
   const [pwdForm,    setPwdForm]    = useState({ nouveau_password: '', confirmer: '' })
-  const [search,     setSearch]     = useState('')
-  const [filterRole, setFilterRole] = useState('')
-  const [filterActif, setFilterActif] = useState('')
+  const [search,       setSearch]       = useState('')
+  const [filterRole,   setFilterRole]   = useState('')
+  const [filterActif,  setFilterActif]  = useState('')
+  const [visibleCount, setVisibleCount] = useState(10)
+  const [activite,     setActivite]     = useState(null)
+  const [activiteTab,  setActiviteTab]  = useState('budgets')
+  const [activiteLoading, setActiviteLoading] = useState(false)
 
   const load = () => {
     setLoading(true)
@@ -68,6 +105,18 @@ export default function UtilisateursPage() {
     setModal('resetPwd')
   }
 
+  const openActivite = (user) => {
+    setTargetUser(user)
+    setActivite(null)
+    setActiviteTab(user.role === 'COMPTABLE' ? 'validees' : 'budgets')
+    setModal('activite')
+    setActiviteLoading(true)
+    getUtilisateurActivite(user.id)
+      .then(r => setActivite(r.data))
+      .catch(() => setActivite({ error: true }))
+      .finally(() => setActiviteLoading(false))
+  }
+
   const handleResetPwd = async (e) => {
     e.preventDefault(); setError(''); setSaving(true)
     if (pwdForm.nouveau_password !== pwdForm.confirmer) {
@@ -101,7 +150,9 @@ export default function UtilisateursPage() {
     })
   }, [users, search, filterRole, filterActif])
 
-  const hasFilters = search || filterRole || filterActif
+  const hasFilters   = search || filterRole || filterActif
+  const visibleUsers = filtered.slice(0, visibleCount)
+  const hasMore      = visibleCount < filtered.length
 
   if (loading) return <div className="page-loader"><div className="spinner" /></div>
 
@@ -132,7 +183,7 @@ export default function UtilisateursPage() {
             type="text"
             placeholder="Rechercher par nom, email, matricule…"
             value={search}
-            onChange={e => setSearch(e.target.value)}
+            onChange={e => { setSearch(e.target.value); setVisibleCount(10) }}
             className="form-input"
             style={{ paddingLeft: 34, height: 38, fontSize: 13 }}
           />
@@ -146,7 +197,7 @@ export default function UtilisateursPage() {
         {/* Filtre rôle */}
         <select
           value={filterRole}
-          onChange={e => setFilterRole(e.target.value)}
+          onChange={e => { setFilterRole(e.target.value); setVisibleCount(10) }}
           className="form-select"
           style={{ height: 38, fontSize: 13, minWidth: 160 }}
         >
@@ -157,7 +208,7 @@ export default function UtilisateursPage() {
         {/* Filtre statut */}
         <select
           value={filterActif}
-          onChange={e => setFilterActif(e.target.value)}
+          onChange={e => { setFilterActif(e.target.value); setVisibleCount(10) }}
           className="form-select"
           style={{ height: 38, fontSize: 13, minWidth: 140 }}
         >
@@ -179,12 +230,12 @@ export default function UtilisateursPage() {
 
       {/* Grille utilisateurs */}
       <div className="grid gap-[14px]" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))' }}>
-        {filtered.length === 0 && (
+        {visibleUsers.length === 0 && (
           <div className="col-span-full text-center py-12 text-gray-400 text-sm">
             Aucun utilisateur ne correspond à votre recherche.
           </div>
         )}
-        {filtered.map(u => (
+        {visibleUsers.map(u => (
           <div
             key={u.id}
             className="card"
@@ -237,21 +288,29 @@ export default function UtilisateursPage() {
             )}
 
             {/* Actions */}
-            <div className="flex gap-[6px] pt-3 border-t border-[#F3F4F6]">
+            <div className="flex gap-[6px] pt-3 border-t border-[#F3F4F6] flex-wrap">
+              {(u.role === 'GESTIONNAIRE' || u.role === 'COMPTABLE') && (
+                <button
+                  onClick={() => openActivite(u)}
+                  className="btn btn-secondary btn-sm gap-[5px] flex-1"
+                  title="Voir l'activité"
+                >
+                  <Activity size={12} strokeWidth={2} /> Activité
+                </button>
+              )}
               <button
                 onClick={() => handleToggle(u)}
-                className={`btn btn-sm flex-1 gap-[5px] ${u.actif ? 'btn-warning' : 'btn-success'}`}
+                className={`btn btn-sm gap-[5px] ${u.actif ? 'btn-warning' : 'btn-success'}`}
+                title={u.actif ? 'Désactiver' : 'Activer'}
               >
-                {u.actif
-                  ? <><UserX  size={12} strokeWidth={2} /> Désactiver</>
-                  : <><UserCheck size={12} strokeWidth={2} /> Activer</>
-                }
+                {u.actif ? <UserX size={12} strokeWidth={2} /> : <UserCheck size={12} strokeWidth={2} />}
               </button>
               <button
                 onClick={() => openResetPwd(u)}
-                className="btn btn-secondary btn-sm flex-1 gap-[5px]"
+                className="btn btn-secondary btn-sm gap-[5px]"
+                title="Réinitialiser mot de passe"
               >
-                <KeyRound size={12} strokeWidth={2} /> Mot de passe
+                <KeyRound size={12} strokeWidth={2} />
               </button>
               <button
                 onClick={() => handleDelete(u)}
@@ -264,6 +323,24 @@ export default function UtilisateursPage() {
           </div>
         ))}
       </div>
+
+      {hasMore && (
+        <div className="flex flex-col items-center gap-[6px] mt-[20px]">
+          <button
+            onClick={() => setVisibleCount(c => c + 10)}
+            className="btn btn-secondary btn-md gap-[7px]"
+            style={{ minWidth: 180 }}
+          >
+            Charger plus
+            <span style={{ background: 'var(--color-gray-200)', color: 'var(--color-gray-600)', fontSize: '11px', padding: '1px 7px', borderRadius: 8, fontWeight: 700, fontFamily: 'var(--font-mono)' }}>
+              +{Math.min(10, filtered.length - visibleCount)}
+            </span>
+          </button>
+          <p style={{ fontSize: '11px', color: 'var(--color-gray-400)' }}>
+            {visibleCount} sur {filtered.length} utilisateurs affichés
+          </p>
+        </div>
+      )}
 
       {/* Modal création */}
       {modal === 'create' && (
@@ -311,6 +388,123 @@ export default function UtilisateursPage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* ── Modal activité ── */}
+      {modal === 'activite' && targetUser && (
+        <div className="modal-overlay" onClick={() => setModal(null)}>
+          <div className="modal-panel" style={{ maxWidth: 720, width: '95vw' }} onClick={e => e.stopPropagation()}>
+
+            {/* Header */}
+            <div className="modal-header" style={{ background: 'linear-gradient(135deg, #1C1917, #2E2A27)', borderBottom: 'none' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <div style={{ width: 40, height: 40, borderRadius: 10, background: 'linear-gradient(135deg, #C9A84C, #8A6B1E)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 800, fontSize: 15, flexShrink: 0 }}>
+                  {(targetUser.prenom?.[0] || '?').toUpperCase()}
+                </div>
+                <div>
+                  <h2 style={{ fontFamily: 'Lora, serif', fontWeight: 700, fontSize: 15, color: '#FAF7F2', margin: 0 }}>
+                    {targetUser.prenom} {targetUser.nom}
+                  </h2>
+                  <div style={{ fontSize: 11, color: 'rgba(201,168,76,.7)', marginTop: 2, letterSpacing: '.4px' }}>
+                    {targetUser.role} — {targetUser.email}
+                  </div>
+                </div>
+              </div>
+              <button onClick={() => setModal(null)} style={{ background: 'rgba(255,255,255,.1)', border: 'none', borderRadius: 6, width: 28, height: 28, cursor: 'pointer', color: 'rgba(255,255,255,.7)', fontSize: 14, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✕</button>
+            </div>
+
+            {/* Onglets */}
+            <div style={{ display: 'flex', borderBottom: '1px solid #F3F4F6', background: '#FAFAFA' }}>
+              {targetUser.role !== 'COMPTABLE' && (
+                <TabBtn label="Budgets créés" icon={<Wallet size={13} />} count={activite?.budgets_crees?.length} active={activiteTab === 'budgets'} onClick={() => setActiviteTab('budgets')} />
+              )}
+              {targetUser.role !== 'COMPTABLE' && (
+                <TabBtn label="Dépenses saisies" icon={<CreditCard size={13} />} count={activite?.depenses_enregistrees?.length} active={activiteTab === 'depenses'} onClick={() => setActiviteTab('depenses')} />
+              )}
+              {targetUser.role === 'COMPTABLE' && (
+                <TabBtn label="Dépenses validées" icon={<CheckCircle2 size={13} />} count={activite?.depenses_validees?.length} active={activiteTab === 'validees'} onClick={() => setActiviteTab('validees')} />
+              )}
+            </div>
+
+            {/* Contenu */}
+            <div style={{ maxHeight: 420, overflowY: 'auto' }}>
+              {activiteLoading ? (
+                <div style={{ padding: '40px', textAlign: 'center' }}><div className="spinner mx-auto" /></div>
+              ) : activite?.error ? (
+                <div style={{ padding: '40px', textAlign: 'center', color: '#9CA3AF', fontSize: 13 }}>Erreur de chargement</div>
+              ) : (
+                <>
+                  {/* Budgets créés */}
+                  {activiteTab === 'budgets' && (
+                    <table className="data-table">
+                      <thead><tr><th>Code</th><th>Nom</th><th>Montant global</th><th>Statut</th><th>Date</th><th></th></tr></thead>
+                      <tbody>
+                        {(activite?.budgets_crees || []).length === 0 ? (
+                          <tr><td colSpan={6} style={{ textAlign: 'center', color: '#9CA3AF', fontStyle: 'italic', padding: '24px' }}>Aucun budget créé</td></tr>
+                        ) : (activite?.budgets_crees || []).map(b => (
+                          <tr key={b.id} className="clickable" onClick={() => { setModal(null); navigate(`/budgets/${b.id}`) }}>
+                            <td><span className="code-tag">{b.code}</span></td>
+                            <td style={{ fontWeight: 500, maxWidth: 180 }}><div className="truncate">{b.nom}</div></td>
+                            <td style={{ fontFamily: 'var(--font-mono)', fontWeight: 600 }}>{fmt(b.montant_global)} FCFA</td>
+                            <td><span style={{ fontSize: 11, fontWeight: 700, color: STATUT_COLOR[b.statut] || '#6B7280' }}>{b.statut}</span></td>
+                            <td style={{ color: '#9CA3AF', fontSize: 12 }}>{fmtDate(b.date_creation)}</td>
+                            <td><ChevronRight size={13} style={{ color: '#D1D5DB' }} /></td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  )}
+
+                  {/* Dépenses saisies */}
+                  {activiteTab === 'depenses' && (
+                    <table className="data-table">
+                      <thead><tr><th>Référence</th><th>Budget</th><th>Ligne</th><th>Montant</th><th>Statut</th><th>Date</th></tr></thead>
+                      <tbody>
+                        {(activite?.depenses_enregistrees || []).length === 0 ? (
+                          <tr><td colSpan={6} style={{ textAlign: 'center', color: '#9CA3AF', fontStyle: 'italic', padding: '24px' }}>Aucune dépense saisie</td></tr>
+                        ) : (activite?.depenses_enregistrees || []).map(d => (
+                          <tr key={d.id}>
+                            <td><span className="code-tag">{d.reference}</span></td>
+                            <td style={{ fontSize: 12 }}>{d.budget_code}</td>
+                            <td style={{ fontSize: 12, maxWidth: 160 }}><div className="truncate">{d.ligne_designation}</div></td>
+                            <td style={{ fontFamily: 'var(--font-mono)', fontWeight: 600 }}>{fmt(d.montant)} FCFA</td>
+                            <td><span style={{ fontSize: 11, fontWeight: 700, color: STATUT_COLOR[d.statut] || '#6B7280' }}>{d.statut}</span></td>
+                            <td style={{ color: '#9CA3AF', fontSize: 12 }}>{fmtDate(d.date)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  )}
+
+                  {/* Dépenses validées (comptable) */}
+                  {activiteTab === 'validees' && (
+                    <table className="data-table">
+                      <thead><tr><th>Référence</th><th>Budget</th><th>Saisie par</th><th>Montant</th><th>Statut</th><th>Date</th></tr></thead>
+                      <tbody>
+                        {(activite?.depenses_validees || []).length === 0 ? (
+                          <tr><td colSpan={6} style={{ textAlign: 'center', color: '#9CA3AF', fontStyle: 'italic', padding: '24px' }}>Aucune dépense traitée</td></tr>
+                        ) : (activite?.depenses_validees || []).map(d => (
+                          <tr key={d.id}>
+                            <td><span className="code-tag">{d.reference}</span></td>
+                            <td style={{ fontSize: 12 }}>{d.budget_code}</td>
+                            <td style={{ fontSize: 12 }}>{d.enregistre_par}</td>
+                            <td style={{ fontFamily: 'var(--font-mono)', fontWeight: 600 }}>{fmt(d.montant)} FCFA</td>
+                            <td><span style={{ fontSize: 11, fontWeight: 700, color: STATUT_COLOR[d.statut] || '#6B7280' }}>{d.statut}</span></td>
+                            <td style={{ color: '#9CA3AF', fontSize: 12 }}>{fmtDate(d.date)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  )}
+                </>
+              )}
+            </div>
+
+            <div className="modal-footer">
+              <button onClick={() => setModal(null)} className="btn btn-secondary btn-md">Fermer</button>
+            </div>
           </div>
         </div>
       )}

@@ -30,24 +30,29 @@ const fmtDate = (iso) => {
   return d.toLocaleDateString('fr-FR') + ' ' + d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
 }
 
+const PAGE_SIZE = 10
+
 export default function AuditLogsPage() {
-  const [logs,    setLogs]    = useState([])
-  const [loading, setLoading] = useState(true)
-  const [error,   setError]   = useState('')
-  const [filter,  setFilter]  = useState({ action: '', table: '' })
+  const [logs,         setLogs]         = useState([])
+  const [loading,      setLoading]      = useState(true)
+  const [error,        setError]        = useState('')
+  const [filter,       setFilter]       = useState({ action: '', table: '' })
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE)
 
   const load = () => {
     setLoading(true); setError('')
     api.get('/audit/', { params: { action: filter.action || undefined, table: filter.table || undefined } })
-      .then(r => setLogs(r.data.results ?? r.data))
+      .then(r => { setLogs(r.data.results ?? r.data); setVisibleCount(PAGE_SIZE) })
       .catch(err => setError(err.response?.data?.detail || err.message || 'Erreur lors du chargement des logs'))
       .finally(() => setLoading(false))
   }
 
   useEffect(() => { load() }, [filter])
 
-  const tables  = [...new Set(logs.map(l => l.table))].sort()
-  const actions = Object.keys(ACTION_STYLE)
+  const tables       = [...new Set(logs.map(l => l.table))].sort()
+  const actions      = Object.keys(ACTION_STYLE)
+  const visibleLogs  = logs.slice(0, visibleCount)
+  const hasMore      = visibleCount < logs.length
 
   return (
     <div>
@@ -59,7 +64,7 @@ export default function AuditLogsPage() {
         {!loading && !error && (
           <div className="flex items-center gap-[6px] px-[14px] py-[6px] rounded-[20px] bg-[#F3F4F6] text-[#4B5563] text-[13px] font-semibold">
             <ClipboardList size={14} strokeWidth={2} />
-            {logs.length} entrée{logs.length !== 1 ? 's' : ''}
+            {visibleCount < logs.length ? `${visibleCount} / ${logs.length}` : logs.length} entrée{logs.length !== 1 ? 's' : ''}
           </div>
         )}
       </div>
@@ -135,7 +140,7 @@ export default function AuditLogsPage() {
                 </tr>
               </thead>
               <tbody>
-                {logs.map(log => {
+                {visibleLogs.map(log => {
                   const as         = ACTION_STYLE[log.action] || { bg: 'var(--color-gray-100)', color: 'var(--color-gray-600)', label: log.action }
                   const tableLabel = TABLE_LABEL[log.table] || log.table
                   return (
@@ -183,6 +188,25 @@ export default function AuditLogsPage() {
               </tbody>
             </table>
           )}
+        </div>
+      )}
+
+      {/* Charger plus */}
+      {!loading && hasMore && (
+        <div className="flex flex-col items-center gap-[6px] mt-[20px]">
+          <button
+            onClick={() => setVisibleCount(c => c + PAGE_SIZE)}
+            className="btn btn-secondary btn-md gap-[7px]"
+            style={{ minWidth: 180 }}
+          >
+            Charger plus
+            <span style={{ background: 'var(--color-gray-200)', color: 'var(--color-gray-600)', fontSize: '11px', padding: '1px 7px', borderRadius: 8, fontWeight: 700, fontFamily: 'var(--font-mono)' }}>
+              +{Math.min(PAGE_SIZE, logs.length - visibleCount)}
+            </span>
+          </button>
+          <p style={{ fontSize: '11px', color: 'var(--color-gray-400)' }}>
+            {visibleCount} sur {logs.length} entrées affichées
+          </p>
         </div>
       )}
     </div>

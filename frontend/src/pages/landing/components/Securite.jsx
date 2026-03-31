@@ -34,18 +34,18 @@ export default function Securite() {
   return (
     <section
       className="py-24 px-6 relative overflow-hidden"
-      style={{ background: 'linear-gradient(135deg, #0F2547 0%, #1E3A8A 60%, #1D4ED8 100%)' }}
+      style={{ background: 'linear-gradient(135deg, #1C1917 0%, #252120 55%, #2E2A27 100%)' }}
       aria-labelledby="securite-title"
     >
       {/* Decorative circles */}
       <div
         className="absolute top-0 right-0 w-96 h-96 rounded-full pointer-events-none"
-        style={{ background: 'radial-gradient(circle, rgba(59,130,246,.12) 0%, transparent 70%)', transform: 'translate(30%, -30%)' }}
+        style={{ background: 'radial-gradient(circle, rgba(201,168,76,.12) 0%, transparent 70%)', transform: 'translate(30%, -30%)' }}
         aria-hidden="true"
       />
       <div
         className="absolute bottom-0 left-0 w-80 h-80 rounded-full pointer-events-none"
-        style={{ background: 'radial-gradient(circle, rgba(99,102,241,.1) 0%, transparent 70%)', transform: 'translate(-30%, 30%)' }}
+        style={{ background: 'radial-gradient(circle, rgba(201,168,76,.08) 0%, transparent 70%)', transform: 'translate(-30%, 30%)' }}
         aria-hidden="true"
       />
 
@@ -57,13 +57,13 @@ export default function Securite() {
             visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'
           }`}
         >
-          <p className="text-sm font-semibold text-blue-300 uppercase tracking-widest mb-4">
+          <p className="text-sm font-semibold uppercase tracking-widest mb-4" style={{ color: '#D4B355' }}>
             Sécurité & Conformité
           </p>
           <h2 id="securite-title" className="text-3xl md:text-4xl font-extrabold text-white mb-4 tracking-tight">
             Vos données en sécurité
           </h2>
-          <p className="text-lg text-blue-200/80 max-w-xl mx-auto leading-relaxed">
+          <p className="text-lg max-w-xl mx-auto leading-relaxed" style={{ color: 'rgba(250,247,242,0.65)' }}>
             BudgetFlow est conçu avec la sécurité au cœur de son architecture.
             Confidentialité, intégrité et disponibilité garanties.
           </p>
@@ -74,13 +74,15 @@ export default function Securite() {
           {SECURITY_ITEMS.map((item, i) => (
             <div
               key={item.title}
-              className={`text-center p-6 rounded-2xl border border-white/10 hover:border-blue-400/50 hover:bg-white/10 transition-all duration-300 ${
+              className={`text-center p-6 rounded-2xl border border-white/10 hover:bg-white/10 transition-all duration-300 ${
                 visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-5'
               }`}
               style={{
                 background: 'rgba(255,255,255,0.05)',
                 transitionDelay: `${i * 0.08}s`,
               }}
+              onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(201,168,76,0.45)' }}
+              onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)' }}
             >
               <div
                 className="w-14 h-14 rounded-2xl flex items-center justify-center text-2xl mx-auto mb-4"
@@ -90,7 +92,7 @@ export default function Securite() {
                 {item.emoji}
               </div>
               <h3 className="text-sm font-bold text-white mb-2 leading-tight">{item.title}</h3>
-              <p className="text-xs text-blue-200/70 leading-relaxed m-0">{item.description}</p>
+              <p className="text-xs leading-relaxed m-0" style={{ color: 'rgba(250,247,242,0.55)' }}>{item.description}</p>
             </div>
           ))}
         </div>

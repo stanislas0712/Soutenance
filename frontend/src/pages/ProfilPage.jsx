@@ -65,11 +65,11 @@ export default function ProfilPage() {
       <div
         className="rounded-[var(--radius-lg)] px-8 py-7 mb-6 flex items-center gap-[22px] text-white relative overflow-hidden"
         style={{
-          background: 'linear-gradient(160deg, #0F2547 0%, #1E3A8A 60%, #1D4ED8 100%)',
-          boxShadow: '0 8px 28px rgba(30,58,138,.3)',
+          background: 'linear-gradient(160deg, #1C1917 0%, #252120 60%, #2E2A27 100%)',
+          boxShadow: '0 8px 28px rgba(28,25,23,.4)',
         }}
       >
-        <div className="absolute rounded-full pointer-events-none" style={{ top: -40, right: -40, width: 180, height: 180, background: 'rgba(255,255,255,.05)' }} />
+        <div className="absolute rounded-full pointer-events-none" style={{ top: -40, right: -40, width: 180, height: 180, background: 'rgba(201,168,76,.06)' }} />
         <div
           className="w-[70px] h-[70px] rounded-full shrink-0 flex items-center justify-center font-extrabold text-[1.6rem]"
           style={{ background: 'rgba(255,255,255,.18)', border: '2.5px solid rgba(255,255,255,.35)' }}
@@ -77,10 +77,10 @@ export default function ProfilPage() {
           {initiales}
         </div>
         <div className="relative">
-          <div className="font-extrabold text-[1.25rem] mb-1">
+          <div className="font-extrabold text-[1.25rem] mb-1" style={{ fontFamily: "'Lora', serif", color: '#FAF7F2' }}>
             {user?.prenom} {user?.nom}
           </div>
-          <div className="opacity-75 text-[13px] mb-[10px]">{user?.email}</div>
+          <div className="text-[13px] mb-[10px]" style={{ color: 'rgba(250,247,242,.65)' }}>{user?.email}</div>
           <div className="flex gap-2 flex-wrap">
             <span
               className="px-3 py-[3px] rounded-[20px] text-[11px] font-bold"
@@ -103,8 +103,8 @@ export default function ProfilPage() {
       {/* Informations personnelles */}
       <div className="card mb-5">
         <h2 className="flex items-center gap-[9px] font-bold text-[14px] text-[#1F2937] mb-5 pb-[14px] border-b border-[#F3F4F6]">
-          <div className="w-7 h-7 rounded-[7px] bg-[#EFF6FF] flex items-center justify-center">
-            <User size={14} strokeWidth={2} className="text-[#2563EB]" />
+          <div className="w-7 h-7 rounded-[7px] flex items-center justify-center" style={{ background: '#FEF9EC' }}>
+            <User size={14} strokeWidth={2} style={{ color: '#B8973F' }} />
           </div>
           Informations personnelles
         </h2>

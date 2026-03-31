@@ -641,6 +641,13 @@ class ConsommationLigne(models.Model):
                               related_name='depenses_enregistrees',
                               verbose_name="Enregistré par"
                           )
+    validateur          = models.ForeignKey(
+                              Utilisateur,
+                              on_delete=models.SET_NULL,
+                              null=True, blank=True,
+                              related_name='depenses_validees',
+                              verbose_name="Validé/Rejeté par"
+                          )
 
     class Meta:
         db_table            = 'consommation_ligne'

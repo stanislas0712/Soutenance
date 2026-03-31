@@ -8,7 +8,7 @@ from rest_framework import permissions, status
 from django.db.models import Q
 
 from .models import ConsommationLigne, StatutDepense, PieceJustificative, creer_notification
-from accounts.views import IsComptableOrAdmin
+from accounts.views import IsComptableOrAdmin, IsComptable
 
 
 def _serialiser_depense(c, request=None):
@@ -44,6 +44,10 @@ def _serialiser_depense(c, request=None):
             f"{c.enregistre_par.prenom} {c.enregistre_par.nom}"
             if c.enregistre_par else '—'
         ),
+        'validateur_nom':          (
+            f"{c.validateur.prenom} {c.validateur.nom}"
+            if c.validateur else None
+        ),
     }
 
 
@@ -52,7 +56,7 @@ class DepenseListView(APIView):
 
     def get(self, request):
         qs = ConsommationLigne.objects.select_related(
-            'ligne__budget', 'enregistre_par'
+            'ligne__budget', 'enregistre_par', 'validateur'
         ).order_by('-date')
 
         statut    = request.query_params.get('statut')
@@ -90,7 +94,7 @@ class DepenseDetailView(APIView):
     def get(self, request, pk):
         try:
             c = ConsommationLigne.objects.select_related(
-                'ligne__budget', 'enregistre_par'
+                'ligne__budget', 'enregistre_par', 'validateur'
             ).get(pk=pk)
         except ConsommationLigne.DoesNotExist:
             return Response({'detail': 'Dépense introuvable.'}, status=status.HTTP_404_NOT_FOUND)
@@ -98,7 +102,7 @@ class DepenseDetailView(APIView):
 
 
 class ValiderDepenseView(APIView):
-    permission_classes = [IsComptableOrAdmin]
+    permission_classes = [IsComptable]
 
     def post(self, request, pk):
         try:
@@ -111,8 +115,9 @@ class ValiderDepenseView(APIView):
                 {'detail': f'Impossible de valider une dépense au statut {depense.statut}.'},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-        depense.statut = StatutDepense.VALIDEE
-        depense.save(update_fields=['statut'])
+        depense.statut    = StatutDepense.VALIDEE
+        depense.validateur = request.user
+        depense.save(update_fields=['statut', 'validateur'])
         if depense.enregistre_par:
             creer_notification(
                 destinataire=depense.enregistre_par,
@@ -124,7 +129,7 @@ class ValiderDepenseView(APIView):
 
 
 class RejeterDepenseView(APIView):
-    permission_classes = [IsComptableOrAdmin]
+    permission_classes = [IsComptable]
 
     def post(self, request, pk):
         try:
@@ -145,7 +150,8 @@ class RejeterDepenseView(APIView):
             )
         depense.statut      = StatutDepense.REJETEE
         depense.motif_rejet = motif
-        depense.save(update_fields=['statut', 'motif_rejet'])
+        depense.validateur  = request.user
+        depense.save(update_fields=['statut', 'motif_rejet', 'validateur'])
         if depense.enregistre_par:
             creer_notification(
                 destinataire=depense.enregistre_par,

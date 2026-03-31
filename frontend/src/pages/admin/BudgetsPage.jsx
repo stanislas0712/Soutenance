@@ -28,11 +28,12 @@ export default function BudgetsPage() {
   const deptId  = searchParams.get('departement') || ''
   const deptNom = searchParams.get('nom') || ''
 
-  const [budgets,   setBudgets]   = useState([])
-  const [loading,   setLoading]   = useState(true)
-  const [filtre,    setFiltre]    = useState('')
-  const [search,    setSearch]    = useState('')
-  const [actionBusy, setActionBusy] = useState(null)
+  const [budgets,      setBudgets]      = useState([])
+  const [loading,      setLoading]      = useState(true)
+  const [filtre,       setFiltre]       = useState('')
+  const [search,       setSearch]       = useState('')
+  const [actionBusy,   setActionBusy]   = useState(null)
+  const [visibleCount, setVisibleCount] = useState(10)
 
   const handleCloturer = async (b, e) => {
     e.stopPropagation()
@@ -76,7 +77,7 @@ export default function BudgetsPage() {
     if (statut)  params.statut      = statut
     if (deptId)  params.departement = deptId
     getBudgets(params)
-      .then(r => setBudgets(r.data.results ?? r.data))
+      .then(r => { setBudgets(r.data.results ?? r.data); setVisibleCount(10) })
       .finally(() => setLoading(false))
   }
 
@@ -88,6 +89,8 @@ export default function BudgetsPage() {
     b.nom?.toLowerCase().includes(search.toLowerCase()) ||
     b.departement_nom?.toLowerCase().includes(search.toLowerCase())
   )
+  const visible  = filtered.slice(0, visibleCount)
+  const hasMore  = visibleCount < filtered.length
 
   return (
     <div>
@@ -102,7 +105,7 @@ export default function BudgetsPage() {
         <div className="flex items-center gap-2">
           <div className="flex items-center gap-[6px] px-[14px] py-[6px] rounded-[20px] bg-[#EFF6FF] text-[#1D4ED8] text-[13px] font-semibold">
             <TrendingUp size={14} strokeWidth={2} />
-            {filtered.length} budget{filtered.length !== 1 ? 's' : ''}
+            {hasMore ? `${visibleCount} / ${filtered.length}` : filtered.length} budget{filtered.length !== 1 ? 's' : ''}
           </div>
           <button
             onClick={() => {
@@ -148,14 +151,15 @@ export default function BudgetsPage() {
 
       {/* Bandeau département actif */}
       {deptId && (
-        <div className="flex items-center gap-[10px] px-4 py-[10px] rounded-[10px] mb-[14px] bg-[#EFF6FF] border border-[#BFDBFE]">
-          <Building2 size={14} strokeWidth={2} className="text-[#2563EB] shrink-0" />
-          <span className="text-[13px] text-[#1E40AF] flex-1">
+        <div className="flex items-center gap-[10px] px-4 py-[10px] rounded-[10px] mb-[14px]" style={{ background: '#FEF9EC', border: '1px solid #F3D07A' }}>
+          <Building2 size={14} strokeWidth={2} className="shrink-0" style={{ color: '#B8973F' }} />
+          <span className="text-[13px] flex-1" style={{ color: '#78350F' }}>
             Filtre actif : <strong>{deptNom}</strong>
           </span>
           <button
             onClick={() => setSearchParams({})}
-            className="flex items-center gap-1 text-[#2563EB] text-[12px] font-semibold cursor-pointer"
+            className="flex items-center gap-1 text-[12px] font-semibold cursor-pointer"
+            style={{ color: '#B8973F' }}
           >
             <X size={13} strokeWidth={2.5} /> Effacer le filtre
           </button>
@@ -169,7 +173,7 @@ export default function BudgetsPage() {
           <input
             className="search-input"
             value={search}
-            onChange={e => setSearch(e.target.value)}
+            onChange={e => { setSearch(e.target.value); setVisibleCount(10) }}
             placeholder="Rechercher par code, nom, département…"
           />
         </div>
@@ -177,7 +181,7 @@ export default function BudgetsPage() {
           {STATUTS.map(s => (
             <button
               key={s.value}
-              onClick={() => setFiltre(s.value)}
+              onClick={() => { setFiltre(s.value); setVisibleCount(10) }}
               className={`filter-pill${filtre === s.value ? ' active' : ''}`}
             >
               {s.label}
@@ -187,13 +191,13 @@ export default function BudgetsPage() {
       </div>
 
       {/* Table */}
-      <div className="card p-0 overflow-hidden">
+      <div className="card p-0 overflow-hidden" style={{ marginBottom: hasMore ? 0 : undefined }}>
         {loading ? (
           <div className="p-[60px] text-center">
             <div className="spinner mx-auto mb-3" />
             <p className="text-[13px] text-[#9CA3AF]">Chargement des budgets…</p>
           </div>
-        ) : filtered.length === 0 ? (
+        ) : visible.length === 0 ? (
           <div className="empty-state">
             <div className="empty-icon">
               <FileText size={28} strokeWidth={1.5} className="text-gray-400" />
@@ -213,7 +217,7 @@ export default function BudgetsPage() {
               </tr>
             </thead>
             <tbody>
-              {filtered.map((b) => {
+              {visible.map((b) => {
                 const taux = parseFloat(b.taux_consommation || 0)
                 const color = jaugeColor(taux)
                 return (
@@ -294,6 +298,24 @@ export default function BudgetsPage() {
           </table>
         )}
       </div>
+
+      {!loading && hasMore && (
+        <div className="flex flex-col items-center gap-[6px] mt-[20px]">
+          <button
+            onClick={() => setVisibleCount(c => c + 10)}
+            className="btn btn-secondary btn-md gap-[7px]"
+            style={{ minWidth: 180 }}
+          >
+            Charger plus
+            <span style={{ background: 'var(--color-gray-200)', color: 'var(--color-gray-600)', fontSize: '11px', padding: '1px 7px', borderRadius: 8, fontWeight: 700, fontFamily: 'var(--font-mono)' }}>
+              +{Math.min(10, filtered.length - visibleCount)}
+            </span>
+          </button>
+          <p style={{ fontSize: '11px', color: 'var(--color-gray-400)' }}>
+            {visibleCount} sur {filtered.length} budgets affichés
+          </p>
+        </div>
+      )}
     </div>
   )
 }

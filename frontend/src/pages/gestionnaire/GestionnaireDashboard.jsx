@@ -5,7 +5,7 @@ import { getBudgets } from '../../api/budget'
 import { getDepartements } from '../../api/accounts'
 import KpiCard from '../../components/KpiCard'
 import { StatutBadge, AlerteBadge } from '../../components/StatusBadge'
-import { ChevronRight, Plus, ArrowRight, Building2, Sparkles, AlertTriangle, TrendingUp, MessageSquare } from 'lucide-react'
+import { ChevronRight, Plus, ArrowRight, Building2, Sparkles, AlertTriangle, TrendingUp, MessageSquare, LayoutList, CheckCircle2, Clock, XCircle, Wallet, ShieldAlert } from 'lucide-react'
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, Legend, Cell,
@@ -99,25 +99,25 @@ export default function GestionnaireDashboard() {
       {/* Hero greeting */}
       <div
         className="rounded-[14px] px-7 py-6 mb-7 text-white relative overflow-hidden"
-        style={{ background: 'linear-gradient(135deg, #0F2547 0%, #1E3A8A 55%, #2563EB 100%)' }}
+        style={{ background: 'linear-gradient(135deg, #1C1917 0%, #252120 55%, #2E2A27 100%)' }}
       >
-        <div className="absolute rounded-full pointer-events-none" style={{ top: -60, right: -60, width: 200, height: 200, background: 'rgba(255,255,255,.05)' }} />
-        <div className="absolute rounded-full pointer-events-none" style={{ bottom: -40, right: 80, width: 120, height: 120, background: 'rgba(59,130,246,.15)' }} />
-        <div className="text-[13px] text-white/60 mb-1">
+        <div className="absolute rounded-full pointer-events-none" style={{ top: -60, right: -60, width: 200, height: 200, background: 'rgba(201,168,76,.06)' }} />
+        <div className="absolute rounded-full pointer-events-none" style={{ bottom: -40, right: 80, width: 120, height: 120, background: 'rgba(201,168,76,.08)' }} />
+        <div className="text-[13px] mb-1" style={{ color: 'rgba(201,168,76,.6)' }}>
           {new Date().toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
         </div>
-        <h1 className="font-extrabold text-[22px] tracking-[-0.03em] mb-[6px]">
+        <h1 className="font-extrabold text-[22px] tracking-[-0.03em] mb-[6px]" style={{ fontFamily: "'Lora', serif", color: '#FAF7F2' }}>
           Bonjour, {user?.prenom} 👋
         </h1>
-        <p className="text-[14px] text-white/65 mb-[18px]">
+        <p className="text-[14px] mb-[18px]" style={{ color: 'rgba(250,247,242,.65)' }}>
           Vous avez {soumis > 0 ? `${soumis} budget${soumis > 1 ? 's' : ''} en attente de validation` : 'tous vos budgets à jour'}.
         </p>
         <button
           onClick={() => navigate('/creer-budget')}
           className="btn btn-sm text-white"
           style={{
-            background: 'rgba(255,255,255,.15)',
-            border: '1.5px solid rgba(255,255,255,.3)',
+            background: 'rgba(201,168,76,.18)',
+            border: '1.5px solid rgba(201,168,76,.35)',
             backdropFilter: 'blur(8px)',
           }}
         >
@@ -128,17 +128,17 @@ export default function GestionnaireDashboard() {
 
       {/* KPIs */}
       <div className="kpi-grid" style={{ gridTemplateColumns: 'repeat(auto-fit,minmax(170px,1fr))', marginBottom: 24 }}>
-        <KpiCard icon="📋" label="Mes budgets"  value={total}                       color="var(--color-primary-600)" bgColor="var(--color-primary-50)" sparklineData={sparkMois.map(m => m.count)} />
-        <KpiCard icon="✅" label="Approuvés"     value={approuves}                   color="var(--color-success-600)" bgColor="var(--color-success-50)" />
-        <KpiCard icon="⏳" label="En validation" value={soumis}                      color="var(--color-info-600)"    bgColor="var(--color-info-50)" />
-        <KpiCard icon="↩️" label="Rejetés"       value={rejetes}                     color="var(--color-danger-600)"  bgColor="var(--color-danger-50)" />
-        <KpiCard icon="💰" label="Montant total" value={`${fmt(montantTotal)} FCFA`} color="#7C3AED"                  bgColor="#F5F3FF" sparklineData={sparkMois.map(m => m.montant)} />
-        <KpiCard icon="⚠️" label="Alertes"       value={critiques}                   color="var(--color-danger-600)"  bgColor="var(--color-danger-50)" sub={`+${alertes} avertissements`} />
+        <KpiCard icon={<LayoutList size={22} strokeWidth={1.8}/>}  label="Mes budgets"     value={total}                                                                   color="#2563EB"  bgColor="#DBEAFE" sparklineData={sparkMois.map(m => m.count)} trendText={`${total} au total`} />
+        <KpiCard icon={<CheckCircle2 size={22} strokeWidth={1.8}/>} label="Approuvés"      value={approuves}                                                               color="#16A34A"  bgColor="#DCFCE7" trendText={approuves > 0 ? `${approuves} budget${approuves>1?'s':''} actifs` : 'Aucun approuvé'} />
+        <KpiCard icon={<Clock size={22} strokeWidth={1.8}/>}        label="En validation"  value={soumis}                                                                  color="#D97706"  bgColor="#FEF3C7" trendText={soumis > 0 ? `${soumis} en attente` : 'Tout traité'} />
+        <KpiCard icon={<XCircle size={22} strokeWidth={1.8}/>}      label="Rejetés"        value={rejetes}                                                                 color="#DC2626"  bgColor="#FEE2E2" trendText={rejetes > 0 ? `${rejetes} à corriger` : 'Aucun rejet'} trendPositive={rejetes === 0} />
+        <KpiCard icon={<Wallet size={22} strokeWidth={1.8}/>}       label="Montant total"  value={montantTotal >= 1e6 ? `${(montantTotal/1e6).toFixed(1)}M` : `${fmt(montantTotal)} F`} color="#7C3AED" bgColor="#EDE9FE" sparklineData={sparkMois.map(m => m.montant)} trendText="FCFA alloués" />
+        <KpiCard icon={<ShieldAlert size={22} strokeWidth={1.8}/>}  label="Alertes"        value={critiques}                                                               color="#DC2626"  bgColor="#FEE2E2" trendText={alertes > 0 ? `+${alertes} avertissements` : 'Aucune alerte'} trendPositive={alertes === 0} />
       </div>
 
       {/* ── Charts ────────────────────────────────────────────────────────── */}
       {chartBudgets.length > 0 && (
-        <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:18, marginBottom:24 }}>
+        <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(min(300px,100%), 1fr))', gap:18, marginBottom:24 }}>
 
           {/* Alloué vs Consommé */}
           <div className="card" style={{ padding:'20px 24px' }}>
@@ -227,7 +227,7 @@ export default function GestionnaireDashboard() {
           </div>
 
           {/* 3 action cards */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(220px,100%), 1fr))' }}>
             {[
               {
                 icon: <AlertTriangle size={19} strokeWidth={1.8} />,
@@ -307,7 +307,7 @@ export default function GestionnaireDashboard() {
       </div>
 
       {/* Layout département + table */}
-      <div style={{ display: 'grid', gridTemplateColumns: '248px 1fr', gap: 16, alignItems: 'start' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(248px,100%), 1fr))', gap: 16, alignItems: 'start' }}>
 
         {/* Panneau départements */}
         <div className="card" style={{ overflow: 'hidden' }}>

@@ -201,11 +201,12 @@ export default function MesBudgets() {
           )}
         </div>
       ) : (
-        <div className="card p-0 overflow-hidden">
+        <div className="card p-0 overflow-hidden" style={{ overflowX: 'auto' }}>
           {/* Header */}
           <div style={{
             display: 'grid',
             gridTemplateColumns: '1fr 160px 140px 160px',
+            minWidth: 560,
             padding: '8px 20px',
             background: 'var(--color-gray-50)',
             borderBottom: '1px solid var(--color-gray-200)',
@@ -229,6 +230,7 @@ export default function MesBudgets() {
                 style={{
                   display: 'grid',
                   gridTemplateColumns: '1fr 160px 140px 160px',
+                  minWidth: 560,
                   padding: '14px 20px',
                   borderBottom: i < visible.length - 1 ? '1px solid var(--color-gray-100)' : 'none',
                   alignItems: 'center',
@@ -256,6 +258,11 @@ export default function MesBudgets() {
                   <div style={{ fontSize: '11px', color: 'var(--color-gray-400)' }}>
                     {b.departement_nom} · {b.date_debut} → {b.date_fin}
                   </div>
+                  {b.comptable_nom && (
+                    <div style={{ fontSize: '11px', color: b.statut === 'REJETE' ? 'var(--color-danger-600)' : 'var(--color-success-600)', marginTop: 2 }}>
+                      {b.statut === 'APPROUVE' ? '✓ Approuvé' : b.statut === 'REJETE' ? '✕ Rejeté'  : '→ Traité'} par {b.comptable_nom}
+                    </div>
+                  )}
                 </div>
 
                 {/* Montant */}

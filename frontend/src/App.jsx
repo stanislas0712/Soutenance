@@ -3,8 +3,9 @@ import { AuthProvider, useAuth } from './context/AuthContext'
 import Layout from './components/Layout'
 
 /* Pages publiques */
-import LoginPage    from './pages/LoginPage'
-import LandingPage  from './pages/landing/LandingPage'
+import LoginPage         from './pages/LoginPage'
+import LandingPage       from './pages/landing/LandingPage'
+import ResetPasswordPage from './pages/ResetPasswordPage'
 
 /* Admin */
 import AdminDashboard   from './pages/admin/AdminDashboard'
@@ -114,9 +115,10 @@ export default function App() {
     <AuthProvider>
       <BrowserRouter>
         <Routes>
-          <Route path="/"      element={<LandingPage />} />
-          <Route path="/login" element={<PublicRoute><LoginPage /></PublicRoute>} />
-          <Route path="/*"     element={<PrivateRoute><AppRoutes /></PrivateRoute>} />
+          <Route path="/"               element={<LandingPage />} />
+          <Route path="/login"          element={<PublicRoute><LoginPage /></PublicRoute>} />
+          <Route path="/reset-password" element={<ResetPasswordPage />} />
+          <Route path="/*"              element={<PrivateRoute><AppRoutes /></PrivateRoute>} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>

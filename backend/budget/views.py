@@ -27,7 +27,7 @@ from .serializers import (
     SousCategorieSerializer,
     LigneBudgetaireHierarchieSerializer,
 )
-from accounts.views import IsAdministrateur, IsGestionnaireOrAdmin, IsComptableOrAdmin, IsGestionnaire
+from accounts.views import IsAdministrateur, IsGestionnaireOrAdmin, IsComptableOrAdmin, IsGestionnaire, IsComptable
 from audit.models import LogAudit, ActionAudit
 
 
@@ -224,7 +224,7 @@ class BudgetDetailView(generics.RetrieveUpdateDestroyAPIView):
         if self.request.method in ('PUT', 'PATCH'):
             return [IsGestionnaire()]
         if self.request.method == 'DELETE':
-            return [IsGestionnaireOrAdmin()]
+            return [IsGestionnaire()]
         return [permissions.IsAuthenticated()]
 
     def get_serializer_class(self):
@@ -276,7 +276,7 @@ class BudgetDetailView(generics.RetrieveUpdateDestroyAPIView):
 
 
 class ApprouverBudgetView(APIView):
-    permission_classes = [IsComptableOrAdmin]
+    permission_classes = [IsComptable]
 
     def post(self, request, pk):
         try:
@@ -310,7 +310,7 @@ class ApprouverBudgetView(APIView):
 
 
 class RejeterBudgetView(APIView):
-    permission_classes = [IsComptableOrAdmin]
+    permission_classes = [IsComptable]
 
     def post(self, request, pk):
         try:
@@ -347,7 +347,7 @@ class RejeterBudgetView(APIView):
 
 
 class CloturerBudgetView(APIView):
-    permission_classes = [IsComptableOrAdmin]
+    permission_classes = [IsComptable]
 
     def post(self, request, pk):
         try:
@@ -428,7 +428,10 @@ class SoumettreView(APIView):
 # ── Lignes budgétaires ────────────────────────────────────────────────────────
 
 class LigneBudgetaireListCreateView(generics.ListCreateAPIView):
-    permission_classes = [permissions.IsAuthenticated]
+    def get_permissions(self):
+        if self.request.method == 'POST':
+            return [IsGestionnaire()]
+        return [permissions.IsAuthenticated()]
 
     def get_serializer_class(self):
         if self.request.method == 'POST':
@@ -462,7 +465,10 @@ class LigneBudgetaireListCreateView(generics.ListCreateAPIView):
 
 
 class LigneBudgetaireDetailView(generics.RetrieveUpdateDestroyAPIView):
-    permission_classes = [permissions.IsAuthenticated]
+    def get_permissions(self):
+        if self.request.method in ('PUT', 'PATCH', 'DELETE'):
+            return [IsGestionnaire()]
+        return [permissions.IsAuthenticated()]
 
     def get_serializer_class(self):
         if self.request.method in ('PUT', 'PATCH'):

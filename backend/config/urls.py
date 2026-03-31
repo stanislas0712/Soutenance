@@ -9,7 +9,7 @@ from django.conf.urls.static import static
 from django.views.generic import TemplateView
 
 urlpatterns = [
-    path("admin/", admin.site.urls),
+    path("manager/", admin.site.urls),
 
     # Comptes : auth, utilisateurs, départements
     path("api/accounts/", include("accounts.urls")),
@@ -33,7 +33,7 @@ urlpatterns = [
     path("api/v1/notifications/", include("budget.urls_notifications")),
 
     # React SPA — catch-all (doit être en dernier)
-    re_path(r'^(?!api|admin|static|media).*$', TemplateView.as_view(template_name='index.html')),
+    re_path(r'^(?!api|manager|static|media).*$', TemplateView.as_view(template_name='index.html')),
 ]
 
 if settings.DEBUG:

@@ -175,6 +175,11 @@ export function BudgetsAValiderList() {
                   </div>
                   <div className="text-[12px] text-[#6B7280]">
                     {b.departement_nom} · Gestionnaire : <strong>{b.gestionnaire_nom || '—'}</strong>
+                    {b.comptable_nom && (
+                      <span style={{ marginLeft: 8 }}>
+                        · {b.statut === 'APPROUVE' ? 'Approuvé' : 'Rejeté'} par : <strong>{b.comptable_nom}</strong>
+                      </span>
+                    )}
                   </div>
                   {b.date_soumission && (
                     <div className="text-[11px] text-[#9CA3AF] mt-1">
@@ -280,9 +285,9 @@ export function BudgetValidationDetail() {
       {/* Hero header */}
       <div
         className="rounded-[var(--radius-lg)] px-[30px] py-[26px] mb-6 text-white relative overflow-hidden"
-        style={{ background: 'linear-gradient(160deg, #0F2547 0%, #1E3A8A 60%, #1D4ED8 100%)' }}
+        style={{ background: 'linear-gradient(160deg, #1C1917 0%, #252120 60%, #2E2A27 100%)' }}
       >
-        <div className="absolute rounded-full pointer-events-none" style={{ top: -50, right: -50, width: 200, height: 200, background: 'rgba(255,255,255,.05)' }} />
+        <div className="absolute rounded-full pointer-events-none" style={{ top: -50, right: -50, width: 200, height: 200, background: 'rgba(201,168,76,.06)' }} />
         <div className="relative flex items-start gap-4">
           <button
             onClick={() => navigate('/validation')}
@@ -437,7 +442,7 @@ export function BudgetValidationDetail() {
       {(budget.statut === 'SOUMIS' || budget.statut === 'APPROUVE') && (
         <div
           className="mt-6 rounded-[var(--radius-lg)] px-7 py-[22px] flex justify-between items-center flex-wrap gap-4"
-          style={{ background: 'linear-gradient(135deg, #0F2547, #1E3A8A)' }}
+          style={{ background: 'linear-gradient(135deg, #1C1917, #252120)' }}
         >
           <div>
             <div className="font-display font-bold text-white mb-1 text-[15px]">
@@ -578,7 +583,7 @@ function SectionBudget({ titre, lignes, couleur, couleurBg, couleurBorder }) {
           Aucune ligne de type « {titre.toLowerCase()} »
         </div>
       ) : (
-        <div className="grid" style={{ gridTemplateColumns: '230px 1fr 340px', gap: 0 }}>
+        <div className="grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(min(220px,100%), 1fr))', gap: 0 }}>
 
           {/* Panneau gauche : KPI */}
           <div className="p-5 border-r border-[#F3F4F6]">
