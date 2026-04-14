@@ -1,407 +1,446 @@
-<<<<<<< HEAD
-# BudgetFlow — Plateforme de Gestion Budgétaire Entreprise
+# Gestion Budgétaire — Plateforme de Gestion Budgétaire d'Entreprise
 
-[![CI/CD](https://github.com/votre-org/budgetflow/actions/workflows/ci.yml/badge.svg)](https://github.com/votre-org/budgetflow/actions)
-[![Coverage](https://img.shields.io/badge/coverage-≥85%25-brightgreen)](https://github.com/votre-org/budgetflow)
-[![Python](https://img.shields.io/badge/python-3.11%2B-blue)](https://python.org)
-[![Django](https://img.shields.io/badge/django-4.2%20LTS-green)](https://djangoproject.com)
-[![React](https://img.shields.io/badge/react-18-61DAFB)](https://react.dev)
-[![TypeScript](https://img.shields.io/badge/typescript-5-blue)](https://typescriptlang.org)
-[![License](https://img.shields.io/badge/license-MIT-lightgrey)](LICENSE)
+[![CI](https://github.com/stanislas0712/Gestion-de-budget/actions/workflows/ci.yml/badge.svg)](https://github.com/stanislas0712/Gestion-de-budget/actions)
+[![Python](https://img.shields.io/badge/Python-3.10+-blue.svg)](https://www.python.org/)
+[![Django](https://img.shields.io/badge/Django-5.2-green.svg)](https://djangoproject.com/)
+[![React](https://img.shields.io/badge/React-19-61dafb.svg)](https://react.dev/)
+![License](https://img.shields.io/badge/licence-académique-lightgrey.svg)
 
-> **Projet académique de fin d'études** — Plateforme web complète de gestion budgétaire d'entreprise, conçue selon les standards de l'industrie : Clean Architecture, sécurité OWASP Top 10, tests automatisés, CI/CD.
+> Application web de gestion budgétaire avec circuit de validation multi-rôles, traçabilité complète et assistance par intelligence artificielle (Claude — Anthropic).
 
 ---
 
 ## Table des matières
 
-1. [Présentation](#présentation)
-2. [Architecture globale](#architecture-globale)
-3. [Justification des choix techniques](#justification-des-choix-techniques)
-4. [Prérequis système](#prérequis-système)
-5. [Installation rapide](#installation-rapide)
-6. [Variables d'environnement](#variables-denvironnement)
-7. [Commandes utiles](#commandes-utiles)
-8. [Identifiants de démonstration](#identifiants-de-démonstration)
-9. [Documentation API](#documentation-api)
-10. [Tests](#tests)
-11. [Sécurité](#sécurité)
-12. [Liens utiles](#liens-utiles)
+1. [Présentation](#1-présentation)
+2. [Fonctionnalités](#2-fonctionnalités)
+3. [Stack technologique](#3-stack-technologique)
+4. [Modèle de données](#4-modèle-de-données)
+5. [Rôles et permissions](#5-rôles-et-permissions)
+6. [API REST](#6-api-rest)
+7. [Structure du projet](#7-structure-du-projet)
+8. [Installation et démarrage](#8-installation-et-démarrage)
+9. [Variables d'environnement](#9-variables-denvironnement)
+10. [Administration Django](#10-administration-django)
+11. [Auteur](#11-auteur)
 
 ---
 
-## Présentation
+## 1. Présentation
 
-**BudgetFlow** est une plateforme web de gestion budgétaire d'entreprise permettant de gérer le cycle de vie complet des budgets départementaux :
+**Gestion Budgétaire** est une plateforme de gestion budgétaire conçue pour les entreprises et organisations qui souhaitent structurer, soumettre, valider et suivre leurs budgets départementaux de manière rigoureuse et traçable.
 
-- **Gestionnaire** : crée, soumet et corrige ses budgets
-- **Comptable** : valide, approuve ou rejette les budgets soumis
-- **Administrateur** : gère les utilisateurs, départements, exercices et enveloppes budgétaires
+Le système repose sur un **circuit de validation à trois niveaux** :
 
-### Fonctionnalités clés
+```
+Administrateur  →  vote le budget annuel global et l'alloue aux départements
+Gestionnaire    →  crée les budgets départementaux et saisit les dépenses
+Comptable       →  examine, approuve ou rejette les budgets et les dépenses
+```
 
-| Fonctionnalité | Description |
-|---|---|
-| Workflow budgétaire | Machine à états : Brouillon → Soumis → Approuvé/Rejeté → Clôturé |
-| Contrôle des enveloppes | Plafonnement automatique, alertes dépassement |
-| Audit trail | Historique immuable de toutes les actions |
-| Notifications | In-app + email (Celery async) |
-| Exports | PDF (WeasyPrint) + Excel (openpyxl) |
-| Rapports | KPIs, évolution mensuelle, par département |
-| API REST | OpenAPI 3.0, documentation Swagger interactive |
+Chaque action (création, modification, validation, rejet) est automatiquement **journalisée** dans un journal d'audit immuable. Une **assistance IA** (modèle Claude d'Anthropic) permet d'analyser les budgets, détecter les anomalies et suggérer des optimisations.
 
 ---
 
-## Architecture globale
+## 2. Fonctionnalités
+
+### Gestion budgétaire
+
+- Vote du **budget annuel global** avec découpage par exercice (1 ou plusieurs années)
+- **Allocations départementales** : répartition du budget global entre les départements avec contrôle de dépassement
+- Création de budgets par les gestionnaires avec lignes budgétaires (REVENU / DÉPENSE)
+- Techniques d'estimation : **Analogie**, **3 Points (PERT)**, **Ascendante**
+- Circuit de statuts : `BROUILLON → SOUMIS → APPROUVÉ / REJETÉ → CLÔTURÉ`
+- Jauge de consommation temps réel par département et par ligne
+
+### Suivi des dépenses
+
+- Saisie de dépenses multi-lignes sur un budget approuvé
+- Pièces justificatives (fichiers uploadés)
+- Validation / rejet par le comptable avec motif obligatoire
+- Mise à jour automatique des montants consommés
+
+### Rapports & KPIs
+
+- Tableaux de bord rôle-spécifiques avec indicateurs clés
+- Graphiques d'exécution budgétaire (Recharts)
+- Export **CSV** et **PDF** sur toutes les listes
+- Page KPI Analytics (admin + comptable)
+
+### Intelligence artificielle (Claude — Anthropic)
+
+- Analyse automatique d'un budget : cohérence, risques, optimisations
+- Détection d'anomalies sur les dépenses
+- Suggestions de réallocation
+- Chatbot budgétaire intégré (mode conversationnel)
+- Mode de contournement (`SKIP_CLAUDE_API=True`) pour les environnements sans clé API
+
+### Sécurité & gestion des utilisateurs
+
+- Authentification **JWT** (access 15 min / refresh 7 jours) avec hachage **Argon2**
+- Blocage automatique après 3 tentatives de connexion échouées
+- Réinitialisation de mot de passe par email avec token signé
+- Gestion des profils utilisateurs avec photo
+
+### Traçabilité complète
+
+- Journal d'audit `LogAudit` : CREATE / UPDATE / DELETE / LOGIN / APPROVE / REJECT / SUBMIT / EXPORT / VIEW
+- Déclenchement automatique via signaux Django
+- Capture de l'état avant/après sur chaque modification
+- Interface de consultation avec filtres par action, table et date
+
+### Administration
+
+- Interface d'administration Django avec **SimpleUI**
+- Gestion complète des utilisateurs, départements, budgets et allocations
+- Filtres avancés, jauges de consommation, badges colorés par statut
+
+---
+
+## 3. Stack technologique
+
+### Backend
+
+| Composant | Technologie | Version |
+|---|---|---|
+| Framework web | Django | 5.2 |
+| API REST | Django REST Framework | ≥ 3.15 |
+| Authentification | djangorestframework-simplejwt | 5.3.1 |
+| Hachage mots de passe | argon2-cffi | ≥ 23.1 |
+| Base de données | PostgreSQL | 15 |
+| Driver PostgreSQL | psycopg2-binary | 2.9.11 |
+| Intelligence artificielle | Claude API (Anthropic) | claude-3-5-sonnet |
+| Interface admin | django-simpleui | latest |
+| CORS | django-cors-headers | ≥ 4.4 |
+| Images | Pillow | ≥ 10 |
+| Export Excel | openpyxl | ≥ 3.1 |
+| Export PDF | reportlab | ≥ 4 |
+| Configuration | python-dotenv | 1.0.1 |
+
+### Frontend
+
+| Composant | Technologie | Version |
+|---|---|---|
+| Framework UI | React | 19 |
+| Build tool | Vite | 7 |
+| CSS | TailwindCSS | 4 |
+| Requêtes HTTP | Axios | ≥ 1.13 |
+| State serveur | TanStack Query | 5 |
+| Routage | React Router DOM | 7 |
+| Graphiques | Recharts | 3 |
+| Icônes | Lucide React | ≥ 0.577 |
+
+---
+
+## 4. Modèle de données
+
+### Application `accounts`
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                         NGINX (80/443)                          │
-│                    Reverse Proxy + SSL/TLS                      │
-└──────────────────┬──────────────────────┬───────────────────────┘
-                   │                      │
-          ┌────────▼────────┐    ┌────────▼────────┐
-          │   React + TS    │    │  Django + DRF   │
-          │   (Vite/SPA)    │    │   API REST v1   │
-          │   :3000/static  │    │      :8000      │
-          └─────────────────┘    └────────┬────────┘
-                                          │
-              ┌───────────────────────────┼───────────────────────┐
-              │                           │                       │
-     ┌────────▼───────┐         ┌─────────▼──────┐    ┌──────────▼─────┐
-     │  PostgreSQL 15  │         │    Redis 7     │    │   MinIO (S3)   │
-     │  Base de données│         │ Cache + Broker │    │ Stockage objets│
-     └─────────────────┘         └────────┬───────┘    └────────────────┘
-                                          │
-                               ┌──────────▼──────────┐
-                               │   Celery Workers    │
-                               │  + Celery Beat      │
-                               │ (tâches async/cron) │
-                               └─────────────────────┘
+Departement
+├── id          UUID (PK, auto)
+├── code        CharField unique (généré automatiquement depuis le nom)
+├── nom         CharField
+├── description TextField (optionnel)
+└── actif       BooleanField
 
-┌─────────────────────────────────────────────────────────────────┐
-│                    Pattern Architectural                        │
-│                                                                 │
-│  PRÉSENTATION  →  Views DRF + Serializers                       │
-│        ↓                                                        │
-│  APPLICATION   →  Services (use cases métier)                   │
-│        ↓                                                        │
-│  DOMAINE       →  Models + règles métier + StateMachine         │
-│        ↓                                                        │
-│  INFRASTRUCTURE → Repository (Selectors) + ORM Django           │
-└─────────────────────────────────────────────────────────────────┘
+Utilisateur  (AbstractBaseUser)
+├── id                  UUID (PK, auto)
+├── matricule           CharField unique
+├── email               EmailField unique
+├── nom / prenom        CharField
+├── photo               ImageField
+├── role                ADMINISTRATEUR | GESTIONNAIRE | COMPTABLE
+├── departement         FK → Departement
+├── actif               BooleanField
+├── bloque              BooleanField
+├── tentatives_connexion PositiveSmallIntegerField (max 3 avant blocage)
+└── derniere_connexion  DateTimeField
 ```
 
-### Structure des répertoires
+### Application `budget`
 
 ```
-budgetflow/
-├── backend/                    ← Projet Django
-│   ├── config/
-│   │   ├── settings/
-│   │   │   ├── base.py         ← settings communs
-│   │   │   ├── development.py  ← DEBUG=True
-│   │   │   ├── production.py   ← sécurité maximale
-│   │   │   └── test.py         ← BD en mémoire
-│   │   ├── urls.py
-│   │   ├── wsgi.py
-│   │   └── asgi.py
-│   ├── apps/
-│   │   ├── users/              ← Gestion utilisateurs
-│   │   ├── authentication/     ← JWT auth
-│   │   ├── departements/       ← Départements
-│   │   ├── exercices/          ← Exercices budgétaires
-│   │   ├── enveloppes/         ← Enveloppes budgétaires
-│   │   ├── budgets/            ← Domaine principal
-│   │   ├── notifications/      ← Système de notifications
-│   │   └── rapports/           ← KPIs et exports
-│   ├── common/                 ← Code partagé
-│   │   ├── models.py           ← BaseModel UUID
-│   │   ├── permissions.py      ← Permissions par rôle
-│   │   ├── renderers.py        ← Format réponse uniforme
-│   │   ├── exceptions.py       ← Exceptions métier
-│   │   ├── pagination.py
-│   │   └── validators.py
-│   ├── requirements/
-│   │   ├── base.txt
-│   │   ├── development.txt
-│   │   └── production.txt
+BudgetAnnuel
+├── id             UUID (PK)
+├── annee          IntegerField
+├── annee_fin      IntegerField (optionnel — exercice pluriannuel)
+├── montant_global DecimalField
+└── description    TextField
+
+AllocationDepartementale
+├── budget_annuel   FK → BudgetAnnuel
+├── departement     FK → Departement
+├── montant_alloue  DecimalField
+├── montant_consomme  (calculé)
+└── montant_disponible (calculé)
+
+Budget
+├── id               UUID (PK)
+├── code             CharField unique (auto-généré)
+├── nom              CharField
+├── statut           BROUILLON | SOUMIS | APPROUVE | REJETE | CLOTURE
+├── technique        ANALOGIE | TROIS_POINTS | ASCENDANTE
+├── gestionnaire     FK → Utilisateur
+├── departement      FK → Departement
+├── comptable        FK → Utilisateur (validateur)
+├── date_soumission  DateTimeField
+├── motif_rejet      TextField
+└── montant_global   (calculé depuis les lignes)
+
+LigneBudgetaire
+├── budget           FK → Budget
+├── sous_categorie   FK → SousCategorie
+├── libelle          CharField
+├── section          REVENU | DEPENSE
+├── montant_alloue   DecimalField
+├── montant_consomme DecimalField
+└── montant_disponible DecimalField
+
+ConsommationLigne  (dépenses)
+├── ligne            FK → LigneBudgetaire
+├── reference        CharField unique (auto-généré)
+├── montant          DecimalField
+├── statut           SAISIE | VALIDEE | REJETEE
+├── enregistre_par   FK → Utilisateur
+├── validateur       FK → Utilisateur
+├── piece_justificative FileField
+└── motif_rejet      TextField
+```
+
+### Application `audit`
+
+```
+LogAudit
+├── id                UUID (PK)
+├── utilisateur       FK → Utilisateur
+├── table             CharField
+├── enregistrement_id CharField
+├── action            CREATE | UPDATE | DELETE | LOGIN | APPROVE | REJECT | SUBMIT | EXPORT
+├── valeur_avant      TextField JSON
+├── valeur_apres      TextField JSON
+└── date_action       DateTimeField (auto)
+```
+
+---
+
+## 5. Rôles et permissions
+
+| Fonctionnalité | Administrateur | Gestionnaire | Comptable |
+|---|:---:|:---:|:---:|
+| Gérer les départements | ✅ | — | — |
+| Gérer les utilisateurs | ✅ | — | — |
+| Budget annuel & allocations | ✅ | — | — |
+| Voir tous les budgets | ✅ | — | ✅ |
+| Créer / modifier un budget | — | ✅ | — |
+| Soumettre un budget | — | ✅ | — |
+| Approuver / rejeter un budget | — | — | ✅ |
+| Clôturer un budget | — | — | ✅ |
+| Saisir des dépenses | — | ✅ | — |
+| Valider / rejeter des dépenses | — | — | ✅ |
+| Rapports & KPIs | ✅ | — | ✅ |
+| Journal d'audit | ✅ | — | — |
+| Assistant IA | ✅ | ✅ | ✅ |
+| Administration Django | ✅ | — | — |
+
+---
+
+## 6. API REST
+
+Base URL : `http://localhost:8000/api/v1/`
+
+### Authentification
+
+| Méthode | Endpoint | Description |
+|---|---|---|
+| POST | `/auth/login/` | Connexion — retourne access + refresh |
+| POST | `/auth/token/refresh/` | Renouvellement du token access |
+| POST | `/auth/reset-password/request/` | Demande de réinitialisation par email |
+| POST | `/auth/reset-password/confirm/` | Confirmation avec token |
+
+### Comptes
+
+| Méthode | Endpoint | Description |
+|---|---|---|
+| GET / POST | `/departements/` | Lister / créer |
+| GET / PATCH / DELETE | `/departements/{id}/` | Détail / modifier / supprimer |
+| GET / POST | `/utilisateurs/` | Lister / créer |
+| GET / PATCH / DELETE | `/utilisateurs/{id}/` | Détail / modifier / supprimer |
+| GET / PATCH | `/auth/me/` | Profil de l'utilisateur connecté |
+
+### Budgets
+
+| Méthode | Endpoint | Description |
+|---|---|---|
+| GET / POST | `/budgets-annuels/` | Budgets annuels |
+| GET / POST | `/budgets-annuels/{id}/allocations/` | Allocations d'un exercice |
+| GET / POST | `/budgets/` | Budgets départementaux |
+| GET / PATCH | `/budgets/{id}/` | Détail |
+| POST | `/budgets/{id}/soumettre/` | Soumettre pour validation |
+| POST | `/budgets/{id}/approuver/` | Approuver |
+| POST | `/budgets/{id}/rejeter/` | Rejeter |
+| POST | `/budgets/{id}/cloturer/` | Clôturer |
+| GET / POST | `/budgets/{id}/lignes/` | Lignes budgétaires |
+| POST | `/budgets/{id}/depense-multi/` | Saisie dépense multi-lignes |
+
+### Dépenses
+
+| Méthode | Endpoint | Description |
+|---|---|---|
+| GET | `/depenses/` | Lister (filtrable par statut, budget) |
+| GET | `/depenses/{id}/` | Détail |
+| POST | `/depenses/{id}/valider/` | Valider |
+| POST | `/depenses/{id}/rejeter/` | Rejeter avec motif |
+
+### Intelligence artificielle
+
+| Méthode | Endpoint | Description |
+|---|---|---|
+| POST | `/ia/analyser/{budget_id}/` | Analyse complète d'un budget |
+| POST | `/ia/anomalies/{budget_id}/` | Détection d'anomalies |
+| POST | `/ia/suggestions/{budget_id}/` | Suggestions de réallocation |
+| GET / POST | `/ia/conversations/` | Conversations chatbot |
+| POST | `/ia/conversations/{id}/messages/` | Envoyer un message |
+
+### Rapports & Journal d'audit
+
+| Méthode | Endpoint | Description |
+|---|---|---|
+| GET | `/rapports/kpis/` | Indicateurs clés globaux |
+| GET | `/rapports/evolution/` | Évolution mensuelle |
+| GET | `/rapports/departements/` | Consommation par département |
+| GET | `/audit/logs/` | Journal d'audit (filtrable) |
+
+---
+
+## 7. Structure du projet
+
+```
+Gestion-de-budget/
+│
+├── backend/                          # Django API
+│   ├── accounts/                     # Utilisateurs, départements, rôles
+│   ├── budget/                       # Cœur métier (budgets, lignes, dépenses, IA)
+│   ├── audit/                        # Traçabilité (LogAudit)
+│   ├── config/                       # Settings, URLs, WSGI
+│   ├── templates/                    # Templates admin + emails
+│   ├── requirements.txt
 │   └── manage.py
-├── frontend/                   ← Application React/TypeScript
+│
+├── frontend/                         # React SPA
 │   ├── src/
-│   │   ├── api/                ← Clients HTTP + types
-│   │   ├── components/         ← Composants réutilisables
-│   │   ├── pages/              ← Pages par rôle
-│   │   ├── hooks/              ← Custom hooks
-│   │   ├── store/              ← État global (Zustand)
-│   │   ├── utils/              ← Utilitaires
-│   │   └── router/             ← Configuration routing
+│   │   ├── api/                      # Clients Axios (budget, dépenses, IA, audit)
+│   │   ├── components/               # Layout, StatusBadge, ChatbotDrawer…
+│   │   ├── context/AuthContext.jsx   # JWT + refresh auto
+│   │   ├── pages/                    # landing / admin / gestionnaire / comptable / ia
+│   │   └── utils/                    # export.js, constants.js, notifRefresh.js
 │   └── package.json
-├── docker-compose.yml          ← Dev environment
-├── docker-compose.prod.yml     ← Production
-├── nginx/
-│   └── nginx.conf
-└── .github/
-    └── workflows/
-        └── ci.yml
+│
+├── .github/workflows/
+│   └── ci.yml                        # Tests + lint à chaque push/PR
+│
+├── .env.example
+└── README.md
 ```
 
 ---
 
-## Justification des choix techniques
+## 8. Installation et démarrage
 
-### Django 4.2 LTS
-- **Framework mature** (+ de 15 ans) avec "batteries included"
-- **ORM puissant** avec migrations versionnées et auditables
-- **Sécurité éprouvée** : protection CSRF, XSS, injection SQL intégrée
-- **DRF** : standard industrie pour les APIs REST
-- **LTS** : support garanti jusqu'en avril 2026, stabilité en production
+### Prérequis
 
-### React 18 + TypeScript 5
-- **TypeScript** : typage statique → détection d'erreurs à la compilation
-- **Composants réutilisables** → maintenabilité et cohérence UI
-- **React 18 Concurrent** : performances améliorées (Suspense, transitions)
-- **Séparation frontend/backend** → scalabilité indépendante
+- Python 3.10+
+- Node.js 20+
+- PostgreSQL 15
 
-### PostgreSQL 15
-- **ACID compliance** → intégrité des données financières garantie
-- **Transactions atomiques** pour les opérations budgétaires critiques
-- **Support JSON natif** pour les métadonnées flexibles
-- **Performance analytique** sur les requêtes de rapports
-
-### Redis 7
-- **Cache des tableaux de bord** → latence < 50ms vs > 500ms sans cache
-- **Broker Celery** → file de tâches asynchrones persistante
-- **Rate limiting** → protection contre les attaques par force brute
-- **Atomic operations** → verrous distribués thread-safe
-
-### JWT (djangorestframework-simplejwt)
-- **Stateless** → scalabilité horizontale sans session partagée
-- **Refresh token rotation** → révocation sécurisée
-- **Standard RFC 7519** → interopérabilité maximale
-- **Blacklist** → invalidation explicite à la déconnexion
-
----
-
-## Prérequis système
-
-| Outil | Version minimale |
-|---|---|
-| Docker | 24.0+ |
-| Docker Compose | 2.20+ |
-| Git | 2.40+ |
-| Make (optionnel) | 4.0+ |
-
-> **Note** : Docker Compose gère automatiquement Python, Node.js, PostgreSQL, Redis, etc.
-
----
-
-## Installation rapide
+### Backend
 
 ```bash
-# 1. Cloner le dépôt
-git clone https://github.com/votre-org/budgetflow.git
-cd budgetflow
+cd backend
 
-# 2. Copier et configurer les variables d'environnement
-cp .env.example .env
-# Éditer .env si nécessaire (les valeurs par défaut fonctionnent en dev)
+# Créer et activer l'environnement virtuel
+python -m venv ../venv
+../venv/Scripts/activate           # Windows
+# source ../venv/bin/activate      # Linux/Mac
 
-# 3. Construire et démarrer les conteneurs
-docker compose up -d --build
+# Installer les dépendances
+pip install -r requirements.txt
 
-# 4. Appliquer les migrations et charger les données de démo
-docker compose exec backend python manage.py migrate
-docker compose exec backend python manage.py loaddata fixtures/demo.json
+# Configurer l'environnement
+cp ../.env.example ../.env
+# Adapter DB_HOST, DB_USER, DB_PASSWORD, SECRET_KEY…
 
-# 5. Créer un superutilisateur admin (optionnel, déjà dans fixtures)
-docker compose exec backend python manage.py createsuperuser
+# Migrations
+python manage.py migrate
+
+# Créer un superutilisateur
+python manage.py createsuperuser
+
+# Démarrer le serveur
+python manage.py runserver
 ```
 
-L'application est disponible sur **http://localhost** après ces 5 commandes.
-
----
-
-## Variables d'environnement
-
-Copier `.env.example` → `.env` et adapter :
-
-```env
-# ─── Django ───────────────────────────────────────────────────────
-DJANGO_SETTINGS_MODULE=config.settings.development
-SECRET_KEY=your-secret-key-min-50-chars
-DEBUG=True
-ALLOWED_HOSTS=localhost,127.0.0.1
-
-# ─── Base de données ──────────────────────────────────────────────
-DB_ENGINE=django.db.backends.postgresql
-DB_NAME=budgetflow
-DB_USER=budgetflow
-DB_PASSWORD=budgetflow_secret
-DB_HOST=postgres
-DB_PORT=5432
-
-# ─── Redis ────────────────────────────────────────────────────────
-REDIS_URL=redis://redis:6379/0
-CELERY_BROKER_URL=redis://redis:6379/1
-CELERY_RESULT_BACKEND=redis://redis:6379/2
-
-# ─── MinIO / S3 ───────────────────────────────────────────────────
-AWS_ACCESS_KEY_ID=minioadmin
-AWS_SECRET_ACCESS_KEY=minioadmin
-AWS_STORAGE_BUCKET_NAME=budgetflow
-AWS_S3_ENDPOINT_URL=http://minio:9000
-
-# ─── Email ────────────────────────────────────────────────────────
-EMAIL_BACKEND=django.core.mail.backends.smtp.EmailBackend
-EMAIL_HOST=mailpit
-EMAIL_PORT=1025
-EMAIL_USE_TLS=False
-DEFAULT_FROM_EMAIL=noreply@budgetflow.local
-
-# ─── JWT ──────────────────────────────────────────────────────────
-JWT_ACCESS_TOKEN_LIFETIME_MINUTES=15
-JWT_REFRESH_TOKEN_LIFETIME_DAYS=7
-
-# ─── Sentry (production) ──────────────────────────────────────────
-SENTRY_DSN=
-```
-
----
-
-## Commandes utiles
+### Frontend
 
 ```bash
-# ─── Développement ────────────────────────────────────────────────
-docker compose up -d                    # Démarrer tous les services
-docker compose logs -f backend          # Logs backend en temps réel
-docker compose exec backend bash        # Shell dans le conteneur
+cd frontend
 
-# ─── Django ───────────────────────────────────────────────────────
-docker compose exec backend python manage.py migrate
-docker compose exec backend python manage.py makemigrations
-docker compose exec backend python manage.py shell_plus        # shell amélioré
-docker compose exec backend python manage.py collectstatic
+# Installer les dépendances
+npm install
 
-# ─── Tests ────────────────────────────────────────────────────────
-docker compose exec backend pytest                             # tous les tests
-docker compose exec backend pytest --cov=apps --cov-report=html
-docker compose exec backend pytest apps/budgets/tests/ -v     # app spécifique
-cd frontend && npm run test                                    # tests frontend
-cd frontend && npm run test:coverage
+# Build de production (servi par Django)
+npm run build
 
-# ─── Qualité code ─────────────────────────────────────────────────
-docker compose exec backend black .
-docker compose exec backend isort .
-docker compose exec backend flake8
-cd frontend && npm run lint
-cd frontend && npm run type-check
-
-# ─── Celery ───────────────────────────────────────────────────────
-docker compose exec celery-worker celery -A config inspect active
-docker compose exec celery-beat celery -A config beat --loglevel=info
-
-# ─── Base de données ──────────────────────────────────────────────
-docker compose exec postgres psql -U budgetflow budgetflow
-docker compose exec backend python manage.py dumpdata --indent=2 > fixtures/dump.json
-
-# ─── Production ───────────────────────────────────────────────────
-docker compose -f docker-compose.prod.yml up -d --build
-docker compose -f docker-compose.prod.yml exec backend python manage.py migrate
+# Ou démarrer en mode développement (hot reload)
+npm run dev
 ```
 
 ---
 
-## Identifiants de démonstration
+## 9. Variables d'environnement
 
-| Rôle | Email | Mot de passe |
+Copiez `.env.example` en `.env` et adaptez les valeurs. **Ne commitez jamais `.env`.**
+
+| Variable | Description | Défaut |
 |---|---|---|
-| Administrateur | admin@budgetflow.local | Admin1234! |
-| Comptable | comptable1@budgetflow.local | Compta1234! |
-| Comptable | comptable2@budgetflow.local | Compta1234! |
-| Gestionnaire Finance | gestionnaire.finance@budgetflow.local | Gest1234! |
-| Gestionnaire RH | gestionnaire.rh@budgetflow.local | Gest1234! |
-| Gestionnaire IT | gestionnaire.it@budgetflow.local | Gest1234! |
+| `SECRET_KEY` | Clé secrète Django (≥ 50 caractères) | *obligatoire* |
+| `DEBUG` | Mode debug Django | `True` |
+| `ALLOWED_HOSTS` | Hôtes autorisés (virgule) | `localhost,127.0.0.1` |
+| `DB_NAME` | Nom de la base PostgreSQL | `budgetflow` |
+| `DB_USER` | Utilisateur PostgreSQL | `budgetflow` |
+| `DB_PASSWORD` | Mot de passe PostgreSQL | *obligatoire* |
+| `DB_HOST` | Hôte PostgreSQL | `localhost` |
+| `DB_PORT` | Port PostgreSQL | `5432` |
+| `ANTHROPIC_API_KEY` | Clé API Claude (Anthropic) | *optionnel* |
+| `SKIP_CLAUDE_API` | Désactiver les appels IA | `False` |
+| `JWT_ACCESS_TOKEN_LIFETIME_MINUTES` | Durée du token access | `15` |
+| `JWT_REFRESH_TOKEN_LIFETIME_DAYS` | Durée du token refresh | `7` |
+| `EMAIL_HOST` | Serveur SMTP | `smtp.gmail.com` |
+| `EMAIL_PORT` | Port SMTP | `587` |
+| `EMAIL_HOST_USER` | Email d'envoi | *configurable* |
+| `EMAIL_HOST_PASSWORD` | Mot de passe SMTP | *configurable* |
+| `FRONTEND_URL` | URL du frontend (liens email) | `http://localhost:8000` |
 
 ---
 
-## Documentation API
+## 10. Administration Django
 
-| URL | Description |
-|---|---|
-| http://localhost:8000/api/docs/ | Swagger UI interactif |
-| http://localhost:8000/api/redoc/ | ReDoc (documentation lisible) |
-| http://localhost:8000/api/schema/ | Schéma OpenAPI 3.0 (JSON/YAML) |
+L'interface d'administration est accessible sur `/manager/` avec un compte `is_staff=True`.
 
-> **Authentification Swagger** : cliquer "Authorize" → saisir `Bearer <access_token>`
-
----
-
-## Tests
-
-```bash
-# Rapport de couverture complet
-docker compose exec backend pytest --cov=apps --cov-report=html --cov-report=term-missing
-
-# Résultats dans htmlcov/index.html
-# Couverture cible : ≥ 85%
-```
-
-### Cas critiques testés
-
-- Isolation des données par rôle (gestionnaire voit uniquement ses budgets)
-- Machine à états : transitions valides/invalides
-- Anti-conflit d'intérêts : comptable ne peut approuver son propre département
-- Rate limiting : 6ème tentative de login → 429 Too Many Requests
-- Dépassement d'enveloppe → 400 Bad Request
-- Upload fichier avec mauvais MIME → 400 Bad Request
-- Race condition lors de l'approbation concurrente
+- Thème sombre (SimpleUI)
+- Gestion des utilisateurs avec badges rôle, statut actif/bloqué
+- Budgets avec jauge de consommation inline
+- Journal d'audit en lecture seule avec badges colorés par action
 
 ---
 
-## Sécurité
+## 11. Auteur
 
-BudgetFlow implémente l'ensemble des recommandations **OWASP Top 10** :
+**Stanislas Konaté**
+Projet de soutenance — Développement d'une application web de gestion budgétaire
 
-| OWASP | Mesure |
-|---|---|
-| A01 Broken Access Control | Permissions DRF granulaires par rôle + ownership, UUIDs |
-| A02 Cryptographic Failures | Bcrypt passwords, HTTPS/HSTS, secrets .env, JWT HS256 |
-| A03 Injection | ORM Django, validation Zod/serializers, pas de SQL brut |
-| A04 Insecure Design | Moindre privilège, anti-conflit d'intérêts, audit trail |
-| A05 Security Misconfiguration | DEBUG=False prod, CSP headers, CORS restreint |
-| A06 Vulnerable Components | Versions épinglées, safety check CI, images Docker officielles |
-| A07 Authentication Failures | Lock 5 tentatives, rate limit 10/min, JWT blacklist |
-| A08 Software & Data Integrity | python-magic MIME check, machine à états explicite |
-| A09 Logging & Monitoring | Logs JSON structurés, Sentry, audit trail complet |
-| A10 SSRF | Pas de fetch externe, MinIO URLs présignées |
+- GitHub : [@stanislas0712](https://github.com/stanislas0712)
 
 ---
 
-## Liens utiles
-
-| Service | URL | Accès |
-|---|---|---|
-| Application | http://localhost | - |
-| API Swagger | http://localhost:8000/api/docs/ | - |
-| Django Admin | http://localhost:8000/admin/ | admin@budgetflow.local |
-| pgAdmin | http://localhost:5050 | admin@admin.com / admin |
-| Flower (Celery) | http://localhost:5555 | - |
-| MinIO Console | http://localhost:9001 | minioadmin / minioadmin |
-| Mailpit (emails dev) | http://localhost:8025 | - |
-
----
-
-## Méthodologie
-
-- **Agile Scrum** : 4 sprints de 2 semaines, backlog priorisé
-- **Git Flow** : branches `feature/`, `fix/`, `release/`
-- **Conventional Commits** : `feat:`, `fix:`, `docs:`, `test:`, `refactor:`
-- **Code Review** : Pull Requests obligatoires, CI verte avant merge
-
----
-
-*Développé dans le cadre d'un projet de fin d'études — 2024/2025*
-=======
-# gestion_budgetaire_soutenance
->>>>>>> 8179da248bc6189a266dca344f335265659893f9
+*Gestion Budgétaire — Projet académique de soutenance. Tous droits réservés.*

@@ -4,8 +4,8 @@ const STEPS = [
   {
     number: '01',
     tag: 'ALLOCATION',
-    color: '#3B82F6',
-    colorLight: '#EFF6FF',
+    color: '#C9A84C',
+    colorLight: '#FEF9EC',
     title: "L'administrateur alloue les enveloppes",
     description:
       "Définissez le budget global annuel puis répartissez-le par département (Informatique, RH, Comptabilité…). Chaque département reçoit son enveloppe budgétaire avec un montant alloué, un suivi de consommation et un taux d'utilisation en temps réel.",
@@ -125,7 +125,7 @@ export default function HowItWorks() {
             Un workflow simple en 5 étapes
           </h2>
           <p className="text-lg text-gray-500 max-w-xl mx-auto leading-relaxed">
-            De l'allocation initiale à la clôture de l'exercice, BudgetFlow structure
+            De l'allocation initiale à la clôture de l'exercice, Gestion Budgétaire structure
             et sécurise chaque étape de votre cycle budgétaire.
           </p>
         </div>

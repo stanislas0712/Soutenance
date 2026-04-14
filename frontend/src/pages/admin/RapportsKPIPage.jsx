@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query'
 import {
   getKpis,
   getParDepartement,
-  getTauxUtilisationEnvelop,
+  getTauxUtilisationEnveloppes,
   getEvolutionMensuelle,
 } from '../../api/rapports'
 import {
@@ -14,7 +14,7 @@ import { BarChart3, CheckCircle2, Clock, XCircle, TrendingUp, AlertTriangle } fr
 export default function RapportsKPIPage() {
   const { data: kpisData } = useQuery({ queryKey: ['rapports-kpis'], queryFn: () => getKpis().then(r => r.data.data) })
   const { data: deptData  } = useQuery({ queryKey: ['rapports-dept'],  queryFn: () => getParDepartement().then(r => r.data.data) })
-  const { data: envData   } = useQuery({ queryKey: ['rapports-env'],   queryFn: () => getTauxUtilisationEnvelop().then(r => r.data.data) })
+  const { data: envData   } = useQuery({ queryKey: ['rapports-env'],   queryFn: () => getTauxUtilisationEnveloppes().then(r => r.data.data) })
   const { data: evoData   } = useQuery({ queryKey: ['rapports-evo'],   queryFn: () => getEvolutionMensuelle().then(r => r.data.data) })
 
   const kpis       = kpisData || {}
@@ -41,7 +41,7 @@ export default function RapportsKPIPage() {
     <div>
       <div className="page-header">
         <div>
-          <h1 className="page-title">Rapports & KPIs</h1>
+          <h1 className="page-title">Statistiques</h1>
           <p className="page-subtitle">Tableau de bord analytique en temps réel</p>
         </div>
       </div>

@@ -7,6 +7,7 @@
  */
 import { useState, useEffect, useRef } from 'react'
 import { ChevronRight, ChevronDown, Plus, Trash2, Check, X } from 'lucide-react'
+import { ConfirmModal } from '../ui'
 import {
   getBudgetArbre,
   createCategorie,
@@ -31,6 +32,7 @@ export default function LignesBudgetaires({ budgetId, readOnly = false, onTotalC
   const [showLigneForm, setShowLigneForm] = useState(null)   // sousCatId
   const [newLigne,      setNewLigne]      = useState({ libelle: '', montant: '', qte: '1', unite: '' })
   const [saving,        setSaving]        = useState(false)
+  const [confirmModal,  setConfirmModal]  = useState(null)
 
   const newCatRef = useRef(null)
   const subRef    = useRef(null)
@@ -87,10 +89,13 @@ export default function LignesBudgetaires({ budgetId, readOnly = false, onTotalC
     } finally { setSaving(false) }
   }
 
-  const supprimerCategorie = async (catId) => {
-    if (!window.confirm('Supprimer cette catégorie et toutes ses lignes ?')) return
-    await deleteCategorie(catId)
-    await charger()
+  const supprimerCategorie = (catId, libelle) => {
+    setConfirmModal({
+      title: 'Supprimer la catégorie',
+      message: `Supprimer la catégorie "${libelle}" et toutes ses sous-catégories / lignes ?`,
+      confirmLabel: 'Supprimer',
+      onConfirm: async () => { await deleteCategorie(catId); await charger() },
+    })
   }
 
   const ajouterSousCategorie = async (catId) => {
@@ -105,10 +110,13 @@ export default function LignesBudgetaires({ budgetId, readOnly = false, onTotalC
     } finally { setSaving(false) }
   }
 
-  const supprimerSousCategorie = async (scId) => {
-    if (!window.confirm('Supprimer cette sous-catégorie et toutes ses lignes ?')) return
-    await deleteSousCategorie(scId)
-    await charger()
+  const supprimerSousCategorie = (scId, libelle) => {
+    setConfirmModal({
+      title: 'Supprimer la sous-catégorie',
+      message: `Supprimer la sous-catégorie "${libelle}" et toutes ses lignes budgétaires ?`,
+      confirmLabel: 'Supprimer',
+      onConfirm: async () => { await deleteSousCategorie(scId); await charger() },
+    })
   }
 
   const ajouterLigne = async (scId) => {
@@ -205,7 +213,7 @@ export default function LignesBudgetaires({ budgetId, readOnly = false, onTotalC
                     + Sous-cat.
                   </button>
                   <button
-                    onClick={() => supprimerCategorie(cat.id)}
+                    onClick={() => supprimerCategorie(cat.id, cat.libelle)}
                     className="bg-none border-none cursor-pointer px-[4px] py-[2px] rounded-[4px] leading-none text-danger-400"
                   >
                     <Trash2 size={13} strokeWidth={2} />
@@ -264,7 +272,7 @@ export default function LignesBudgetaires({ budgetId, readOnly = false, onTotalC
                         + Ligne
                       </button>
                       <button
-                        onClick={() => supprimerSousCategorie(sc.id)}
+                        onClick={() => supprimerSousCategorie(sc.id, sc.libelle)}
                         className="bg-none border-none cursor-pointer px-[4px] py-[2px] rounded-[4px] leading-none text-danger-400"
                       >
                         <Trash2 size={12} strokeWidth={2} />
@@ -422,6 +430,7 @@ export default function LignesBudgetaires({ budgetId, readOnly = false, onTotalC
           {fmt(totalGeneral)} FCFA
         </span>
       </div>
+      {confirmModal && <ConfirmModal {...confirmModal} onClose={() => setConfirmModal(null)} />}
     </div>
   )
 }

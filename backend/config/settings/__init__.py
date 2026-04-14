@@ -21,14 +21,14 @@ SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-y2(m0&q27a$6os9%+fxf@(fqq1
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv('DEBUG', 'True') == 'True'
 
-ALLOWED_HOSTS = ['localhost', '127.0.0.1']
+_extra_hosts = os.getenv('ALLOWED_HOSTS', '')
+ALLOWED_HOSTS = ['localhost', '127.0.0.1'] + [h.strip() for h in _extra_hosts.split(',') if h.strip()]
 
 
 # Application definition
 
 INSTALLED_APPS = [
-    # Jazzmin DOIT être avant django.contrib.admin
-    'jazzmin',
+    'simpleui',                          # ← doit précéder django.contrib.admin
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -44,8 +44,44 @@ INSTALLED_APPS = [
     'audit',
 ]
 
+# ── SimpleUI — interface d'administration ──────────────────────────────────────
+SIMPLEUI_HOME_TITLE     = 'BudgetFlow Admin'
+SIMPLEUI_HOME_INFO      = False          # masquer le bloc "about SimpleUI"
+SIMPLEUI_ANALYSIS       = False          # désactiver la télémétrie
+SIMPLEUI_DEFAULT_THEME  = 'dark.css'     # thème sombre par défaut (dark / light / element.css …)
+SIMPLEUI_LOGO           = '/gestion.jpg' # logo dans la barre latérale
+
+# Raccourcis rapides sur la page d'accueil de l'admin
+SIMPLEUI_HOME_QUICK = True
+
+# Icônes FontAwesome pour chaque section de menu
+SIMPLEUI_ICON = {
+    'Comptes'                   : 'fas fa-users',
+    'Utilisateurs'              : 'fas fa-user-tie',
+    'Départements'              : 'fas fa-building',
+    'Budget'                    : 'fas fa-wallet',
+    'Budgets annuels'           : 'fas fa-calendar-alt',
+    'Allocations départementales': 'fas fa-chart-pie',
+    'Budgets'                   : 'fas fa-file-invoice-dollar',
+    'Lignes budgétaires'        : 'fas fa-list-alt',
+    'Consommations lignes'      : 'fas fa-receipt',
+    'Audit'                     : 'fas fa-shield-alt',
+    'Logs audit'                : 'fas fa-history',
+}
+
+SIMPLEUI_CONFIG = {
+    'system_keep'  : False,   # cacher les menus Django par défaut non nécessaires
+    'menu_display' : [        # ordre d'affichage des apps dans la sidebar
+        'Comptes',
+        'Budget',
+        'Audit',
+    ],
+    'dynamic'      : True,    # menus dynamiques (basés sur les permissions réelles)
+}
+
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'corsheaders.middleware.CorsMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -75,7 +111,9 @@ TEMPLATES = [
 WSGI_APPLICATION = 'config.wsgi.application'
 
 
-# Database - PostgreSQL
+# Database — DATABASE_URL (Render) a priorité, sinon variables individuelles
+import dj_database_url as _dj_db_url
+
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
@@ -86,6 +124,9 @@ DATABASES = {
         'PORT': os.getenv('DB_PORT', '5432'),
     }
 }
+_db_url = os.getenv('DATABASE_URL')
+if _db_url:
+    DATABASES['default'] = _dj_db_url.config(conn_max_age=600, ssl_require=True)
 
 
 # Password validation
@@ -104,10 +145,13 @@ USE_TZ = True
 # Static files
 STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
-STATICFILES_DIRS = [
-    BASE_DIR / 'static',
-    BASE_DIR / 'frontend_dist',
-]
+STATICFILES_DIRS = [d for d in [BASE_DIR / 'static', BASE_DIR / 'frontend_dist'] if d.exists()]
+
+# Whitenoise — compression brotli/gzip, pas de re-hash (Vite hash déjà les assets)
+STORAGES = {
+    'default':     {'BACKEND': 'django.core.files.storage.FileSystemStorage'},
+    'staticfiles': {'BACKEND': 'whitenoise.storage.CompressedStaticFilesStorage'},
+}
 
 # Default primary key field type
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
@@ -238,152 +282,24 @@ SKIP_CLAUDE_API = os.getenv('SKIP_CLAUDE_API', 'True').lower() in ('true', '1', 
 ANTHROPIC_API_KEY = os.getenv('ANTHROPIC_API_KEY', '')
 
 # ── Email / SMTP ───────────────────────────────────────────────────────────────
-EMAIL_BACKEND      = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST         = os.getenv('EMAIL_HOST', 'smtp.gmail.com')
-EMAIL_PORT         = int(os.getenv('EMAIL_PORT', 587))
-EMAIL_USE_TLS      = os.getenv('EMAIL_USE_TLS', 'True') == 'True'
-EMAIL_HOST_USER    = os.getenv('EMAIL_HOST_USER', '')
-EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD', '')
-DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', f'BudgetFlow <{os.getenv("EMAIL_HOST_USER", "noreply@budgetflow.bf")}>')
+_email_user     = os.getenv('EMAIL_HOST_USER', '').strip()
+_email_password = os.getenv('EMAIL_HOST_PASSWORD', '').strip()
+
+# Si l'email n'est pas configuré en dev → console (le lien s'affiche dans le terminal)
+if DEBUG and not (_email_user and _email_password):
+    EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+else:
+    EMAIL_BACKEND       = 'django.core.mail.backends.smtp.EmailBackend'
+    EMAIL_HOST          = os.getenv('EMAIL_HOST', 'smtp.gmail.com')
+    EMAIL_PORT          = int(os.getenv('EMAIL_PORT', 587))
+    EMAIL_USE_TLS       = os.getenv('EMAIL_USE_TLS', 'True') == 'True'
+    EMAIL_HOST_USER     = _email_user
+    EMAIL_HOST_PASSWORD = _email_password
+
+DEFAULT_FROM_EMAIL = os.getenv(
+    'DEFAULT_FROM_EMAIL',
+    f'BudgetFlow <{_email_user}>' if _email_user else 'BudgetFlow <noreply@budgetflow.bf>',
+)
 
 # URL du frontend React (utilisé dans les liens des emails)
 FRONTEND_URL = os.getenv('FRONTEND_URL', 'http://localhost:5173')
-
-# ─── Jazzmin ──────────────────────────────────────────────────────────────────
-JAZZMIN_SETTINGS = {
-    # Branding
-    'site_title':  'BudgetFlow Admin',
-    'site_header': 'BudgetFlow',
-    'site_brand':  'Gestion Budgétaire',
-    'site_logo':   None,
-    'site_icon':   None,
-    'welcome_sign': 'Bienvenue sur BudgetFlow — Plateforme de Gestion Budgétaire',
-    'copyright':    'BudgetFlow © 2025 — Burkina Faso',
-
-    # Recherche globale
-    'search_model': ['accounts.Utilisateur', 'budget.Budget'],
-
-    # Menu supérieur
-    'topmenu_links': [
-        {'name': 'Dashboard', 'url': 'admin:index', 'permissions': ['auth.view_user']},
-        {'name': 'Application', 'url': '/', 'new_window': True},
-        {
-            'name': 'Comptes',
-            'children': [
-                {'name': 'Utilisateurs', 'url': 'admin:accounts_utilisateur_changelist'},
-                {'name': 'Départements', 'url': 'admin:accounts_departement_changelist'},
-            ],
-        },
-        {
-            'name': 'Budget',
-            'children': [
-                {'name': 'Budgets annuels',  'url': 'admin:budget_budgetannuel_changelist'},
-                {'name': 'Allocations',      'url': 'admin:budget_allocationdepartementale_changelist'},
-                {'name': 'Budgets',          'url': 'admin:budget_budget_changelist'},
-                {'name': 'Lignes budgétaires', 'url': 'admin:budget_lignebudgetaire_changelist'},
-                {'name': 'Dépenses',         'url': 'admin:budget_consommationligne_changelist'},
-            ],
-        },
-        {'name': "Audit", 'url': 'admin:audit_logaudit_changelist'},
-    ],
-
-    # Menu utilisateur (en haut à droite)
-    'usermenu_links': [
-        {'name': 'Voir l\'application', 'url': '/', 'new_window': True, 'icon': 'fas fa-external-link-alt'},
-    ],
-
-    # Sidebar
-    'show_sidebar': True,
-    'navigation_expanded': True,
-
-    # Ordre des apps dans la sidebar
-    'order_with_respect_to': [
-        'accounts',
-        'accounts.Utilisateur',
-        'accounts.Departement',
-        'budget',
-        'budget.BudgetAnnuel',
-        'budget.AllocationDepartementale',
-        'budget.Budget',
-        'budget.LigneBudgetaire',
-        'budget.ConsommationLigne',
-        'audit',
-        'audit.LogAudit',
-    ],
-
-    # Masquer auth (groupes Django non utilisés)
-    'hide_apps': ['auth'],
-    'hide_models': [],
-
-    # Icônes FontAwesome
-    'icons': {
-        'accounts':                              'fas fa-users-cog',
-        'accounts.Utilisateur':                  'fas fa-user-tie',
-        'accounts.Departement':                  'fas fa-building',
-        'budget':                                'fas fa-chart-line',
-        'budget.BudgetAnnuel':                   'fas fa-calendar-alt',
-        'budget.AllocationDepartementale':       'fas fa-wallet',
-        'budget.Budget':                         'fas fa-file-invoice-dollar',
-        'budget.LigneBudgetaire':                'fas fa-list-ul',
-        'budget.ConsommationLigne':              'fas fa-receipt',
-        'audit':                                 'fas fa-shield-alt',
-        'audit.LogAudit':                        'fas fa-history',
-    },
-    'default_icon_parents':  'fas fa-folder-open',
-    'default_icon_children': 'fas fa-circle',
-
-    # Liens rapides dans la sidebar
-    'custom_links': {
-        'budget': [
-            {'name': 'Voir l\'application', 'url': '/', 'icon': 'fas fa-rocket', 'new_window': True},
-        ],
-    },
-
-    # UI
-    'related_modal_active':  True,
-    'use_google_fonts_cdn':  False,
-    'show_ui_builder':       False,
-    'language_chooser':      False,
-    'changeform_format':     'horizontal_tabs',
-    'show_recent_actions':   True,
-
-    # CSS personnalisé BudgetFlow
-    'custom_css': 'jazzmin/css/custom.css',
-}
-
-JAZZMIN_UI_TWEAKS = {
-    # Navbar
-    'navbar':             'navbar-dark',
-    'no_navbar_border':   True,
-    'navbar_fixed':       True,
-    'navbar_small_text':  False,
-
-    # Sidebar
-    'sidebar':                    'sidebar-dark-primary',
-    'sidebar_fixed':              True,
-    'sidebar_nav_small_text':     False,
-    'sidebar_disable_expand':     False,
-    'sidebar_nav_child_indent':   True,
-    'sidebar_nav_compact_style':  False,
-    'sidebar_nav_legacy_style':   False,
-    'sidebar_nav_flat_style':     False,
-
-    # Thème base propre, le CSS custom fait la charte ink×gold
-    'theme':           'litera',
-    'dark_mode_theme': None,
-
-    # Layout
-    'footer_fixed':  False,
-    'layout_boxed':  False,
-    'actions_sticky_top': True,
-
-    # Boutons
-    'button_classes': {
-        'primary':   'btn-primary',
-        'secondary': 'btn-secondary',
-        'info':      'btn-info',
-        'warning':   'btn-warning',
-        'danger':    'btn-danger',
-        'success':   'btn-success',
-    },
-}

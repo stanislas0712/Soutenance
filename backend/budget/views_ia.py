@@ -249,31 +249,14 @@ class EnvoyerMessageView(APIView):
         else:
             try:
                 from .ia_client import ClaudeClient
-                from django.db.models import Sum as _Sum
-                client = ClaudeClient()
-                # Contexte budgétaire de l'utilisateur
-                try:
-                    user_budgets = list(Budget.objects.filter(gestionnaire=request.user).order_by('-date_creation')[:5])
-                    ctx_budgets = '\n'.join(
-                        f"  - {b.nom} ({b.code}): {b.calculer_taux_consommation()}% consommé, statut {b.get_statut_display()}"
-                        for b in user_budgets
-                    ) if user_budgets else "  Aucun budget pour cet utilisateur."
-                except Exception:
-                    ctx_budgets = "  Contexte budgétaire indisponible."
-                historique = '\n'.join(
-                    f"{'Utilisateur' if m['role'] == 'user' else 'Assistant'}: {m['contenu']}"
-                    for m in conv['messages'][-10:]
+                client  = ClaudeClient()
+                reponse = client.chat(
+                    user_message=contenu,
+                    historique=conv['messages'],
+                    user=request.user,
                 )
-                system_prompt = (
-                    f"Tu es BudgetFlow AI, un assistant financier expert en gestion budgétaire pour organisations africaines.\n"
-                    f"Réponds toujours en français, de façon concise et utile.\n"
-                    f"Contexte des budgets de l'utilisateur :\n{ctx_budgets}\n\n"
-                    f"Historique de la conversation :\n{historique}"
-                )
-                rep = client.complete(system_prompt)
-                reponse = rep.content
-            except Exception:
-                reponse = "Service IA temporairement indisponible. Veuillez réessayer."
+            except Exception as e:
+                reponse = f"Service IA temporairement indisponible. ({e})"
 
         msg_assistant = {
             'id':      str(uuid.uuid4()),
@@ -288,14 +271,14 @@ class EnvoyerMessageView(APIView):
 
 def _reponse_chatbot_simulee(question, user=None):
     """
-    Simulation intelligente du chatbot avec données réelles de la DB.
-    Utilisée quand SKIP_CLAUDE_API=True ou qu'aucune clé API n'est configurée.
+    Assistant financier BudgetFlow — simulation avancee basee sur les donnees reelles.
+    Utilisee quand SKIP_CLAUDE_API=True ou qu'aucune cle API n'est configuree.
     """
     import unicodedata
-    from django.db.models import Sum
+    from django.db.models import Sum, Count, Avg
+    from django.utils import timezone
 
     def _norm(s):
-        """Normalise le texte : minuscules + suppression des accents."""
         return ''.join(
             c for c in unicodedata.normalize('NFD', s.lower())
             if unicodedata.category(c) != 'Mn'
@@ -303,7 +286,7 @@ def _reponse_chatbot_simulee(question, user=None):
 
     q = _norm(question)
 
-    # ── Récupérer les budgets de l'utilisateur ─────────────────────────────
+    # Recuperer les budgets selon le role
     budgets = []
     if user:
         try:
@@ -320,242 +303,454 @@ def _reponse_chatbot_simulee(question, user=None):
                     .order_by('-date_creation')
                 )
             else:
-                budgets = list(Budget.objects.select_related('departement').order_by('-date_creation'))
+                budgets = list(Budget.objects.select_related('departement', 'gestionnaire').order_by('-date_creation'))
         except Exception:
             budgets = []
 
-    total_budgets   = len(budgets)
-    approuves       = [b for b in budgets if b.statut == 'APPROUVE']
-    soumis          = [b for b in budgets if b.statut == 'SOUMIS']
-    brouillons      = [b for b in budgets if b.statut == 'BROUILLON']
-    rejetes         = [b for b in budgets if b.statut == 'REJETE']
-    montant_total   = sum(float(b.montant_global or 0) for b in budgets)
-    montant_consomme= sum(float(b.montant_consomme or 0) for b in budgets)
-    taux_global     = round(montant_consomme / montant_total * 100, 1) if montant_total > 0 else 0
-
-    # Budgets en alerte (taux >= 75%)
-    en_alerte = [b for b in approuves if b.calculer_taux_consommation() >= 75]
-    critiques  = [b for b in approuves if b.calculer_taux_consommation() >= 100]
+    total_budgets    = len(budgets)
+    approuves        = [b for b in budgets if b.statut == 'APPROUVE']
+    soumis           = [b for b in budgets if b.statut == 'SOUMIS']
+    brouillons       = [b for b in budgets if b.statut == 'BROUILLON']
+    rejetes          = [b for b in budgets if b.statut == 'REJETE']
+    montant_total    = sum(float(b.montant_global or 0) for b in budgets)
+    montant_consomme = sum(float(b.montant_consomme or 0) for b in budgets)
+    taux_global      = round(montant_consomme / montant_total * 100, 1) if montant_total > 0 else 0
+    en_alerte        = [b for b in approuves if b.calculer_taux_consommation() >= 75]
+    critiques        = [b for b in approuves if b.calculer_taux_consommation() >= 100]
 
     def _fmt(n):
-        return f"{float(n):,.0f}".replace(',', ' ')
+        return f"{float(n):,.0f}".replace(',', '\u202f')
 
-    # ── Salutation ─────────────────────────────────────────────────────────
-    if any(w in q for w in ['bonjour', 'salut', 'hello', 'bonsoir', 'coucou']):
-        prenom = getattr(user, 'prenom', '') or ''
+    def _barre(pct, longueur=10):
+        filled = round(min(pct, 100) / 100 * longueur)
+        return '\u2588' * filled + '\u2591' * (longueur - filled)
+
+    # Salutation
+    if any(w in q for w in ['bonjour', 'salut', 'hello', 'bonsoir', 'coucou', 'slt', 'bjr']):
+        prenom = getattr(user, 'first_name', '') or getattr(user, 'prenom', '') or ''
+        role_txt = ''
+        if user:
+            if user.is_gestionnaire:
+                role_txt = f"En tant que **gestionnaire**, vous gerez **{total_budgets} budget(s)**."
+            elif user.is_comptable:
+                role_txt = (
+                    f"En tant que **comptable**, vous supervisez **{total_budgets} budget(s)** "
+                    f"dont **{len(soumis)}** en attente de validation."
+                )
+            else:
+                role_txt = f"Vous avez acces a **{total_budgets} budget(s)** dans le systeme."
         return (
-            f"Bonjour {prenom} ! 👋 Je suis votre assistant financier BudgetFlow, propulsé par Claude IA.\n\n"
-            f"Vous avez actuellement **{total_budgets} budget(s)** : "
-            f"{len(approuves)} approuvé(s), {len(soumis)} soumis, {len(brouillons)} brouillon(s).\n\n"
-            "Comment puis-je vous aider ?"
+            f"Bonjour{' ' + prenom if prenom else ''} ! Je suis votre assistant financier **BudgetFlow**.\n\n"
+            f"{role_txt}\n\n"
+            f"Situation rapide : **{len(approuves)}** approuve(s) | **{len(soumis)}** soumis | "
+            f"**{len(en_alerte)}** alerte(s) | taux global **{taux_global}%**\n\n"
+            "Que souhaitez-vous savoir ? Tapez **aide** pour voir toutes mes capacites."
         )
 
-    # ── Taux d'exécution / consommation ────────────────────────────────────
-    if any(w in q for w in ['taux', 'execution', 'consommation', 'consomme', 'utilisation']):
+    # Aide
+    if any(w in q for w in ['aide', 'help', 'que peux', 'capacite', 'fonction', 'quoi', 'menu']):
+        return (
+            "**Voici ce que je sais faire :**\n\n"
+            "**Analyse :**\n"
+            "- *taux d'execution* - consommation de vos budgets\n"
+            "- *alertes* - budgets en depassement ou a risque\n"
+            "- *disponible* - fonds restants par budget\n"
+            "- *departement* - analyse par departement\n"
+            "- *top depenses* - les depenses les plus elevees\n"
+            "- *prediction* - projection de fin de periode\n\n"
+            "**Gestion :**\n"
+            "- *situation* - resume complet de vos budgets\n"
+            "- *creer un budget* - guide pas a pas\n"
+            "- *workflow* - circuit de validation\n"
+            "- *enregistrer une depense* - procedure\n\n"
+            "**Recherche :**\n"
+            "- *budget [nom ou code]* - detail d'un budget specifique\n"
+            "- *recommandations* - conseils personnalises\n"
+            "- *rapport* - generer un rapport IA"
+        )
+
+    # Taux d'execution
+    if any(w in q for w in ['taux', 'execution', 'consommation', 'consomme', 'utilisation', 'realisation']):
         if not budgets:
-            return "Vous n'avez pas encore de budget. Créez votre premier budget depuis « Mes budgets »."
+            return "Vous n'avez pas encore de budget. Creez votre premier budget depuis 'Mes budgets'."
         lignes = []
-        for b in approuves[:5]:
+        for b in approuves[:6]:
             t = b.calculer_taux_consommation()
-            emoji = '🔴' if t >= 100 else '🟠' if t >= 90 else '🟡' if t >= 75 else '🟢'
-            lignes.append(f"{emoji} **{b.nom}** ({b.code}) : {t}% — {_fmt(b.montant_consomme)} / {_fmt(b.montant_global)} FCFA")
+            emoji = '[CRITIQUE]' if t >= 100 else '[ROUGE]' if t >= 90 else '[ORANGE]' if t >= 75 else '[OK]'
+            lignes.append(
+                f"{emoji} **{b.nom}** ({b.code})\n"
+                f"   `{_barre(t)}` {t}% - {_fmt(b.montant_consomme)} / {_fmt(b.montant_global)} FCFA"
+            )
         if not lignes:
             return (
-                f"Aucun de vos budgets n'est encore approuvé. "
-                f"Taux global (tous budgets) : **{taux_global}%**."
+                f"Aucun budget approuve pour l'instant.\n"
+                f"Taux global (tous statuts) : **{taux_global}%** - {_fmt(montant_consomme)} / {_fmt(montant_total)} FCFA."
             )
-        resume = '\n'.join(lignes)
         return (
-            f"📊 **Taux d'exécution de vos budgets approuvés :**\n\n{resume}\n\n"
-            f"Taux global consolidé : **{taux_global}%** "
-            f"({_fmt(montant_consomme)} / {_fmt(montant_total)} FCFA).\n\n"
-            "_Un taux ≥ 90% déclenche une alerte, ≥ 100% = dépassement critique._"
+            f"**Taux d'execution - budgets approuves :**\n\n"
+            + '\n\n'.join(lignes) +
+            f"\n\n---\n**Consolide** : {taux_global}% "
+            f"({_fmt(montant_consomme)} / {_fmt(montant_total)} FCFA)\n"
+            "_[OK] < 75% | [ORANGE] 75-90% | [ROUGE] 90-100% | [CRITIQUE] > 100%_"
         )
 
-    # ── Alertes / dépassements ─────────────────────────────────────────────
-    if any(w in q for w in ['alerte', 'depassement', 'depasse', 'seuil', 'risque', 'critique', 'urgence']):
+    # Alertes / depassements
+    if any(w in q for w in ['alerte', 'depassement', 'depasse', 'seuil', 'risque', 'critique', 'urgence', 'danger']):
         if not en_alerte and not critiques:
-            return "✅ Aucune alerte détectée. Tous vos budgets approuvés sont dans les seuils normaux (< 75%)."
+            return (
+                "**Aucune alerte detectee.**\n\n"
+                f"Tous vos {len(approuves)} budget(s) approuve(s) sont sous le seuil de 75%.\n"
+                f"Taux global : **{taux_global}%**"
+            )
         lignes = []
         for b in critiques:
             t = b.calculer_taux_consommation()
-            lignes.append(f"🔴 **CRITIQUE** — {b.nom} ({b.code}) : {t}% (dépassement de {_fmt(float(b.montant_consomme) - float(b.montant_global))} FCFA)")
+            depasse = float(b.montant_consomme) - float(b.montant_global)
+            lignes.append(
+                f"**[DEPASSEMENT]** - {b.nom} ({b.code})\n"
+                f"   {t}% consomme | depassement : **{_fmt(depasse)} FCFA**\n"
+                f"   `{_barre(t)}` - Action immediate requise"
+            )
         for b in en_alerte:
             if b not in critiques:
                 t = b.calculer_taux_consommation()
-                lignes.append(f"{'🟠' if t >= 90 else '🟡'} **{'ROUGE' if t >= 90 else 'ORANGE'}** — {b.nom} ({b.code}) : {t}%")
+                restant = float(b.montant_disponible or 0)
+                niveau = '[ROUGE]' if t >= 90 else '[ORANGE]'
+                lignes.append(
+                    f"**{niveau}** - {b.nom} ({b.code})\n"
+                    f"   {t}% consomme | {_fmt(restant)} FCFA restants\n"
+                    f"   `{_barre(t)}`"
+                )
+        conseils = (
+            "\n\n**Recommandations :**\n"
+            "- Suspendre les depenses non essentielles sur les budgets critiques\n"
+            "- Initier une demande de revision budgetaire si necessaire\n"
+            "- Consulter le module **Anomalies IA** pour le detail"
+        )
         return (
-            f"⚠️ **{len(en_alerte) + len(critiques)} alerte(s) détectée(s) :**\n\n"
-            + '\n'.join(lignes) +
-            "\n\n_Accédez au détail d'un budget pour voir les lignes concernées._"
+            f"**{len(en_alerte) + len(critiques)} alerte(s) active(s) :**\n\n"
+            + '\n\n'.join(lignes) + conseils
         )
 
-    # ── État / résumé des budgets ──────────────────────────────────────────
-    if any(w in q for w in ['etat', 'resume', 'situation', 'tableau', 'bord', 'synthese', 'mes budgets', 'liste', 'tous']):
-        if not budgets:
-            return "Vous n'avez aucun budget pour le moment. Créez votre premier budget depuis le menu « Nouveau budget »."
+    # Analyse par departement
+    if any(w in q for w in ['departement', 'service', 'direction', 'unite', 'pole', 'equipe']):
+        try:
+            deps = (
+                Budget.objects.filter(id__in=[b.id for b in budgets], departement__isnull=False)
+                .values('departement__nom')
+                .annotate(
+                    nb=Count('id'),
+                    total_alloue=Sum('montant_global'),
+                    total_consomme=Sum('montant_consomme'),
+                )
+                .order_by('-total_alloue')[:8]
+            )
+            if not deps:
+                return "Aucun budget associe a un departement dans vos donnees."
+            lignes = []
+            for d in deps:
+                nom = d['departement__nom'] or 'Non defini'
+                alloue = float(d['total_alloue'] or 0)
+                consomme = float(d['total_consomme'] or 0)
+                taux = round(consomme / alloue * 100, 1) if alloue > 0 else 0
+                emoji = '[CRITIQUE]' if taux >= 100 else '[ROUGE]' if taux >= 90 else '[ORANGE]' if taux >= 75 else '[OK]'
+                lignes.append(
+                    f"{emoji} **{nom}** - {d['nb']} budget(s)\n"
+                    f"   {_fmt(consomme)} / {_fmt(alloue)} FCFA | {taux}%"
+                )
+            return (
+                f"**Analyse par departement :**\n\n"
+                + '\n\n'.join(lignes)
+            )
+        except Exception:
+            return "Impossible d'analyser les donnees par departement pour le moment."
+
+    # Top depenses
+    if any(w in q for w in ['top', 'plus grosse', 'plus grande', 'plus elevee', 'plus importante', 'plus chere', 'recente']):
+        try:
+            qs = ConsommationLigne.objects.filter(
+                ligne__budget__in=budgets
+            ).select_related('ligne', 'ligne__budget').order_by('-montant')[:8]
+            if not qs.exists():
+                return "Aucune depense enregistree sur vos budgets pour l'instant."
+            lignes = []
+            for i, dep in enumerate(qs, 1):
+                label = dep.description or dep.ligne.libelle
+                date_str = dep.date_consommation.strftime('%d/%m/%Y') if dep.date_consommation else ''
+                lignes.append(
+                    f"**{i}.** {label} - **{_fmt(dep.montant)} FCFA**\n"
+                    f"   Budget : {dep.ligne.budget.nom} ({dep.ligne.budget.code}) | {date_str}"
+                )
+            total_dep = ConsommationLigne.objects.filter(ligne__budget__in=budgets).aggregate(t=Sum('montant'))['t'] or 0
+            return (
+                f"**Top depenses enregistrees :**\n\n"
+                + '\n\n'.join(lignes) +
+                f"\n\n---\nTotal toutes depenses : **{_fmt(total_dep)} FCFA**"
+            )
+        except Exception:
+            return "Impossible de recuperer les depenses pour le moment."
+
+    # Recherche budget par nom ou code (doit etre avant "situation/liste")
+    budget_trouve = None
+    for b in budgets:
+        if _norm(b.nom) in q or _norm(b.code) in q:
+            budget_trouve = b
+            break
+
+    if budget_trouve:
+        b = budget_trouve
+        t = b.calculer_taux_consommation()
+        nb_dep = ConsommationLigne.objects.filter(ligne__budget=b).count()
+        lignes_qs = list(b.lignes.filter(parent__isnull=True)[:5])
+        detail_lignes = ''
+        if lignes_qs:
+            rows = []
+            for l in lignes_qs:
+                tl = round(float(l.montant_consomme) / float(l.montant_alloue) * 100, 1) if l.montant_alloue else 0
+                em = '[CRITIQUE]' if tl >= 100 else '[ROUGE]' if tl >= 90 else '[ORANGE]' if tl >= 75 else '[OK]'
+                rows.append(f"{em} {l.libelle[:30]} : {tl}% ({_fmt(l.montant_consomme)} / {_fmt(l.montant_alloue)} FCFA)")
+            detail_lignes = '\n\n**Lignes budgetaires :**\n' + '\n'.join(rows)
+        emoji_statut = 'APPROUVE' if b.statut == 'APPROUVE' else 'EN VALIDATION' if b.statut == 'SOUMIS' else 'BROUILLON' if b.statut == 'BROUILLON' else 'REJETE'
+        etat = '[CRITIQUE]' if t >= 100 else '[ROUGE]' if t >= 90 else '[ORANGE]' if t >= 75 else '[OK]'
         return (
-            f"📋 **Situation de vos budgets :**\n\n"
-            f"• Total : **{total_budgets}** budget(s)\n"
-            f"• ✅ Approuvés : **{len(approuves)}**\n"
-            f"• ⏳ En validation : **{len(soumis)}**\n"
-            f"• ✏️ Brouillons : **{len(brouillons)}**\n"
-            f"• ❌ Rejetés : **{len(rejetes)}**\n\n"
-            f"💰 Montant total : **{_fmt(montant_total)} FCFA**\n"
-            f"📊 Taux d'exécution global : **{taux_global}%**"
+            f"**Budget : {b.nom}**\n\n"
+            f"- Code : `{b.code}`\n"
+            f"- Statut : {emoji_statut}\n"
+            f"- Departement : {b.departement or 'Non defini'}\n"
+            f"- Periode : {b.date_debut} -> {b.date_fin}\n\n"
+            f"**Execution financiere :**\n"
+            f"- Alloue : **{_fmt(b.montant_global)} FCFA**\n"
+            f"- Consomme : **{_fmt(b.montant_consomme)} FCFA**\n"
+            f"- Disponible : **{_fmt(b.montant_disponible)} FCFA**\n"
+            f"- Taux : `{_barre(t)}` **{t}%** - {etat}\n"
+            f"- Depenses enregistrees : {nb_dep}"
+            + detail_lignes
         )
 
-    # ── Budget disponible / solde ──────────────────────────────────────────
-    if any(w in q for w in ['disponible', 'solde', 'reste', 'restant', 'combien']):
+    # Etat / resume global
+    if any(w in q for w in ['etat', 'resume', 'situation', 'tableau', 'bord', 'synthese', 'mes budgets', 'liste', 'tous', 'global', 'vue']):
         if not budgets:
-            return "Vous n'avez aucun budget. Créez votre premier budget depuis « Nouveau budget »."
-        # Icône et libellé par statut
+            return "Vous n'avez aucun budget pour le moment. Creez votre premier budget depuis 'Nouveau budget'."
+        total_dispo = sum(float(b.montant_disponible or 0) for b in approuves)
+        top3 = sorted(approuves, key=lambda b: b.calculer_taux_consommation(), reverse=True)[:3]
+        top3_txt = ''
+        if top3:
+            top3_txt = '\n\n**Top consommation :**\n' + '\n'.join(
+                f"  {'[ROUGE]' if b.calculer_taux_consommation() >= 90 else '[ORANGE]'} {b.nom} - {b.calculer_taux_consommation()}%"
+                for b in top3
+            )
+        return (
+            f"**Tableau de bord budgetaire :**\n\n"
+            f"| Statut | Nombre | Montant total |\n"
+            f"|--------|--------|---------------|\n"
+            f"| Approuves | {len(approuves)} | {_fmt(sum(float(b.montant_global or 0) for b in approuves))} FCFA |\n"
+            f"| Soumis | {len(soumis)} | {_fmt(sum(float(b.montant_global or 0) for b in soumis))} FCFA |\n"
+            f"| Brouillons | {len(brouillons)} | {_fmt(sum(float(b.montant_global or 0) for b in brouillons))} FCFA |\n"
+            f"| Rejetes | {len(rejetes)} | {_fmt(sum(float(b.montant_global or 0) for b in rejetes))} FCFA |\n\n"
+            f"**Enveloppe totale** : {_fmt(montant_total)} FCFA\n"
+            f"**Taux d'execution global** : {taux_global}% ({_fmt(montant_consomme)} consomme)\n"
+            f"**Fonds disponibles (approuves)** : {_fmt(total_dispo)} FCFA\n"
+            f"**Alertes actives** : {len(en_alerte) + len(critiques)}"
+            + top3_txt
+        )
+
+    # Fonds disponibles / solde
+    if any(w in q for w in ['disponible', 'solde', 'reste', 'restant', 'combien', 'fonds']):
+        if not budgets:
+            return "Vous n'avez aucun budget. Creez votre premier budget depuis 'Nouveau budget'."
         _statut_info = {
-            'APPROUVE':  ('✅', 'Approuvé  — dépensable'),
-            'BROUILLON': ('✏️', 'Brouillon — non dépensable'),
-            'SOUMIS':    ('⏳', 'En validation — non dépensable'),
-            'REJETE':    ('❌', 'Rejeté — non dépensable'),
-            'CLOTURE':   ('🔒', 'Clôturé'),
-            'ARCHIVE':   ('📦', 'Archivé'),
+            'APPROUVE':  ('APPROUVE', 'depensable'),
+            'BROUILLON': ('BROUILLON', 'non actif'),
+            'SOUMIS':    ('EN VALIDATION', 'en validation'),
+            'REJETE':    ('REJETE', 'rejete'),
+            'CLOTURE':   ('CLOTURE', 'cloture'),
+            'ARCHIVE':   ('ARCHIVE', 'archive'),
         }
         lignes = []
         for b in budgets[:8]:
             dispo = float(b.montant_disponible or 0)
             global_m = float(b.montant_global or 0)
-            icone, libelle = _statut_info.get(b.statut, ('•', b.statut))
-            line = f"{icone} **{b.nom}** ({b.code})"
+            icone, libelle = _statut_info.get(b.statut, ('', b.statut))
             if b.statut == 'APPROUVE':
-                taux = b.calculer_taux_consommation()
-                line += f" : **{_fmt(dispo)} FCFA** disponibles ({taux}% consommé)"
+                t = b.calculer_taux_consommation()
+                lignes.append(f"[{icone}] **{b.nom}** ({b.code}) - {_fmt(dispo)} FCFA dispo | {t}%")
             else:
-                line += f" : {_fmt(global_m)} FCFA alloués — _{libelle}_"
-            lignes.append(line)
+                lignes.append(f"[{icone}] **{b.nom}** ({b.code}) - {_fmt(global_m)} FCFA alloues _{libelle}_")
         total_dispo = sum(float(b.montant_disponible or 0) for b in approuves)
-        note = (
-            f"\n\n💡 _Seuls les budgets **APPROUVÉS** permettent d'enregistrer des dépenses. "
-            f"Total dépensable : **{_fmt(total_dispo)} FCFA**_"
-            if budgets else ""
-        )
         return (
-            f"💰 **Vue d'ensemble de vos {total_budgets} budget(s) :**\n\n"
-            + '\n'.join(lignes)
-            + note
+            f"**Fonds disponibles ({total_budgets} budget(s)) :**\n\n"
+            + '\n'.join(lignes) +
+            f"\n\n**Total depensable (budgets approuves) : {_fmt(total_dispo)} FCFA**\n"
+            "_Seuls les budgets APPROUVES permettent d'enregistrer des depenses._"
         )
 
-    # ── Créer un budget ────────────────────────────────────────────────────
-    if any(w in q for w in ['creer', 'créer', 'nouveau', 'créer', 'ajouter', 'nouveau budget']):
-        return (
-            "📝 **Comment créer un budget :**\n\n"
-            "1. Cliquez sur **« Nouveau budget »** dans le menu\n"
-            "2. Sélectionnez l'exercice budgétaire et le département\n"
-            "3. Saisissez le nom et les dates\n"
-            "4. Après enregistrement, ajoutez vos **lignes budgétaires**\n"
-            "5. Soumettez pour validation par le comptable\n\n"
-            "_Le statut évoluera : BROUILLON → SOUMIS → APPROUVÉ_"
-        )
+    # Recommandations personnalisees
+    if any(w in q for w in ['recommandation', 'conseil', 'que faire', 'action', 'suggestion', 'ameliorer']):
+        recs = []
+        if critiques:
+            recs.append(f"**Urgence** : {len(critiques)} budget(s) en depassement - suspendre les depenses non essentielles immediatement.")
+        if len(en_alerte) > len(critiques):
+            recs.append(f"**Vigilance** : {len(en_alerte) - len(critiques)} budget(s) entre 75-100% - surveiller de pres.")
+        if soumis:
+            recs.append(f"**Validation en attente** : {len(soumis)} budget(s) attendent approbation - traiter rapidement.")
+        if brouillons:
+            recs.append(f"**Completion** : {len(brouillons)} brouillon(s) a finaliser et soumettre.")
+        sous_utilises = [b for b in approuves if b.calculer_taux_consommation() < 20]
+        if sous_utilises:
+            recs.append(f"**Sous-utilisation** : {len(sous_utilises)} budget(s) approuve(s) a moins de 20% - risque de sous-execution.")
+        if not recs:
+            recs.append("Aucune action urgente. Continuez le suivi regulier de vos budgets.")
+        return "**Recommandations personnalisees :**\n\n" + '\n'.join(f"- {r}" for r in recs)
 
-    # ── Soumettre / validation ─────────────────────────────────────────────
-    if any(w in q for w in ['soumettre', 'soumettre', 'valider', 'validation', 'approuver', 'approuve', 'comptable']):
-        return (
-            "✅ **Workflow de validation :**\n\n"
-            "1. **Gestionnaire** : crée le budget (BROUILLON)\n"
-            "2. **Gestionnaire** : ajoute les lignes budgétaires\n"
-            "3. **Gestionnaire** : soumet le budget (→ SOUMIS)\n"
-            "4. **Comptable** : examine et approuve ou rejette\n"
-            "5. Si rejeté → le gestionnaire corrige et resoumet\n\n"
-            f"Actuellement, vous avez **{len(soumis)}** budget(s) en attente de validation."
-        )
-
-    # ── Dépenses / saisir une dépense ─────────────────────────────────────
-    if any(w in q for w in ['depense', 'dépense', 'saisir', 'enregistrer', 'payer', 'achat', 'facture', 'piece']):
-        return (
-            "💳 **Enregistrer une dépense :**\n\n"
-            "1. Accédez à un budget **APPROUVÉ** depuis « Mes budgets »\n"
-            "2. Cliquez sur **« Enregistrer une dépense »**\n"
-            "3. Sélectionnez la **ligne budgétaire** concernée\n"
-            "4. Saisissez le montant (≤ disponible sur la ligne)\n"
-            "5. Joignez la **pièce justificative** (obligatoire si > 50 000 FCFA)\n\n"
-            "_La dépense sera soumise à validation par le comptable._"
-        )
-
-    # ── Lignes budgétaires ────────────────────────────────────────────────
-    if any(w in q for w in ['ligne', 'poste', 'categorie', 'sous-categorie']):
-        return (
-            "📑 **Lignes budgétaires :**\n\n"
-            "Chaque budget est composé de lignes (postes de dépenses) :\n"
-            "• **Libellé** : nom du poste (ex: Serveurs, Formations...)\n"
-            "• **Montant alloué** : budget prévu pour ce poste\n"
-            "• **Montant consommé** : dépenses réelles enregistrées\n"
-            "• **Disponible** : alloué − consommé\n\n"
-            "_Chaque dépense doit être liée à une ligne budgétaire spécifique._"
-        )
-
-    # ── Anomalie ──────────────────────────────────────────────────────────
-    if any(w in q for w in ['anomalie', 'irregularite', 'probleme', 'erreur', 'ecart']):
-        return (
-            "🔍 **Anomalies budgétaires :**\n\n"
-            "L'IA détecte automatiquement :\n"
-            "• 🔴 **Dépassements** : montant consommé > montant alloué\n"
-            "• 🟠 **Seuils atteints** : consommation ≥ 90% de l'alloué\n"
-            "• ⚡ **Sous-utilisation** : < 30% consommé après 80% de la période\n"
-            "• 📎 **Pièces manquantes** : dépenses > 50K sans justificatif\n\n"
-            "Accédez à **Intelligence IA > Anomalies** pour voir les détails."
-        )
-
-    # ── Prédictions ────────────────────────────────────────────────────────
-    if any(w in q for w in ['prediction', 'prevision', 'projection', 'futur', 'fin de periode', 'fin periode']):
-        if approuves:
-            b = approuves[0]
+    # Predictions / projections
+    if any(w in q for w in ['prediction', 'prevision', 'projection', 'futur', 'fin de periode', 'fin periode', 'tendance']):
+        if not approuves:
+            return "Aucun budget approuve pour calculer une projection."
+        resultats = []
+        for b in approuves[:3]:
             t = b.calculer_taux_consommation()
-            jours = 90
-            from django.utils import timezone
-            jours_ecoules = max(1, (timezone.now().date() - b.date_debut).days)
-            taux_jour = float(b.montant_consomme or 0) / jours_ecoules
-            proj = taux_jour * jours
-            return (
-                f"📈 **Projection pour « {b.nom} » :**\n\n"
-                f"• Consommation actuelle : **{_fmt(b.montant_consomme)} FCFA** ({t}%)\n"
-                f"• Jours écoulés : {jours_ecoules} / {jours}\n"
-                f"• Projection fin période : **{_fmt(proj)} FCFA**\n"
-                f"• Budget global : {_fmt(b.montant_global)} FCFA\n\n"
-                + (
-                    "⚠️ **Risque de dépassement détecté.** Réduisez les dépenses non essentielles."
-                    if proj > float(b.montant_global)
-                    else "✅ Budget correctement dimensionné selon la tendance actuelle."
+            try:
+                jours_ecoules = max(1, (timezone.now().date() - b.date_debut).days)
+                jours_total = max(1, (b.date_fin - b.date_debut).days)
+                taux_temps = round(jours_ecoules / jours_total * 100, 1)
+                taux_jour = float(b.montant_consomme or 0) / jours_ecoules
+                proj = taux_jour * jours_total
+                delta = proj - float(b.montant_global)
+                if delta > 0:
+                    statut_proj = f"Risque depassement de {_fmt(delta)} FCFA"
+                elif t > taux_temps + 20:
+                    statut_proj = "Rythme eleve - surveiller"
+                else:
+                    statut_proj = "Tendance normale"
+                resultats.append(
+                    f"**{b.nom}** ({t}% consomme / {taux_temps}% periode ecoulee)\n"
+                    f"   Projection fin : **{_fmt(proj)} FCFA** / {_fmt(b.montant_global)} FCFA\n"
+                    f"   {statut_proj}"
                 )
-            )
-        return "Aucun budget approuvé disponible pour calculer une prédiction."
+            except Exception:
+                resultats.append(f"**{b.nom}** : {t}% (calcul indisponible)")
+        return "**Projections de fin de periode :**\n\n" + '\n\n'.join(resultats)
 
-    # ── Aide générale ──────────────────────────────────────────────────────
-    if any(w in q for w in ['aide', 'help', 'que peux', 'capacites', 'fonctions', 'quoi']):
+    # Creer un budget
+    if any(w in q for w in ['creer', 'nouveau', 'ajouter', 'cree', 'creer', 'initialiser']):
         return (
-            "🤖 **Je peux vous aider sur :**\n\n"
-            "• 📊 **Taux d'exécution** — état de consommation de vos budgets\n"
-            "• ⚠️ **Alertes & dépassements** — budgets en risque\n"
-            "• 💰 **Fonds disponibles** — solde de chaque budget\n"
-            "• 📋 **Résumé budgets** — vue d'ensemble de vos budgets\n"
-            "• 📈 **Prédictions** — projection fin de période\n"
-            "• 💳 **Saisie dépenses** — comment enregistrer une dépense\n"
-            "• ✅ **Workflow validation** — circuit d'approbation\n\n"
-            "Posez votre question !"
+            "**Creer un nouveau budget :**\n\n"
+            "1. Cliquez sur **'Nouveau budget'** dans le menu\n"
+            "2. Choisissez l'**exercice budgetaire** et le **departement**\n"
+            "3. Renseignez le nom, les dates debut/fin et le montant global\n"
+            "4. Enregistrez - le budget est en **BROUILLON**\n"
+            "5. Ajoutez vos **lignes budgetaires** (postes de depenses)\n"
+            "6. Soumettez pour validation par le comptable\n\n"
+            "_BROUILLON -> SOUMIS -> APPROUVE (ou REJETE)_\n\n"
+            f"Vous avez actuellement **{len(brouillons)}** brouillon(s) en cours."
         )
 
-    # ── Réponse par défaut contextuelle ──────────────────────────────────
-    ctx = ""
-    if budgets:
-        ctx = (
-            f"\n\n📊 Votre situation actuelle : {total_budgets} budget(s), "
-            f"taux global {taux_global}%, {len(en_alerte)} alerte(s)."
+    # Workflow / validation
+    if any(w in q for w in ['soumettre', 'valider', 'validation', 'approuver', 'approuve', 'comptable', 'workflow', 'circuit', 'rejet']):
+        en_attente = ''
+        if soumis:
+            en_attente = f"\n\n**Actuellement en attente** : {len(soumis)} budget(s)\n"
+            en_attente += '\n'.join(f"  - {b.nom} ({b.code})" for b in soumis[:5])
+        return (
+            "**Circuit de validation BudgetFlow :**\n\n"
+            "```\n"
+            "Gestionnaire            Comptable\n"
+            "────────────────        ──────────────────\n"
+            "1. Cree le budget  →\n"
+            "2. Ajoute lignes   →\n"
+            "3. Soumet          →    4. Examine\n"
+            "                        5. Approuve ou Rejette\n"
+            "6. Corrige (si rejet) → 7. Re-examine\n"
+            "```\n\n"
+            "**Notifications automatiques** envoyees a chaque changement de statut."
+            + en_attente
         )
+
+    # Depenses
+    if any(w in q for w in ['depense', 'saisir', 'enregistrer', 'payer', 'achat', 'facture', 'piece', 'justificatif']):
+        nb_dep_total = 0
+        total_dep = 0
+        try:
+            agg = ConsommationLigne.objects.filter(ligne__budget__in=budgets).aggregate(
+                nb=Count('id'), total=Sum('montant')
+            )
+            nb_dep_total = agg['nb'] or 0
+            total_dep = float(agg['total'] or 0)
+        except Exception:
+            pass
+        return (
+            "**Enregistrer une depense :**\n\n"
+            "1. Ouvrez un budget **APPROUVE** depuis 'Mes budgets'\n"
+            "2. Cliquez **'Enregistrer une depense'**\n"
+            "3. Choisissez la **ligne budgetaire** concernee\n"
+            "4. Saisissez le montant (ne doit pas depasser le disponible)\n"
+            "5. Ajoutez la **piece justificative** si montant > 50 000 FCFA\n"
+            "6. Validez - la depense est soumise au comptable\n\n"
+            f"Vos statistiques : **{nb_dep_total}** depense(s) | **{_fmt(total_dep)} FCFA** depenses au total."
+        )
+
+    # Lignes budgetaires
+    if any(w in q for w in ['ligne', 'poste', 'categorie', 'rubrique']):
+        nb_lignes_total = sum(b.lignes.count() for b in budgets[:10])
+        return (
+            "**Lignes budgetaires :**\n\n"
+            "Chaque budget est ventile en lignes (postes de depenses) :\n"
+            "- **Libelle** : nom du poste (ex: Materiel informatique, Formations...)\n"
+            "- **Montant alloue** : enveloppe prevue pour ce poste\n"
+            "- **Montant consomme** : depenses reelles enregistrees\n"
+            "- **Disponible** : alloue - consomme\n"
+            "- **Lignes enfants** : sous-postes pour une granularite fine\n\n"
+            f"Vos budgets comptent **{nb_lignes_total}** ligne(s) au total.\n"
+            "_Toute depense doit etre rattachee a une ligne budgetaire._"
+        )
+
+    # Anomalies
+    if any(w in q for w in ['anomalie', 'irregularite', 'probleme', 'erreur', 'ecart', 'fraude', 'incident']):
+        return (
+            "**Detection d'anomalies IA :**\n\n"
+            "L'IA BudgetFlow analyse automatiquement :\n"
+            "- **Depassements globaux** : montant consomme > montant alloue\n"
+            "- **Depassements de ligne** : poste depasse individuellement\n"
+            "- **Seuil d'alerte** : consommation >= 85% de l'enveloppe\n"
+            "- **Sous-utilisation** : budget approuve a < 5% de consommation\n"
+            "- **Structure manquante** : budget sans lignes budgetaires\n\n"
+            "Accedez a **Intelligence IA > Anomalies** pour detecter et traiter les anomalies."
+        )
+
+    # Rapport
+    if any(w in q for w in ['rapport', 'reporting', 'bilan', 'export', 'statistique', 'kpi']):
+        return (
+            "**Rapports disponibles dans BudgetFlow :**\n\n"
+            "**Rapports IA (Intelligence IA > Rapports) :**\n"
+            "- Generation automatique via IA\n"
+            "- Analyse narrative avec recommandations\n"
+            "- Export PDF professionnel\n\n"
+            "**Rapports detailles (menu Rapports) :**\n"
+            "- **Mensuel** - analyse par mois\n"
+            "- **Trimestriel** - vue par trimestre\n"
+            "- **Annuel** - bilan de l'exercice budgetaire\n"
+            "- **Ad hoc** - periode et filtres personnalises\n"
+            "- Export Excel et PDF\n\n"
+            f"Vous avez **{total_budgets}** budget(s) disponible(s) pour generer des rapports."
+        )
+
+    # Reponse par defaut contextuelle
+    ctx_parts = []
+    if budgets:
+        ctx_parts.append(f"{total_budgets} budget(s) | taux global {taux_global}% | {len(en_alerte) + len(critiques)} alerte(s)")
+    ctx = f"\n\n_Votre contexte : {' | '.join(ctx_parts)}_" if ctx_parts else ""
     return (
-        "Je n'ai pas bien compris votre question. "
-        "Essayez par exemple :\n"
-        "• _« Mon taux d'exécution »_\n"
-        "• _« Alertes de dépassement »_\n"
-        "• _« Fonds disponibles »_\n"
-        "• _« Résumé de mes budgets »_"
+        "Je n'ai pas bien compris votre demande. Voici quelques exemples :\n\n"
+        "- _'Mon taux d'execution'_\n"
+        "- _'Alertes de depassement'_\n"
+        "- _'Fonds disponibles'_\n"
+        "- _'Situation globale'_\n"
+        "- _'Recommandations'_\n"
+        "- _'Budget [nom du budget]'_\n\n"
+        "Tapez **aide** pour voir toutes mes capacites."
         + ctx
     )
+
 
 
 # ── F3 — Détection d'Anomalies ────────────────────────────────────────────────

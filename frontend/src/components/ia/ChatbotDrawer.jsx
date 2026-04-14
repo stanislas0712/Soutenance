@@ -67,7 +67,7 @@ export default function ChatbotDrawer() {
 
   /* ── Mutation : créer une conversation ───────────────────────────────── */
   const { mutate: creer, isPending: creating } = useMutation({
-    mutationFn: () => creerConversation({ titre: 'Assistant BudgetFlow' }),
+    mutationFn: () => creerConversation({ titre: 'Assistant Gestion Budgétaire' }),
     onSuccess: (r) => {
       const id = r.data?.data?.id || r.data?.id
       if (!id) return
@@ -143,8 +143,8 @@ export default function ChatbotDrawer() {
         aria-label="Ouvrir l'assistant IA"
         className="fixed bottom-6 right-6 z-[1000] w-[52px] h-[52px] rounded-full border-none cursor-pointer flex items-center justify-center transition-[transform_.2s,box-shadow_.2s] hover:scale-110"
         style={{
-          background: 'linear-gradient(135deg, #1a56db, #2563eb)',
-          boxShadow: '0 4px 16px rgba(26,86,219,.4)',
+          background: 'linear-gradient(135deg, #1E3A5F, #1E3A5F)',
+          boxShadow: '0 4px 16px rgba(201,168,76,.35)',
         }}
       >
         <Brain size={21} strokeWidth={1.8} style={{ color: '#fff' }} />
@@ -160,7 +160,7 @@ export default function ChatbotDrawer() {
           {/* Header */}
           <div
             className="px-4 py-3 flex items-center justify-between shrink-0"
-            style={{ background: 'linear-gradient(135deg, #1a56db, #2563eb)' }}
+            style={{ background: 'linear-gradient(135deg, #1E3A5F, #1E3A5F)', borderBottom: '2px solid rgba(201,168,76,.3)' }}
           >
             <div className="flex items-center gap-[10px]">
               <div style={{
@@ -171,7 +171,7 @@ export default function ChatbotDrawer() {
                 <Brain size={15} strokeWidth={2} style={{ color: '#fff' }} />
               </div>
               <div>
-                <div className="text-white font-bold text-[.85rem]">Assistant BudgetFlow</div>
+                <div className="text-white font-bold text-[.85rem]">Assistant Gestion Budgétaire</div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 1 }}>
                   <div style={{
                     width: 5, height: 5, borderRadius: '50%',
@@ -232,7 +232,7 @@ export default function ChatbotDrawer() {
                 <button
                   key={s}
                   onClick={() => handleSuggestion(s)}
-                  className="bg-[#F9FAFB] border border-[#E5E7EB] rounded-[20px] px-[10px] py-1 text-[.68rem] text-[#4B5563] cursor-pointer whitespace-nowrap hover:bg-[#EFF6FF] transition-colors"
+                  className="bg-[#F9FAFB] border border-[#E5E7EB] rounded-[20px] px-[10px] py-1 text-[.68rem] text-[#4B5563] cursor-pointer whitespace-nowrap hover:bg-[#FEF9EC] transition-colors"
                 >
                   {s}
                 </button>
@@ -251,13 +251,13 @@ export default function ChatbotDrawer() {
               onChange={e => setInput(e.target.value)}
               placeholder={convId ? 'Votre question…' : 'Initialisation…'}
               disabled={sending || !convId}
-              className="flex-1 border border-[#E5E7EB] rounded-[8px] px-3 py-2 text-[.8rem] outline-none bg-[#F9FAFB] transition-colors focus:border-[#1a56db]"
+              className="flex-1 border border-[#E5E7EB] rounded-[8px] px-3 py-2 text-[.8rem] outline-none bg-[#F9FAFB] transition-colors focus:border-[#C9A84C]"
             />
             <button
               type="submit"
               disabled={!input.trim() || sending || !convId}
-              className="bg-[#1a56db] border-none rounded-[8px] px-[14px] py-2 text-white text-[.85rem] cursor-pointer transition-opacity"
-              style={{ opacity: (!input.trim() || sending || !convId) ? 0.45 : 1 }}
+              className="border-none rounded-[8px] px-[14px] py-2 text-[.85rem] cursor-pointer transition-opacity"
+              style={{ background: '#1E3A5F', color: '#C9A84C', border: '1px solid rgba(201,168,76,.4)', opacity: (!input.trim() || sending || !convId) ? 0.45 : 1 }}
             >
               ➤
             </button>
@@ -270,7 +270,7 @@ export default function ChatbotDrawer() {
 
 /* ── Sous-composants ──────────────────────────────────────────────────────── */
 
-const MSG_ACCUEIL = "Bonjour\u00a0! Je suis l'assistant IA BudgetFlow. Je peux vous aider avec l'analyse de vos budgets, le suivi des d\u00e9penses et toutes vos questions de gestion financi\u00e8re. Comment puis-je vous aider\u00a0?"
+const MSG_ACCUEIL = "Bonjour\u00a0! Je suis l'assistant IA Gestion Budgétaire. Je peux vous aider avec l'analyse de vos budgets, le suivi des d\u00e9penses et toutes vos questions de gestion financi\u00e8re. Comment puis-je vous aider\u00a0?"
 
 /* Rendu Markdown minimal : **gras**, _italique_, `code`, listes */
 function renderMd(text) {
@@ -310,7 +310,7 @@ function MessageBubble({ msg }) {
       <div
         className="max-w-[82%] px-3 py-[9px] text-[.78rem] leading-[1.6] break-words"
         style={{
-          background: isUser ? 'linear-gradient(135deg, #1a56db, #6c63ff)' : '#F3F4F6',
+          background: isUser ? 'linear-gradient(135deg, #1E3A5F, #1E3A5F)' : '#F3F4F6',
           color: isUser ? '#fff' : '#1F2937',
           borderRadius: isUser ? '12px 12px 0 12px' : '0 12px 12px 12px',
         }}
@@ -337,8 +337,8 @@ function TypingDots() {
           30% { transform: translateY(-6px); }
         }
         @keyframes ia-chatbot-ring {
-          0%, 90%, 100% { box-shadow: 0 4px 20px rgba(99,102,241,.5); }
-          45% { box-shadow: 0 4px 20px rgba(99,102,241,.5), 0 0 0 8px rgba(99,102,241,.15); }
+          0%, 90%, 100% { box-shadow: 0 4px 20px rgba(201,168,76,.4); }
+          45% { box-shadow: 0 4px 20px rgba(201,168,76,.4), 0 0 0 8px rgba(201,168,76,.12); }
         }
       `}</style>
     </div>

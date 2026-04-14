@@ -28,10 +28,12 @@ import { BudgetsAValiderList, BudgetValidationDetail } from './pages/comptable/B
 import ProfilPage from './pages/ProfilPage'
 
 /* IA */
-import IADashboard from './pages/ia/IADashboard'
+import IADashboard    from './pages/ia/IADashboard'
+import RapportIADetail from './pages/ia/RapportIADetail'
 
 /* Rapports */
 import RapportsKPIPage from './pages/admin/RapportsKPIPage'
+import RapportPage     from './pages/admin/RapportPage'
 
 /* Dépenses (comptable) */
 import DepensesPage from './pages/comptable/DepensesPage'
@@ -70,7 +72,7 @@ function AppRoutes() {
       <Routes>
         <Route path="/dashboard" element={<DashboardPage />} />
 
-        {/* ── Admin : gestion structure uniquement (pas de budget/dépense) ── */}
+        {/* ── Admin ── */}
         {isAdmin && <>
           <Route path="/budget-annuel" element={<BudgetAnnuelPage />} />
           <Route path="/departements"  element={<DepartementsPage />} />
@@ -78,10 +80,11 @@ function AppRoutes() {
           <Route path="/budgets/:id"   element={<BudgetDetail basePath="/budgets" />} />
           <Route path="/utilisateurs"  element={<UtilisateursPage />} />
           <Route path="/audit"         element={<AuditLogsPage />} />
-          <Route path="/rapports"      element={<RapportsKPIPage />} />
+          <Route path="/rapports"           element={<RapportsKPIPage />} />
+          <Route path="/rapports-detailles" element={<RapportPage />} />
         </>}
 
-        {/* ── Gestionnaire : budgets + dépenses propres (pas départements) ── */}
+        {/* ── Gestionnaire ── */}
         {isGestionnaire && <>
           <Route path="/mes-budgets"      element={<MesBudgets />} />
           <Route path="/mes-budgets/:id"  element={<BudgetDetail basePath="/mes-budgets" />} />
@@ -89,7 +92,7 @@ function AppRoutes() {
           <Route path="/mes-depenses"     element={<MesDepenses />} />
         </>}
 
-        {/* ── Comptable : validation + rapports (jamais BROUILLON côté API) ── */}
+        {/* ── Comptable ── */}
         {isComptable && <>
           <Route path="/validation"      element={<BudgetsAValiderList />} />
           <Route path="/validation/:id"  element={<BudgetValidationDetail />} />
@@ -97,8 +100,10 @@ function AppRoutes() {
           <Route path="/rapports"        element={<RapportsKPIPage />} />
         </>}
 
-        {/* IA — tous les rôles authentifiés */}
-        <Route path="/ia" element={<IADashboard />} />
+        {/* IA — tous les rôles */}
+        <Route path="/ia"                element={<IADashboard />} />
+        <Route path="/ia-rapport/:id"    element={<RapportIADetail />} />
+        <Route path="/ia/rapports/:id"   element={<RapportIADetail />} />
 
         {/* Profil — tous les rôles */}
         <Route path="/profil" element={<ProfilPage />} />

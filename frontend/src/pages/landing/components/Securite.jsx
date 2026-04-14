@@ -34,7 +34,7 @@ export default function Securite() {
   return (
     <section
       className="py-24 px-6 relative overflow-hidden"
-      style={{ background: 'linear-gradient(135deg, #1C1917 0%, #252120 55%, #2E2A27 100%)' }}
+      style={{ background: 'linear-gradient(135deg, #1E3A5F 0%, #152B4B 55%, #1E3A5F 100%)' }}
       aria-labelledby="securite-title"
     >
       {/* Decorative circles */}
@@ -64,7 +64,7 @@ export default function Securite() {
             Vos données en sécurité
           </h2>
           <p className="text-lg max-w-xl mx-auto leading-relaxed" style={{ color: 'rgba(250,247,242,0.65)' }}>
-            BudgetFlow est conçu avec la sécurité au cœur de son architecture.
+            Gestion Budgétaire est conçu avec la sécurité au cœur de son architecture.
             Confidentialité, intégrité et disponibilité garanties.
           </p>
         </div>

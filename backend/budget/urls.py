@@ -26,6 +26,8 @@ urlpatterns = [
          views.LigneBudgetaireDetailView.as_view(),      name='ligne-detail'),
     path('<uuid:budget_pk>/lignes/<uuid:pk>/consommer/',
          views.EnregistrerConsommationMultiView.as_view(), name='ligne-consommer'),
+    path('<uuid:pk>/depense-multi/',
+         views.EnregistrerDepenseMultiLigneView.as_view(), name='depense-multi-ligne'),
 
     # Vue comptable
     path('en-validation/',         views.BudgetComptableListView.as_view(),  name='budget-en-validation'),

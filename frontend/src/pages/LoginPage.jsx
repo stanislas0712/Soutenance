@@ -36,8 +36,8 @@ function ForgotPasswordModal({ onClose }) {
   }
 
   return (
-    <div style={{ position:'fixed', inset:0, background:'rgba(28,25,23,.55)', backdropFilter:'blur(6px)', zIndex:9999, display:'flex', alignItems:'center', justifyContent:'center', padding:20, animation:'fadeIn .15s ease' }}>
-      <div style={{ background:'#FEFCF9', borderRadius:18, width:'100%', maxWidth:420, boxShadow:'0 24px 64px rgba(28,25,23,.18)', overflow:'hidden', animation:'scaleIn .2s cubic-bezier(.34,1.56,.64,1)' }}>
+    <div style={{ position:'fixed', inset:0, background:'rgba(15,34,64,.6)', backdropFilter:'blur(6px)', zIndex:9999, display:'flex', alignItems:'center', justifyContent:'center', padding:20, animation:'fadeIn .15s ease' }}>
+      <div style={{ background:'#FFFFFF', borderRadius:18, width:'100%', maxWidth:420, boxShadow:'0 24px 64px rgba(15,34,64,.2)', overflow:'hidden', animation:'scaleIn .2s cubic-bezier(.34,1.56,.64,1)' }}>
         <div style={{ height:3, background:'linear-gradient(90deg,#C9A84C,#D4B355)' }} />
         <div style={{ padding:'28px 32px' }}>
           {/* Header */}
@@ -47,7 +47,7 @@ function ForgotPasswordModal({ onClose }) {
                 <KeyRound size={16} strokeWidth={1.8} color="#B8973F" />
               </div>
               <div>
-                <div style={{ fontWeight:700, fontSize:15, color:'#1C1917', fontFamily:'Lora, Georgia, serif' }}>Mot de passe oublié</div>
+                <div style={{ fontWeight:700, fontSize:15, color:'#0F2240', fontFamily:'Lora, Georgia, serif' }}>Mot de passe oublié</div>
                 <div style={{ fontSize:12, color:'#78716C', marginTop:1 }}>Un lien vous sera envoyé par email</div>
               </div>
             </div>
@@ -125,8 +125,13 @@ export default function LoginPage() {
     try {
       await login(form.email, form.password)
       navigate('/dashboard')
-    } catch {
-      setError('Email ou mot de passe incorrect. Vérifiez vos identifiants.')
+    } catch (err) {
+      const detail = err?.response?.data?.detail
+      if (err?.response?.status === 403) {
+        setError(detail || 'Compte bloqué après 3 tentatives. Contactez votre administrateur.')
+      } else {
+        setError(detail || 'Email ou mot de passe incorrect. Vérifiez vos identifiants.')
+      }
     } finally {
       setLoading(false)
     }
@@ -140,7 +145,7 @@ export default function LoginPage() {
       <div
         style={{
           flex: 1,
-          background: 'linear-gradient(180deg, #F5F0E8 0%, #EDE9E3 40%, #F5F0E8 100%)',
+          background: 'linear-gradient(180deg, #EEF2F8 0%, #E1EBF7 40%, #EEF2F8 100%)',
           display: 'flex',
           flexDirection: 'column',
           justifyContent: 'center',
@@ -153,13 +158,13 @@ export default function LoginPage() {
         <div style={{
           position: 'absolute', top: -100, right: -80, width: 400, height: 400,
           borderRadius: '50%',
-          background: 'radial-gradient(circle, rgba(59,130,246,.12) 0%, transparent 70%)',
+          background: 'radial-gradient(circle, rgba(201,168,76,.12) 0%, transparent 70%)',
           pointerEvents: 'none',
         }} />
         <div style={{
           position: 'absolute', bottom: -60, left: -60, width: 280, height: 280,
           borderRadius: '50%',
-          background: 'radial-gradient(circle, rgba(99,102,241,.08) 0%, transparent 70%)',
+          background: 'radial-gradient(circle, rgba(201,168,76,.07) 0%, transparent 70%)',
           pointerEvents: 'none',
         }} />
 
@@ -174,7 +179,7 @@ export default function LoginPage() {
             <Wallet size={21} strokeWidth={2.5} color="#fff" />
           </div>
           <div>
-            <div style={{ fontWeight: 700, fontSize: 19, color: '#1C1917', letterSpacing: '-.3px', fontFamily: 'Lora, Georgia, serif' }}>BudgetFlow</div>
+            <div style={{ fontWeight: 700, fontSize: 19, color: '#0F2240', letterSpacing: '-.3px', fontFamily: 'Lora, Georgia, serif' }}>Gestion Budgétaire</div>
             <div style={{ fontSize: 9, color: '#B8973F', letterSpacing: '.8px', textTransform: 'uppercase', marginTop: 1 }}>GESTION BUDGÉTAIRE</div>
           </div>
         </div>
@@ -188,7 +193,7 @@ export default function LoginPage() {
               width: '100%', maxWidth: 400,
               aspectRatio: '4/3', objectFit: 'cover',
               borderRadius: 20,
-              boxShadow: '0 16px 48px rgba(59,130,246,.18)',
+              boxShadow: '0 16px 48px rgba(15,34,64,.14)',
               border: '3px solid #fff',
             }}
           />
@@ -209,7 +214,7 @@ export default function LoginPage() {
 
         {/* Headline */}
         <h2 style={{
-          fontWeight: 700, color: '#1C1917',
+          fontWeight: 700, color: '#0F2240',
           fontSize: 'clamp(1.5rem, 2.5vw, 2rem)',
           lineHeight: 1.2, letterSpacing: '-.02em', marginBottom: 14,
           fontFamily: 'Lora, Georgia, serif',
@@ -241,7 +246,7 @@ export default function LoginPage() {
 
         {/* Footer */}
         <div style={{ marginTop: 'auto', paddingTop: 40, fontSize: 11, color: '#9CA3AF' }}>
-          © 2025 BudgetFlow — Accès réservé aux utilisateurs autorisés
+          © 2025 Gestion Budgétaire — Accès réservé aux utilisateurs autorisés
         </div>
       </div>
 

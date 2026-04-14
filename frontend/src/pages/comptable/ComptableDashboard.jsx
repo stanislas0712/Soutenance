@@ -79,7 +79,7 @@ export default function ComptableDashboard() {
       {/* Hero banner */}
       <div
         className="rounded-[var(--radius-lg)] px-8 py-7 mb-7 text-white relative overflow-hidden"
-        style={{ background: 'linear-gradient(135deg, #1C1917 0%, #252120 55%, #2E2A27 100%)' }}
+        style={{ background: 'linear-gradient(135deg, #1E3A5F 0%, #152B4B 55%, #1E3A5F 100%)' }}
       >
         <div className="absolute rounded-full pointer-events-none" style={{ top: -50, right: -50, width: 200, height: 200, background: 'rgba(201,168,76,.06)' }} />
         <div className="absolute rounded-full pointer-events-none" style={{ bottom: -30, right: 80, width: 120, height: 120, background: 'rgba(201,168,76,.08)' }} />
@@ -87,8 +87,8 @@ export default function ComptableDashboard() {
           <div className="text-[12px] mb-[6px] font-medium tracking-[.3px]" style={{ color: 'rgba(201,168,76,.6)' }}>
             ESPACE COMPTABLE
           </div>
-          <h1 className="font-extrabold text-[1.6rem] tracking-[-0.3px] mb-2" style={{ fontFamily: "'Lora', serif", color: '#FAF7F2' }}>
-            Bonjour, {user?.prenom} {user?.nom} 👋
+          <h1 className="font-extrabold text-[1.6rem] tracking-[-0.3px] mb-2" style={{ fontFamily: "'Lora', serif", color: '#F8FAFC' }}>
+            Bonjour, {user?.prenom} {user?.nom}
           </h1>
           <p className={`text-[14px]${aValider.length > 0 ? ' mb-5' : ''}`} style={{ color: 'rgba(250,247,242,.65)' }}>
             {aValider.length > 0
@@ -142,8 +142,8 @@ export default function ComptableDashboard() {
           icon={<LayoutList size={22} strokeWidth={1.8} />}
           label="Total Budgets"
           value={tous.length}
-          color="#2563EB"
-          bgColor="#DBEAFE"
+          color="#C9A84C"
+          bgColor="#FEF9EC"
           trendText={`${tous.length} budget${tous.length!==1?'s':''} au total`}
           sparklineData={sparkMois}
         />
@@ -160,7 +160,7 @@ export default function ComptableDashboard() {
 
       {/* ── Charts ────────────────────────────────────────────────────────── */}
       {tous.length > 0 && (
-        <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(min(300px,100%), 1fr))', gap:18, marginBottom:24 }}>
+        <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(min(300px,100%), 1fr))', gap:20, marginBottom:24 }}>
 
           {/* Répartition par statut */}
           <div className="card" style={{ padding:'20px 24px' }}>

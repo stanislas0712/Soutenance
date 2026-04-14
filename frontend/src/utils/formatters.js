@@ -118,7 +118,7 @@ export function formaterEcart(montantReel, montantPrevu) {
   const pctFmt = `${signeTaux}${`${tauxArrondi}`.replace('.', ',')} %`
 
   let statut, couleur
-  if (taux < 50)       { statut = 'sous_consomme'; couleur = '#3B82F6' }
+  if (taux < 50)       { statut = 'sous_consomme'; couleur = '#D97706' }
   else if (taux <= 80) { statut = 'normal';        couleur = '#22C55E' }
   else if (taux <= 95) { statut = 'sur_consomme';  couleur = '#F59E0B' }
   else                 { statut = 'depasse';        couleur = '#EF4444' }
@@ -146,7 +146,7 @@ export function formaterTaux(numerateur, denominateur, { decimales = 1, vide = '
 export function getCouleurExecution(taux) {
   if (taux === null || taux === undefined) return '#6B7280'
   const t = parseFloat(taux)
-  if (t < 50)  return '#3B82F6'
+  if (t < 50)  return '#D97706'
   if (t < 80)  return '#22C55E'
   if (t < 95)  return '#F59E0B'
   return '#EF4444'

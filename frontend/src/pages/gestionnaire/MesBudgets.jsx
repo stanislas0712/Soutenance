@@ -1,12 +1,14 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { getBudgets, deleteBudget, soumettrebudget } from '../../api/budget'
+import { getBudgets, deleteBudget, soumettreBudget } from '../../api/budget'
 import { StatutBadge } from '../../components/StatusBadge'
 import {
   Search, Plus, Wallet, Trash2, Eye, Send, Edit2, Receipt,
   ChevronRight, Download, Printer,
 } from 'lucide-react'
 import { exportCSV, printPDF } from '../../utils/export'
+import { notifRefresh } from '../../utils/notifRefresh'
+import { ConfirmModal } from '../../components/ui'
 
 const fmt = (n) => new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 0 }).format(parseFloat(n || 0))
 
@@ -15,6 +17,7 @@ const TABS = [
   { key: 'SOUMIS',    label: 'Soumis',      color: '#D97706' },
   { key: 'APPROUVE',  label: 'Approuvés',   color: '#059669' },
   { key: 'REJETE',    label: 'Rejetés',     color: '#DC2626' },
+  { key: 'CLOTURE',   label: 'Clôturés',    color: '#7C3AED' },
 ]
 
 export default function MesBudgets() {
@@ -24,7 +27,8 @@ export default function MesBudgets() {
   const [loading,  setLoading]  = useState(true)
   const [search,   setSearch]   = useState('')
   const [tab,      setTab]      = useState('BROUILLON')
-  const [busy,     setBusy]     = useState(null)   // id en cours d'action
+  const [busy,         setBusy]         = useState(null)
+  const [confirmModal, setConfirmModal] = useState(null)
 
   const load = () => {
     setLoading(true)
@@ -44,27 +48,35 @@ export default function MesBudgets() {
     return matchTab && matchSearch
   })
 
-  const handleDelete = async (id, e) => {
+  const handleDelete = (id, nom, e) => {
     e.stopPropagation()
-    if (!confirm('Supprimer ce budget ?')) return
-    setBusy(id)
-    await deleteBudget(id).catch(err => alert(err.response?.data?.detail || 'Erreur'))
-    setBusy(null)
-    load()
+    setConfirmModal({
+      title: 'Supprimer le budget',
+      message: `Supprimer définitivement le budget "${nom}" ? Cette action est irréversible.`,
+      confirmLabel: 'Supprimer',
+      onConfirm: async () => {
+        setBusy(id)
+        await deleteBudget(id).catch(err => alert(err.response?.data?.detail || 'Erreur'))
+        setBusy(null)
+        load()
+      },
+    })
   }
 
-  const handleSoumettre = async (id, e) => {
+  const handleSoumettre = (id, nom, e) => {
     e.stopPropagation()
-    if (!confirm('Soumettre ce budget pour validation ?')) return
-    setBusy(id)
-    try {
-      await soumettrebudget(id)
-      load()
-    } catch (err) {
-      alert(err.response?.data?.detail || 'Erreur lors de la soumission')
-    } finally {
-      setBusy(null)
-    }
+    setConfirmModal({
+      title: 'Soumettre pour validation',
+      message: `Soumettre le budget "${nom}" au comptable pour validation ? Vous ne pourrez plus le modifier après soumission.`,
+      confirmLabel: 'Soumettre',
+      variant: 'warning',
+      onConfirm: async () => {
+        setBusy(id)
+        try { await soumettreBudget(id); notifRefresh(); load() }
+        catch (err) { alert(err.response?.data?.detail || 'Erreur lors de la soumission') }
+        finally { setBusy(null) }
+      },
+    })
   }
 
   if (loading) return <div className="page-loader"><div className="spinner" /></div>
@@ -295,7 +307,7 @@ export default function MesBudgets() {
                   <button
                     title="Voir le détail"
                     onClick={() => navigate(`/mes-budgets/${b.id}`)}
-                    style={btnStyle('#3B82F6')}
+                    style={btnStyle('#C9A84C')}
                   >
                     <Eye size={13} strokeWidth={2} />
                   </button>
@@ -315,7 +327,7 @@ export default function MesBudgets() {
                   {['BROUILLON', 'REJETE'].includes(b.statut) && (
                     <button
                       title="Soumettre pour validation"
-                      onClick={e => handleSoumettre(b.id, e)}
+                      onClick={e => handleSoumettre(b.id, b.nom, e)}
                       disabled={isBusy}
                       style={btnStyle('#059669')}
                     >
@@ -338,7 +350,7 @@ export default function MesBudgets() {
                   {['BROUILLON', 'REJETE'].includes(b.statut) && (
                     <button
                       title="Supprimer"
-                      onClick={e => handleDelete(b.id, e)}
+                      onClick={e => handleDelete(b.id, b.nom, e)}
                       disabled={isBusy}
                       style={btnStyle('#EF4444')}
                     >
@@ -353,6 +365,7 @@ export default function MesBudgets() {
           })}
         </div>
       )}
+      {confirmModal && <ConfirmModal {...confirmModal} onClose={() => setConfirmModal(null)} />}
     </div>
   )
 }

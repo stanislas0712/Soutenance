@@ -2,18 +2,19 @@ import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import {
-  getBudget, deleteBudget, consommerLigne, updateBudget, soumettrebudget,
-  effectuerVirement, getLignesSelecteur,
+  getBudget, deleteBudget, updateBudget, soumettreBudget,
 } from '../../api/budget'
 import { getDepenses } from '../../api/depenses'
 import { StatutBadge, AlerteBadge } from '../../components/StatusBadge'
 import LignesBudgetaires from '../../components/budget/LignesBudgetaires'
-import SelecteurLigne from '../../components/budget/SelecteurLigne'
+import DepenseMultiModal from '../../components/budget/DepenseMultiModal'
 import { exportCSV, printPDF } from '../../utils/export'
+import { notifRefresh } from '../../utils/notifRefresh'
+import { ConfirmModal } from '../../components/ui'
 import {
   ArrowLeft, Trash2, Pencil, Send, DollarSign,
-  CheckCircle2, AlertTriangle, Paperclip, Info,
-  Check, FileText, Receipt, ExternalLink, ArrowLeftRight,
+  CheckCircle2, AlertTriangle, Info,
+  FileText, Receipt, ExternalLink,
   Download, Printer,
 } from 'lucide-react'
 
@@ -35,9 +36,6 @@ export default function BudgetDetail({ basePath = '/mes-budgets' }) {
   const [hasLignes, setHasLignes] = useState(false)
 
   const [showDepenseModal, setShowDepenseModal] = useState(false)
-  const [depForm,          setDepForm]          = useState({ ligne_id: '', montant: '', note: '', file: null, pieces: [] })
-  const [depSaving,        setDepSaving]        = useState(false)
-  const [depError,         setDepError]         = useState('')
 
   const [showEdit,   setShowEdit]   = useState(false)
   const [editForm,   setEditForm]   = useState({ nom: '', date_debut: '', date_fin: '' })
@@ -51,11 +49,7 @@ export default function BudgetDetail({ basePath = '/mes-budgets' }) {
   const [depenses,       setDepenses]       = useState([])
   const [depensesLoaded, setDepensesLoaded] = useState(false)
 
-  const [showVirement,   setShowVirement]   = useState(false)
-  const [virForm,        setVirForm]        = useState({ ligne_source: '', ligne_destination: '', montant: '', motif: '' })
-  const [virSaving,      setVirSaving]      = useState(false)
-  const [virError,       setVirError]       = useState('')
-  const [virLignes,      setVirLignes]      = useState([])
+  const [confirmModal, setConfirmModal] = useState(null)
 
   const load = () => {
     getBudget(id)
@@ -71,33 +65,16 @@ export default function BudgetDetail({ basePath = '/mes-budgets' }) {
       .finally(() => setDepensesLoaded(true))
   }
 
-  const openVirement = () => {
-    setVirForm({ ligne_source: '', ligne_destination: '', montant: '', motif: '' })
-    setVirError('')
-    getLignesSelecteur(id)
-      .then(r => setVirLignes(r.data?.data ?? []))
-      .catch(() => setVirLignes([]))
-    setShowVirement(true)
-  }
-  const handleVirement = async (e) => {
-    e.preventDefault()
-    setVirError(''); setVirSaving(true)
-    try {
-      await effectuerVirement(id, {
-        ligne_source:      virForm.ligne_source,
-        ligne_destination: virForm.ligne_destination,
-        montant:           parseFloat(virForm.montant),
-        motif:             virForm.motif,
-      })
-      setShowVirement(false); load()
-    } catch (err) { setVirError(err.response?.data?.detail || 'Erreur') }
-    finally { setVirSaving(false) }
-  }
-
-  const handleDelete = async () => {
-    if (!confirm('Supprimer définitivement ce budget ?')) return
-    try { await deleteBudget(id); navigate(basePath) }
-    catch (err) { alert(err.response?.data?.detail || 'Erreur') }
+  const handleDelete = () => {
+    setConfirmModal({
+      title: 'Supprimer le budget',
+      message: `Supprimer définitivement ce budget "${budget?.nom || ''}" ? Toutes les lignes budgétaires seront effacées.`,
+      confirmLabel: 'Supprimer',
+      onConfirm: async () => {
+        try { await deleteBudget(id); navigate(basePath) }
+        catch (err) { alert(err.response?.data?.detail || 'Erreur') }
+      },
+    })
   }
 
   const openEdit = () => {
@@ -116,28 +93,17 @@ export default function BudgetDetail({ basePath = '/mes-budgets' }) {
     e.preventDefault()
     setSoumissionSaving(true); setSoumissionError('')
     try {
-      await soumettrebudget(id)
+      await soumettreBudget(id)
+      notifRefresh()
       setShowSoumission(false); load()
     } catch (err) {
       setSoumissionError(err.response?.data?.detail || 'Erreur lors de la soumission')
     } finally { setSoumissionSaving(false) }
   }
 
-  const openDepense = () => {
-    setDepForm({ ligne_id: '', montant: '', note: '', file: null, pieces: [] })
-    setDepError(''); setShowDepenseModal(true)
-  }
-  const handleDepense = async (e) => {
-    e.preventDefault()
-    // pièce justificative recommandée mais non bloquante
-    if (!depForm.ligne_id) { setDepError('Sélectionnez une ligne budgétaire.'); return }
-    setDepSaving(true); setDepError('')
-    try {
-      await consommerLigne(id, depForm.ligne_id, parseFloat(depForm.montant), depForm.file, depForm.note, depForm.pieces)
-      setShowDepenseModal(false); load(); loadDepenses()
-    } catch (err) { setDepError(err.response?.data?.detail || 'Erreur') }
-    finally { setDepSaving(false) }
-  }
+  const openDepense  = () => setShowDepenseModal(true)
+  const closeDepense = () => setShowDepenseModal(false)
+  const onDepenseSuccess = () => { setShowDepenseModal(false); load(); loadDepenses() }
 
   // Charger les dépenses dès que le budget est approuvé
   useEffect(() => {
@@ -224,10 +190,10 @@ export default function BudgetDetail({ basePath = '/mes-budgets' }) {
         </div>
 
         <div style={{
-          background: 'linear-gradient(160deg, #1C1917 0%, #252120 60%, #2E2A27 100%)',
+          background: 'linear-gradient(160deg, #1E3A5F 0%, #152B4B 60%, #1E3A5F 100%)',
           borderRadius: 'var(--radius-lg)', padding: '24px 28px',
           color: '#fff', position: 'relative', overflow: 'hidden',
-          boxShadow: '0 8px 28px rgba(28,25,23,.4)',
+          boxShadow: '0 8px 28px rgba(15,34,64,.4)',
         }}>
           <div style={{ position: 'absolute', top: -50, right: -50, width: 200, height: 200, borderRadius: '50%', background: 'rgba(255,255,255,.05)' }} />
           <div style={{ position: 'absolute', bottom: -30, right: 80, width: 120, height: 120, borderRadius: '50%', background: 'rgba(255,255,255,.04)' }} />
@@ -389,14 +355,9 @@ export default function BudgetDetail({ basePath = '/mes-budgets' }) {
               </button>
             )}
             {approuve && (
-              <>
-                <button onClick={openVirement} className="btn btn-secondary btn-md" style={{ gap: 6 }}>
-                  <ArrowLeftRight size={14} strokeWidth={2} /> Virement de crédits
-                </button>
-                <button onClick={openDepense} className="btn btn-success btn-md" style={{ gap: 6 }}>
-                  <DollarSign size={14} strokeWidth={2} /> Enregistrer une dépense
-                </button>
-              </>
+              <button onClick={openDepense} className="btn btn-success btn-md" style={{ gap: 6 }}>
+                <DollarSign size={14} strokeWidth={2} /> Enregistrer une dépense
+              </button>
             )}
           </div>
         </div>
@@ -498,121 +459,13 @@ export default function BudgetDetail({ basePath = '/mes-budgets' }) {
         </div>
       )}
 
-      {/* ── Modal dépense (layout horizontal) ───────────────────────────────── */}
+      {/* ── Modal dépense multi-lignes ──────────────────────────────────────── */}
       {showDepenseModal && (
-        <div className="modal-overlay" onClick={e => { if (e.target === e.currentTarget) setShowDepenseModal(false) }}>
-          <div className="modal-panel" onClick={e => e.stopPropagation()} style={{ maxWidth: 860, width: '95vw' }}>
-
-            {/* Header */}
-            <div className="modal-header">
-              <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '15px', display: 'flex', alignItems: 'center', gap: 8 }}>
-                <DollarSign size={16} strokeWidth={2} style={{ color: 'var(--color-success-600)' }} />
-                Enregistrer une dépense
-              </h2>
-            </div>
-
-            <form onSubmit={handleDepense}>
-              {/* Corps — deux colonnes (stacked sur mobile) */}
-              <div className="modal-body" style={{ padding: 0 }}>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 0 }}>
-
-                  {/* Colonne gauche — sélecteur de ligne */}
-                  <div style={{
-                    flex: '1 1 300px', padding: '20px 20px',
-                    borderRight: '1px solid var(--color-gray-100)',
-                    maxHeight: 480, overflowY: 'auto',
-                    minWidth: 0,
-                  }}>
-                    <label className="form-label" style={{ marginBottom: 10 }}>
-                      Ligne budgétaire <span style={{ color: 'var(--color-danger-600)' }}>*</span>
-                    </label>
-                    <SelecteurLigne
-                      budgetId={budget.id}
-                      value={depForm.ligne_id}
-                      onChange={(ligneId) => setDepForm(f => ({ ...f, ligne_id: ligneId }))}
-                      error={depError && !depForm.ligne_id ? 'Sélectionnez une ligne budgétaire' : null}
-                    />
-                  </div>
-
-                  {/* Colonne droite — montant, note, pièce + boutons */}
-                  <div style={{ flex: '1 1 260px', padding: '20px 20px', display: 'flex', flexDirection: 'column', gap: 14, minWidth: 0 }}>
-
-                    <div>
-                      <label className="form-label">Montant (FCFA) <span style={{ color: 'var(--color-danger-600)' }}>*</span></label>
-                      <input
-                        type="number" required min={0.01} step="0.01"
-                        className="form-input" style={{ fontFamily: 'var(--font-mono)' }}
-                        value={depForm.montant}
-                        onChange={e => setDepForm(f => ({ ...f, montant: e.target.value }))}
-                        placeholder="Ex : 50 000"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="form-label">Note / Description</label>
-                      <input
-                        className="form-input" value={depForm.note}
-                        onChange={e => setDepForm(f => ({ ...f, note: e.target.value }))}
-                        placeholder="Ex : Facture fournisseur n°…"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="form-label">
-                        Pièce(s) justificative(s) <span style={{ color: 'var(--color-danger-600)' }}>*</span>
-                      </label>
-                      <div style={{
-                        border: '1.5px dashed var(--color-gray-300)', borderRadius: 'var(--radius-md)',
-                        padding: '12px', display: 'flex', alignItems: 'center', gap: 10,
-                        background: 'var(--color-gray-50)',
-                      }}>
-                        <Paperclip size={15} strokeWidth={2} style={{ color: 'var(--color-gray-400)', flexShrink: 0 }} />
-                        <input
-                          type="file"
-                          multiple
-                          accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx"
-                          onChange={e => {
-                            const files = Array.from(e.target.files)
-                            setDepForm(f => ({ ...f, file: files[0] || null, pieces: files.slice(1) }))
-                          }}
-                          style={{ fontSize: '12px', flex: 1 }}
-                        />
-                      </div>
-                      <p className="form-hint">PDF, image, Word, Excel — sélection multiple possible</p>
-                      {depForm.file && (
-                        <ul style={{ marginTop: 4, fontSize: '11px', color: 'var(--color-gray-500)', listStyle: 'disc', paddingLeft: 16 }}>
-                          {[depForm.file, ...depForm.pieces].map((f, i) => <li key={i}>{f.name}</li>)}
-                        </ul>
-                      )}
-                    </div>
-
-                    {depError && (
-                      <div style={{ display: 'flex', gap: 8, alignItems: 'center', padding: '8px 12px', borderRadius: 8, background: 'var(--color-danger-50)', border: '1px solid var(--color-danger-200)' }}>
-                        <AlertTriangle size={13} style={{ color: 'var(--color-danger-500)', flexShrink: 0 }} />
-                        <span style={{ color: 'var(--color-danger-700)', fontSize: '12px' }}>{depError}</span>
-                      </div>
-                    )}
-
-                    {/* Boutons en bas de la colonne droite */}
-                    <div style={{ marginTop: 'auto', display: 'flex', gap: 8, paddingTop: 8, borderTop: '1px solid var(--color-gray-100)' }}>
-                      <button type="button" onClick={() => setShowDepenseModal(false)} className="btn btn-secondary btn-md" style={{ flex: 1 }}>
-                        Annuler
-                      </button>
-                      <button
-                        type="submit"
-                        disabled={depSaving || !depForm.ligne_id || !depForm.montant}
-                        className="btn btn-success btn-md" style={{ flex: 1, gap: 6 }}
-                      >
-                        {depSaving ? <><span className="spinner-sm" /> Enregistrement…</> : <><Check size={14} strokeWidth={2.5} /> Confirmer</>}
-                      </button>
-                    </div>
-
-                  </div>
-                </div>
-              </div>
-            </form>
-          </div>
-        </div>
+        <DepenseMultiModal
+          budgetId={budget.id}
+          onClose={closeDepense}
+          onSuccess={onDepenseSuccess}
+        />
       )}
 
       {/* ── Modal soumission ─────────────────────────────────────────────────── */}
@@ -709,100 +562,7 @@ export default function BudgetDetail({ basePath = '/mes-budgets' }) {
           </div>
         </div>
       )}
-      {/* ── Modal Virement de crédits ────────────────────────────────────────── */}
-      {showVirement && (
-        <div className="modal-overlay" onClick={e => { if (e.target === e.currentTarget) setShowVirement(false) }}>
-          <div className="modal-panel" onClick={e => e.stopPropagation()} style={{ maxWidth: 520 }}>
-            <div className="modal-header">
-              <h2 style={{ fontSize: '15px', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8 }}>
-                <ArrowLeftRight size={16} strokeWidth={2} style={{ color: 'var(--color-primary-600)' }} />
-                Virement de crédits
-              </h2>
-            </div>
-            <form onSubmit={handleVirement}>
-              <div className="modal-body" style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-                <div>
-                  <label className="form-label">Ligne source <span style={{ color: 'var(--color-danger-600)' }}>*</span></label>
-                  <select
-                    className="form-input" required
-                    value={virForm.ligne_source}
-                    onChange={e => setVirForm(f => ({ ...f, ligne_source: e.target.value }))}
-                  >
-                    <option value="">— Sélectionner —</option>
-                    {virLignes.filter(l => parseFloat(l.montant_disponible) > 0).map(l => (
-                      <option key={l.ligne_id} value={l.ligne_id}>
-                        {l.libelle} — Disponible : {new Intl.NumberFormat('fr-FR').format(l.montant_disponible)} FCFA
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="form-label">Ligne destination <span style={{ color: 'var(--color-danger-600)' }}>*</span></label>
-                  <select
-                    className="form-input" required
-                    value={virForm.ligne_destination}
-                    onChange={e => setVirForm(f => ({ ...f, ligne_destination: e.target.value }))}
-                  >
-                    <option value="">— Sélectionner —</option>
-                    {virLignes.filter(l => l.ligne_id !== virForm.ligne_source).map(l => (
-                      <option key={l.ligne_id} value={l.ligne_id}>
-                        {l.libelle}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="form-label">Montant (FCFA) <span style={{ color: 'var(--color-danger-600)' }}>*</span></label>
-                  <input
-                    type="number" required min={1} step="1"
-                    className="form-input" style={{ fontFamily: 'var(--font-mono)' }}
-                    value={virForm.montant}
-                    onChange={e => setVirForm(f => ({ ...f, montant: e.target.value }))}
-                    placeholder="Ex : 50 000"
-                  />
-                  {virForm.ligne_source && virForm.montant && (() => {
-                    const src = virLignes.find(l => l.ligne_id === virForm.ligne_source)
-                    if (src && parseFloat(virForm.montant) > parseFloat(src.montant_disponible)) {
-                      return (
-                        <p style={{ fontSize: '12px', color: 'var(--color-danger-600)', marginTop: 4 }}>
-                          Montant supérieur au disponible ({new Intl.NumberFormat('fr-FR').format(src.montant_disponible)} FCFA)
-                        </p>
-                      )
-                    }
-                    return null
-                  })()}
-                </div>
-                <div>
-                  <label className="form-label">Motif</label>
-                  <input
-                    className="form-input" value={virForm.motif}
-                    onChange={e => setVirForm(f => ({ ...f, motif: e.target.value }))}
-                    placeholder="Ex : Réallocation pour achat matériel urgent…"
-                  />
-                </div>
-                {virError && (
-                  <div style={{ display: 'flex', gap: 8, alignItems: 'center', padding: '8px 12px', borderRadius: 8, background: 'var(--color-danger-50)', border: '1px solid var(--color-danger-200)' }}>
-                    <AlertTriangle size={13} style={{ color: 'var(--color-danger-500)', flexShrink: 0 }} />
-                    <span style={{ color: 'var(--color-danger-700)', fontSize: '12px' }}>{virError}</span>
-                  </div>
-                )}
-              </div>
-              <div className="modal-footer">
-                <button type="button" onClick={() => setShowVirement(false)} className="btn btn-secondary btn-md">Annuler</button>
-                <button
-                  type="submit"
-                  disabled={virSaving || !virForm.ligne_source || !virForm.ligne_destination || !virForm.montant}
-                  className="btn btn-primary btn-md"
-                  style={{ gap: 6 }}
-                >
-                  {virSaving ? <><span className="spinner-sm" /> Virement…</> : <><ArrowLeftRight size={14} /> Confirmer</>}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
+      {confirmModal && <ConfirmModal {...confirmModal} onClose={() => setConfirmModal(null)} />}
     </div>
   )
 }

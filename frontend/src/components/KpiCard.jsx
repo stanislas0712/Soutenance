@@ -40,7 +40,7 @@ export default function KpiCard({
       role={onClick ? 'button' : undefined}
       tabIndex={onClick ? 0 : undefined}
       style={{
-        background: '#FEFCF9',
+        background: '#FFFFFF',
         borderRadius: 18,
         padding: '20px 22px 0',
         position: 'relative',
@@ -94,7 +94,7 @@ export default function KpiCard({
       <div style={{
         fontWeight: 800,
         fontFamily: "'Syne', system-ui, sans-serif",
-        color: '#1C1917',
+        color: '#1E3A5F',
         lineHeight: 1.05,
         letterSpacing: '-.04em',
         fontSize: typeof value === 'string' && value.length > 12 ? '1.35rem'

@@ -8,6 +8,7 @@ import {
 } from 'lucide-react'
 import { DepenseBadge } from '../../components/StatusBadge'
 import { exportCSV, printPDF } from '../../utils/export'
+import { notifRefresh } from '../../utils/notifRefresh'
 
 const fmt     = (n)   => new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 0 }).format(parseFloat(n || 0))
 const fmtDate = (iso) => iso ? new Date(iso).toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' }) : '—'
@@ -30,12 +31,12 @@ export default function DepensesPage() {
 
   const { mutate: valider, isPending: validating } = useMutation({
     mutationFn: (id) => validerDepense(id, {}),
-    onSuccess: () => { qc.invalidateQueries(['depenses']); setDetailModal(null) },
+    onSuccess: () => { qc.invalidateQueries(['depenses']); notifRefresh(); setDetailModal(null) },
   })
 
   const { mutate: rejeter } = useMutation({
     mutationFn: ({ id, motif }) => rejeterDepense(id, { motif }),
-    onSuccess: () => { qc.invalidateQueries(['depenses']); setRejetModal(null); setDetailModal(null) },
+    onSuccess: () => { qc.invalidateQueries(['depenses']); notifRefresh(); setRejetModal(null); setDetailModal(null) },
   })
 
   const depenses       = Array.isArray(data?.data) ? data.data : (data?.data?.results || data?.results || [])
@@ -109,7 +110,7 @@ export default function DepensesPage() {
       </div>
 
       {/* KPI */}
-      <div className="kpi-grid" style={{ marginBottom: 20 }}>
+      <div className="kpi-grid">
         {[
           { label: 'EN ATTENTE',  val: countFor('SAISIE'),  color: 'var(--color-warning-600)',  bg: 'var(--color-warning-50)'  },
           { label: 'VALIDÉES',    val: countFor('VALIDEE'), color: 'var(--color-success-600)',  bg: 'var(--color-success-50)'  },

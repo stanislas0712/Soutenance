@@ -120,7 +120,7 @@ export default function AdminDashboard() {
 
       {/* ── Hero header ───────────────────────────────────────────────────── */}
       <div style={{
-        background: 'linear-gradient(135deg, #1C1917 0%, #252120 55%, #2E2A27 100%)',
+        background: 'linear-gradient(135deg, #1E3A5F 0%, #152B4B 55%, #1E3A5F 100%)',
         borderRadius: 18, padding: '28px 32px', marginBottom: 24,
         position: 'relative', overflow: 'hidden',
         boxShadow: '0 8px 32px rgba(10,8,6,.35)',
@@ -134,7 +134,7 @@ export default function AdminDashboard() {
             <div style={{ fontSize:12, fontWeight:700, color:'rgba(201,168,76,.6)', letterSpacing:'.8px', textTransform:'uppercase', marginBottom:6 }}>
               TABLEAU DE BORD ADMINISTRATEUR
             </div>
-            <h1 style={{ fontWeight:700, fontSize:'1.6rem', color:'#FAF7F2', letterSpacing:'-.02em', marginBottom:6, fontFamily:'Lora, Georgia, serif' }}>
+            <h1 style={{ fontWeight:700, fontSize:'1.6rem', color:'#F8FAFC', letterSpacing:'-.02em', marginBottom:6, fontFamily:'Lora, Georgia, serif' }}>
               Gestion Budgétaire — Exercice {ba?.annee ?? new Date().getFullYear()}
             </h1>
             <p style={{ fontSize:13, color:'rgba(255,255,255,.45)', marginBottom:0 }}>{now}</p>
@@ -190,7 +190,7 @@ export default function AdminDashboard() {
           label="Budget Total Alloué"
           value={enveloppeGlobale >= 1e6 ? `${(enveloppeGlobale/1e6).toFixed(1)}M` : `${fmt(enveloppeGlobale)} F`}
           trendText={`${fmt(enveloppeAllouee)} F alloués depts`}
-          color="#2563EB" bgColor="#DBEAFE"
+          color="#C9A84C" bgColor="#FEF9EC"
           sparklineData={evolutionData.map(d => d.montant)}
         />
         <KpiCard
@@ -229,7 +229,7 @@ export default function AdminDashboard() {
       </div>
 
       {/* ── Charts ───────────────────────────────────────────────────────── */}
-      <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(min(300px,100%), 1fr))', gap:18, marginBottom:22 }}>
+      <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(min(300px,100%), 1fr))', gap:20, marginBottom:24 }}>
 
         {/* Consommation par département */}
         <div className="card" style={{ padding:'20px 24px' }}>
@@ -281,7 +281,7 @@ export default function AdminDashboard() {
       </div>
 
       {/* ── Évolution mensuelle ───────────────────────────────────────────── */}
-      <div className="card" style={{ padding:'20px 24px', marginBottom:22 }}>
+      <div className="card" style={{ padding:'20px 24px', marginBottom:24 }}>
         <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:18 }}>
           <TrendingUp size={15} strokeWidth={2} color="var(--color-primary-600)" />
           <span style={{ fontWeight:700, fontSize:14, color:'var(--color-gray-900)' }}>Évolution budgétaire — 6 derniers mois</span>
@@ -311,7 +311,7 @@ export default function AdminDashboard() {
       </div>
 
       {/* ── Action panels ────────────────────────────────────────────────── */}
-      <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(min(300px,100%), 1fr))', gap:18, marginBottom:22 }}>
+      <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(min(300px,100%), 1fr))', gap:20, marginBottom:24 }}>
 
         {/* Budgets en attente de validation */}
         <div className="card" style={{ overflow:'hidden' }}>

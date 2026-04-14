@@ -4,19 +4,19 @@ import { useScrollAnimation } from '../hooks/useScrollAnimation'
 
 const FAQ_ITEMS = [
   {
-    question: 'BudgetFlow est-il adapté aux PME et grandes entreprises ?',
+    question: 'Gestion Budgétaire est-il adapté aux PME et grandes entreprises ?',
     answer:
-      "Oui, BudgetFlow est conçu pour s'adapter à toutes les tailles d'organisation. Les PME bénéficient d'une solution clé en main facile à déployer, tandis que les grandes entreprises peuvent configurer des workflows complexes, des hiérarchies multi-niveaux et des contrôles d'accès granulaires selon leurs besoins spécifiques.",
+      "Oui, Gestion Budgétaire est conçu pour s'adapter à toutes les tailles d'organisation. Les PME bénéficient d'une solution clé en main facile à déployer, tandis que les grandes entreprises peuvent configurer des workflows complexes, des hiérarchies multi-niveaux et des contrôles d'accès granulaires selon leurs besoins spécifiques.",
   },
   {
-    question: 'Combien de temps faut-il pour mettre en place BudgetFlow ?',
+    question: 'Combien de temps faut-il pour mettre en place Gestion Budgétaire ?',
     answer:
       "La configuration initiale prend généralement moins de 30 minutes. Notre assistant de démarrage guidé vous accompagne étape par étape : création de votre organisation, ajout des membres de l'équipe, configuration des structures budgétaires et paramétrage des workflows de validation. Notre équipe support est disponible pour vous aider à chaque étape.",
   },
   {
     question: "Peut-on importer des données depuis Excel ou d'autres outils ?",
     answer:
-      "Absolument. BudgetFlow propose des importateurs natifs pour Excel (XLS, XLSX), CSV et plusieurs logiciels comptables populaires. Vous pouvez importer vos budgets existants, vos plans de comptes et vos données historiques en quelques clics. Nous proposons également une API REST pour les intégrations personnalisées.",
+      "Absolument. Gestion Budgétaire propose des importateurs natifs pour Excel (XLS, XLSX), CSV et plusieurs logiciels comptables populaires. Vous pouvez importer vos budgets existants, vos plans de comptes et vos données historiques en quelques clics. Nous proposons également une API REST pour les intégrations personnalisées.",
   },
   {
     question: 'Comment fonctionne le workflow de validation ?',
@@ -59,7 +59,7 @@ function AccordionItem({ item, isOpen, onToggle, index, visible }) {
         aria-expanded={isOpen}
         aria-controls={`faq-answer-${index}`}
       >
-        <span className={`font-medium transition-colors duration-200 pr-4`} style={{ color: isOpen ? '#B8973F' : '#1C1917' }}>
+        <span className={`font-medium transition-colors duration-200 pr-4`} style={{ color: isOpen ? '#B8973F' : '#1E3A5F' }}>
           {item.question}
         </span>
         <ChevronDown
@@ -103,7 +103,7 @@ export default function FAQ() {
             Questions fréquentes
           </h2>
           <p className="text-lg text-gray-500 max-w-xl mx-auto leading-relaxed">
-            Vous avez des questions sur BudgetFlow ? Nous avons les réponses.
+            Vous avez des questions sur Gestion Budgétaire ? Nous avons les réponses.
           </p>
         </div>
 

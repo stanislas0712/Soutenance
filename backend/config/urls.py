@@ -7,8 +7,16 @@ from django.urls import include, path, re_path
 from django.conf import settings
 from django.conf.urls.static import static
 from django.views.generic import TemplateView
+from django.views.static import serve as static_serve
+from django.http import JsonResponse
+
+
+def health_check(request):
+    return JsonResponse({'status': 'ok'})
+
 
 urlpatterns = [
+    path("api/accounts/health/", health_check, name="health-check"),
     path("manager/", admin.site.urls),
 
     # Comptes : auth, utilisateurs, départements
@@ -31,6 +39,11 @@ urlpatterns = [
 
     # Notifications in-app
     path("api/v1/notifications/", include("budget.urls_notifications")),
+
+    # Fichiers statiques du build React (images, fonts, etc. à la racine de frontend_dist)
+    re_path(r'^(?P<path>.*\.(js|css|jpg|jpeg|png|svg|ico|webp|woff|woff2|ttf|eot|map|txt|json))$',
+            static_serve,
+            {'document_root': settings.BASE_DIR / 'frontend_dist'}),
 
     # React SPA — catch-all (doit être en dernier)
     re_path(r'^(?!api|manager|static|media).*$', TemplateView.as_view(template_name='index.html')),

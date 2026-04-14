@@ -5,9 +5,9 @@ import ChatbotDrawer from './ia/ChatbotDrawer'
 import { getNotifications, marquerLue, marquerToutesLues } from '../api/notifications'
 import {
   LayoutDashboard, Wallet, CalendarDays, Building2, Users,
-  ClipboardList, BarChart3, CreditCard, Sparkles,
+  ClipboardList, BarChart3, FileBarChart, CreditCard, Sparkles,
   CheckCircle2, ChevronRight, ChevronDown, LogOut, User,
-  ExternalLink, Menu, PlusCircle, Bell,
+  Menu, Bell,
 } from 'lucide-react'
 
 /* ── Rôles ───────────────────────────────────────────────────────────────── */
@@ -24,14 +24,14 @@ function navItems(role) {
     { to: '/budget-annuel', icon: CalendarDays,    label: 'Budget annuel' },
     { to: '/departements',  icon: Building2,       label: 'Départements' },
     { to: '/utilisateurs',  icon: Users,           label: 'Utilisateurs' },
-    { to: '/audit',         icon: ClipboardList,   label: "Journal d'audit" },
-    { to: '/rapports',      icon: BarChart3,       label: 'KPIs & Rapports' },
-    { to: '/ia',            icon: Sparkles,        label: 'Veille & Analyse' },
+    { to: '/audit',               icon: ClipboardList, label: "Journal d'audit"     },
+    { to: '/rapports',            icon: BarChart3,    label: 'Statistiques'     },
+    { to: '/rapports-detailles',  icon: FileBarChart, label: 'Rapports détaillés'  },
+    { to: '/ia',                  icon: Sparkles,     label: 'Veille & Analyse'    },
   ]
   if (role === 'GESTIONNAIRE') return [
     { to: '/dashboard',    icon: LayoutDashboard, label: 'Tableau de bord' },
     { to: '/mes-budgets',  icon: Wallet,          label: 'Mes budgets' },
-    { to: '/creer-budget', icon: PlusCircle,      label: 'Nouveau budget' },
     { to: '/mes-depenses', icon: CreditCard,      label: 'Mes dépenses' },
     { to: '/ia',           icon: Sparkles,        label: 'Veille & Analyse' },
   ]
@@ -39,7 +39,7 @@ function navItems(role) {
     { to: '/dashboard',  icon: LayoutDashboard, label: 'Tableau de bord' },
     { to: '/validation', icon: CheckCircle2,    label: 'Budgets à valider' },
     { to: '/depenses',   icon: CreditCard,      label: 'Dépenses à valider' },
-    { to: '/rapports',   icon: BarChart3,       label: 'KPIs & Rapports' },
+    { to: '/rapports',   icon: BarChart3,       label: 'Statistiques' },
     { to: '/ia',         icon: Sparkles,        label: 'Veille & Analyse' },
   ]
   return []
@@ -51,16 +51,16 @@ function getSections(role, items) {
     return [
       { label: 'PRINCIPAL',      items: items.slice(0, 1) },
       { label: 'ADMINISTRATION', items: items.slice(1, 5) },
-      { label: 'RAPPORTS',       items: items.slice(5, 6) },
-      { label: 'IA',             items: items.slice(6) },
+      { label: 'RAPPORTS',       items: items.slice(5, 7) },
+      { label: 'IA',             items: items.slice(7) },
     ]
   }
   if (role === 'GESTIONNAIRE') {
     return [
       { label: null,       items: items.slice(0, 1) },
-      { label: 'BUDGETS',  items: items.slice(1, 3) },
-      { label: 'DÉPENSES', items: items.slice(3, 4) },
-      { label: 'IA',       items: items.slice(4) },
+      { label: 'BUDGETS',  items: items.slice(1, 2) },
+      { label: 'DÉPENSES', items: items.slice(2, 3) },
+      { label: 'IA',       items: items.slice(3) },
     ]
   }
   if (role === 'COMPTABLE') {
@@ -86,9 +86,9 @@ function NavItem({ item, collapsed }) {
         gap: 10, padding: collapsed ? '9px 0' : '8px 11px',
         justifyContent: collapsed ? 'center' : 'flex-start',
         borderRadius: 9, marginBottom: 2,
-        color: isActive ? '#FAF7F2' : 'rgba(255,255,255,.48)',
+        color: isActive ? '#F8FAFC' : 'rgba(255,255,255,.48)',
         background: isActive
-          ? 'linear-gradient(135deg, rgba(201,168,76,.22), rgba(184,151,63,.15))'
+          ? 'linear-gradient(135deg, rgba(201,168,76,.28), rgba(201,168,76,.12))'
           : 'transparent',
         fontWeight: isActive ? 600 : 400,
         fontSize: '13.5px',
@@ -118,7 +118,7 @@ function NavItem({ item, collapsed }) {
 
 /* ── Layout component ────────────────────────────────────────────────────── */
 export default function Layout({ children }) {
-  const { user, logout, isAdmin } = useAuth()
+  const { user, logout } = useAuth()
   const navigate   = useNavigate()
   const location   = useLocation()
   const [collapsed, setCollapsed]         = useState(false)
@@ -145,11 +145,12 @@ export default function Layout({ children }) {
   }
 
   /* Breadcrumb label from current path */
-  const currentItem = items.find(i => i.to !== '/dashboard' && location.pathname.startsWith(i.to))
+  const currentItem = items.find(i => i.to !== '/dashboard' && location.pathname.startsWith(i.to + '/'))
+    || items.find(i => i.to !== '/dashboard' && location.pathname === i.to)
     || items.find(i => i.to === location.pathname)
 
   return (
-    <div className="flex h-full" style={{ background: '#F5F0E8' }}>
+    <div className="flex h-full" style={{ background: '#EEF2F8' }}>
 
       {/* ── Mobile overlay ────────────────────────────────────────────── */}
       {isMobile && mobileSidebarOpen && (
@@ -175,8 +176,8 @@ export default function Layout({ children }) {
           minWidth: isMobile ? 'var(--sidebar-w)' : (collapsed ? 60 : 'var(--sidebar-w)'),
           transform: isMobile ? (mobileSidebarOpen ? 'translateX(0)' : 'translateX(-100%)') : 'none',
           transition: 'width .22s cubic-bezier(.4,0,.2,1), min-width .22s, transform .25s cubic-bezier(.4,0,.2,1)',
-          background: 'linear-gradient(175deg, #1C1917 0%, #252120 55%, #2E2A27 100%)',
-          boxShadow: '6px 0 32px rgba(10,8,6,.45), 2px 0 8px rgba(28,25,23,.3)',
+          background: 'linear-gradient(175deg, #0D1E35 0%, #152B4B 55%, #1E3A5F 100%)',
+          boxShadow: '6px 0 32px rgba(8,15,28,.45), 2px 0 8px rgba(15,34,64,.3)',
         }}
       >
 
@@ -190,23 +191,18 @@ export default function Layout({ children }) {
             borderBottomColor: 'rgba(255,255,255,.05)',
           }}
         >
-          <div
-            className="shrink-0 flex items-center justify-center"
-            style={{
-              width: 34, height: 34, borderRadius: 10,
-              background: 'linear-gradient(135deg, #C9A84C, #8A6B1E)',
-              boxShadow: '0 2px 8px rgba(201,168,76,.4)',
-            }}
-          >
-            <Wallet size={16} strokeWidth={2.5} color="#fff" />
-          </div>
+          <img
+            src="/budget.jpg"
+            alt="Gestion Budgétaire"
+            style={{ width: 34, height: 34, borderRadius: 10, objectFit: 'cover', flexShrink: 0 }}
+          />
           {!collapsed && (
             <div>
-              <div style={{ fontWeight: 700, fontSize: '14.5px', color: '#FAF7F2', letterSpacing: '-.2px', lineHeight: 1.2, fontFamily: 'Lora, Georgia, serif' }}>
-                BudgetFlow
+              <div style={{ fontWeight: 700, fontSize: '14.5px', color: '#F8FAFC', letterSpacing: '-.2px', lineHeight: 1.2, fontFamily: 'Lora, Georgia, serif' }}>
+                Gestion Budgétaire
               </div>
               <div style={{ fontSize: '9.5px', color: 'rgba(201,168,76,.6)', letterSpacing: '.8px', marginTop: 1 }}>
-                GESTION BUDGÉTAIRE
+                PLATEFORME BUDGÉTAIRE
               </div>
             </div>
           )}
@@ -244,9 +240,9 @@ export default function Layout({ children }) {
           className="shrink-0 flex items-center px-5 gap-[12px] z-50"
           style={{
             height: 'var(--topbar-h)',
-            background: '#141110',
-            borderBottom: '1px solid rgba(201,168,76,.12)',
-            boxShadow: '0 4px 16px rgba(10,8,6,.4), 0 1px 4px rgba(0,0,0,.2)',
+            background: '#0C1B32',
+            borderBottom: '1px solid rgba(201,168,76,.15)',
+            boxShadow: '0 4px 16px rgba(8,15,28,.45), 0 1px 4px rgba(0,0,0,.2)',
           }}
         >
           {/* Toggle sidebar */}
@@ -268,34 +264,13 @@ export default function Layout({ children }) {
           {/* Breadcrumb */}
           {currentItem && (
             <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '13px', color: 'rgba(255,255,255,.6)' }}>
-              <span style={{ fontWeight: 500 }}>BudgetFlow</span>
+              <span style={{ fontWeight: 500 }}>Gestion Budgétaire</span>
               <ChevronRight size={12} strokeWidth={2.5} />
               <span style={{ color: '#fff', fontWeight: 700, letterSpacing: '-.01em' }}>{currentItem.label}</span>
             </div>
           )}
 
           <div className="flex-1" />
-
-          {/* Admin Django link — outil dev uniquement */}
-          {isAdmin && (
-            <a
-              href="/manager/"
-              target="_blank" rel="noreferrer"
-              title="Interface d'administration technique (développeur)"
-              style={{
-                display: 'flex', alignItems: 'center', gap: 5,
-                padding: '5px 10px', borderRadius: 7,
-                border: '1px dashed rgba(255,255,255,.3)', background: 'transparent',
-                color: 'rgba(255,255,255,.55)', fontSize: '11.5px', fontWeight: 500,
-                transition: 'all .12s', textDecoration: 'none',
-              }}
-              onMouseEnter={e => { e.currentTarget.style.color = '#fff'; e.currentTarget.style.borderColor = 'rgba(255,255,255,.6)'; }}
-              onMouseLeave={e => { e.currentTarget.style.color = 'rgba(255,255,255,.55)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,.3)'; }}
-            >
-              <ExternalLink size={11} strokeWidth={2} />
-              Dev
-            </a>
-          )}
 
           {/* Cloche de notifications */}
           <NotificationBell navigate={navigate} />
@@ -305,7 +280,7 @@ export default function Layout({ children }) {
         </header>
 
         {/* Page content */}
-        <main className="flex-1 overflow-y-auto" style={{ padding: isMobile ? '16px 14px' : '32px 36px' }}>
+        <main className="flex-1 overflow-y-auto" style={{ padding: isMobile ? '16px 14px' : '32px 36px', background: '#EEF2F8' }}>
           <div className="page-content">
             {children}
           </div>
@@ -320,12 +295,14 @@ export default function Layout({ children }) {
 
 /* ── helpers notifications ───────────────────────────────────────────────── */
 const NOTIF_META = {
-  BUDGET_APPROUVE:  { icon: '✅', color: '#16A34A', bg: '#F0FDF4', border: '#BBF7D0', label: 'Budget approuvé'  },
-  BUDGET_REJETE:    { icon: '❌', color: '#DC2626', bg: '#FFF1F2', border: '#FECDD3', label: 'Budget rejeté'    },
-  BUDGET_SOUMIS:    { icon: '📤', color: '#7C3AED', bg: '#F5F3FF', border: '#DDD6FE', label: 'Budget soumis'    },
-  DEPENSE_VALIDEE:  { icon: '💳', color: '#0891B2', bg: '#ECFEFF', border: '#A5F3FC', label: 'Dépense validée'  },
-  DEPENSE_REJETEE:  { icon: '🚫', color: '#EA580C', bg: '#FFF7ED', border: '#FED7AA', label: 'Dépense rejetée'  },
-  DEFAULT:          { icon: '🔔', color: '#2563EB', bg: '#EFF6FF', border: '#BFDBFE', label: 'Info'             },
+  BUDGET_CREE:      { icon: '📝', color: '#1D4ED8', bg: '#EFF6FF', border: '#BFDBFE', label: 'Nouveau budget'    },
+  BUDGET_APPROUVE:  { icon: '✅', color: '#16A34A', bg: '#F0FDF4', border: '#BBF7D0', label: 'Budget approuvé'   },
+  BUDGET_REJETE:    { icon: '❌', color: '#DC2626', bg: '#FFF1F2', border: '#FECDD3', label: 'Budget rejeté'     },
+  BUDGET_SOUMIS:    { icon: '📤', color: '#7C3AED', bg: '#F5F3FF', border: '#DDD6FE', label: 'Budget soumis'     },
+  DEPENSE_SAISIE:   { icon: '💸', color: '#0F766E', bg: '#F0FDFA', border: '#99F6E4', label: 'Dépense enregistrée' },
+  DEPENSE_VALIDEE:  { icon: '💳', color: '#0891B2', bg: '#ECFEFF', border: '#A5F3FC', label: 'Dépense validée'   },
+  DEPENSE_REJETEE:  { icon: '🚫', color: '#EA580C', bg: '#FFF7ED', border: '#FED7AA', label: 'Dépense rejetée'   },
+  DEFAULT:          { icon: '🔔', color: '#C9A84C', bg: '#FEF9EC', border: '#F3D07A', label: 'Info'              },
 }
 const notifMeta = (type) => NOTIF_META[type] || NOTIF_META.DEFAULT
 
@@ -356,10 +333,27 @@ function NotificationBell({ navigate }) {
     }).catch(() => {})
   }
 
+  // Polling rapide sur le compteur seul (requête légère ?non_lues=1)
+  const loadBadge = () => {
+    getNotifications({ non_lues: '1' }).then(r => {
+      setNbNonLues(r.data?.nb_non_lues ?? 0)
+    }).catch(() => {})
+  }
+
   useEffect(() => {
     loadNotifs()
-    const timer = setInterval(loadNotifs, 15000)
-    return () => clearInterval(timer)
+    // Badge : toutes les 5s (requête légère)
+    const badgeTimer = setInterval(loadBadge, 5000)
+    // Liste complète : toutes les 30s (si le panel est ouvert, on recharge à l'ouverture)
+    const fullTimer  = setInterval(loadNotifs, 30000)
+    // Écouter l'événement custom émis après chaque action métier
+    const onRefresh = () => loadNotifs()
+    window.addEventListener('budgetflow:notif-refresh', onRefresh)
+    return () => {
+      clearInterval(badgeTimer)
+      clearInterval(fullTimer)
+      window.removeEventListener('budgetflow:notif-refresh', onRefresh)
+    }
   }, [])
 
   useEffect(() => {
@@ -418,7 +412,7 @@ function NotificationBell({ navigate }) {
           <span style={{
             position: 'absolute', top: -4, right: -4,
             minWidth: 17, height: 17, borderRadius: 9999,
-            background: '#EF4444', border: '2px solid #1C1917',
+            background: '#EF4444', border: '2px solid #0C1B32',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             fontSize: '9px', fontWeight: 800, color: '#fff', padding: '0 3px',
           }}>
@@ -451,7 +445,7 @@ function NotificationBell({ navigate }) {
           {/* ── Header ── */}
           <div style={{
             padding: '16px 18px 14px',
-            background: 'linear-gradient(135deg, #1C1917 0%, #2E2A27 100%)',
+            background: 'linear-gradient(135deg, #1E3A5F 0%, #0D1E35 100%)',
             flexShrink: 0,
           }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -565,7 +559,7 @@ function NotificationBell({ navigate }) {
                       {!n.lu && (
                         <span style={{
                           width: 7, height: 7, borderRadius: '50%',
-                          background: '#3B82F6', flexShrink: 0,
+                          background: '#C9A84C', flexShrink: 0,
                         }} />
                       )}
                     </div>
@@ -582,7 +576,7 @@ function NotificationBell({ navigate }) {
                       <span>🕐</span>
                       {fmtDate(n.date)}
                       {n.lien && (
-                        <span style={{ marginLeft: 6, color: '#2563EB', fontWeight: 600 }}>
+                        <span style={{ marginLeft: 6, color: '#B8973F', fontWeight: 600 }}>
                           Voir →
                         </span>
                       )}

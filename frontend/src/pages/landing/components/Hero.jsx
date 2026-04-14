@@ -33,7 +33,7 @@ export default function Hero() {
 
       <section
         className="pt-24 pb-16 px-6 overflow-hidden"
-        style={{ background: 'linear-gradient(180deg, #F5F0E8 0%, #FEFCF9 60%)' }}
+        style={{ background: 'linear-gradient(180deg, #EEF2F8 0%, #FFFFFF 60%)' }}
         aria-label="Section principale"
       >
         <div className="max-w-7xl mx-auto flex flex-col lg:flex-row items-center gap-16">
@@ -47,9 +47,9 @@ export default function Hero() {
             </div>
 
             {/* H1 */}
-            <h1 className="text-4xl lg:text-5xl font-extrabold leading-tight text-gray-900 mb-6">
+            <h1 className="text-4xl lg:text-5xl font-extrabold leading-tight mb-6" style={{ color: '#166534' }}>
               La gestion budgétaire{' '}
-              <span className="underline underline-offset-4" style={{ color: '#B8973F', textDecorationColor: '#D4B355', textDecorationStyle: 'wavy' }}>
+              <span style={{ color: '#166534' }}>
                 intelligente
               </span>{' '}
               pour les institutions publiques
@@ -75,13 +75,13 @@ export default function Hero() {
             <div className="flex flex-wrap gap-4 mb-12">
               <a
                 href="/login"
-                className="text-white font-semibold px-8 py-3.5 rounded-xl text-base transition-all hover:scale-105 no-underline inline-flex items-center gap-2" style={{ background: 'linear-gradient(135deg, #292524, #1C1917)', boxShadow: '0 4px 16px rgba(28,25,23,.25)' }}
+                className="text-white font-semibold px-8 py-3.5 rounded-xl text-base transition-all hover:scale-105 no-underline inline-flex items-center gap-2" style={{ background: 'linear-gradient(135deg, #292524, #1E3A5F)', boxShadow: '0 4px 16px rgba(15,34,64,.25)' }}
               >
                 Accéder à la plateforme →
               </a>
               <a
                 href="#how-it-works"
-                className="flex items-center gap-2 border-2 text-gray-700 font-semibold px-8 py-3.5 rounded-xl text-base transition-all no-underline" style={{ borderColor: '#E7E5E4', background: '#FEFCF9' }}
+                className="flex items-center gap-2 border-2 text-gray-700 font-semibold px-8 py-3.5 rounded-xl text-base transition-all no-underline" style={{ borderColor: '#E7E5E4', background: '#FFFFFF' }}
               >
                 <span>▶</span> Voir comment ça marche
               </a>

@@ -1,5 +1,8 @@
+export { default as Button        } from './Button'
+export { default as Card          } from './Card'
 export { default as MontantFCFA   } from './MontantFCFA'
 export { default as DateDisplay   } from './DateDisplay'
 export { default as ExecutionJauge } from './ExecutionJauge'
 export { default as AllocationJauge } from './AllocationJauge'
 export { default as InputMontant  } from './InputMontant'
+export { default as ConfirmModal  } from './ConfirmModal'

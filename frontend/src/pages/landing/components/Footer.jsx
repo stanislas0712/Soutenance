@@ -69,7 +69,7 @@ export default function Footer() {
   const currentYear = new Date().getFullYear()
 
   return (
-    <footer className="text-gray-400 py-16 px-6" style={{ background: '#1C1917' }} aria-label="Pied de page">
+    <footer className="text-gray-400 py-16 px-6" style={{ background: '#1E3A5F' }} aria-label="Pied de page">
       <div className="max-w-6xl mx-auto">
         {/* Top grid */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-12 pb-12 border-b border-gray-800">
@@ -132,7 +132,7 @@ export default function Footer() {
         {/* Bottom bar */}
         <div className="flex flex-col md:flex-row justify-between items-center gap-4 pt-8 text-xs text-gray-500">
           <div className="flex flex-col md:flex-row items-center gap-2">
-            <span>© {currentYear} BudgetFlow. Tous droits réservés.</span>
+            <span>© {currentYear} Gestion Budgétaire. Tous droits réservés.</span>
             <span className="hidden md:inline text-gray-700">·</span>
             <span>Développé par <span className="text-gray-300 font-semibold">KONATÉ Stanislas</span></span>
           </div>

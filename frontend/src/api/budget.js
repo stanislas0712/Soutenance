@@ -20,7 +20,7 @@ export const createBudget     = (data)   => api.post('/budget/', data)
 export const updateBudget     = (id, d)  => api.patch(`/budget/${id}/`, d)
 export const deleteBudget     = (id)     => api.delete(`/budget/${id}/`)
 
-export const soumettrebudget  = (id)        => api.post(`/budget/${id}/soumettre/`)
+export const soumettreBudget  = (id)        => api.post(`/budget/${id}/soumettre/`)
 export const approuverBudget  = (id)        => api.post(`/budget/${id}/approuver/`)
 export const rejeterBudget    = (id, data)  => api.post(`/budget/${id}/rejeter/`, data)
 export const cloturerBudget   = (id)        => api.post(`/budget/${id}/cloturer/`)
@@ -45,6 +45,20 @@ export const consommerLigne = (bId, id, montant, pieceJustificative, note = '', 
     }
   }
   return api.post(`/budget/${bId}/lignes/${id}/consommer/`, form, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  })
+}
+
+export const depenseMultiLigne = (bId, lignes, note = '', pieceJustificative = null, pieces = []) => {
+  const form = new FormData()
+  // lignes = [{ligne_id, montant}, ...] envoyées comme JSON string
+  form.append('lignes_json', JSON.stringify(lignes))
+  if (note) form.append('note', note)
+  if (pieceJustificative) form.append('piece_justificative', pieceJustificative)
+  if (pieces && pieces.length > 0) {
+    for (const f of pieces) form.append('pieces', f)
+  }
+  return api.post(`/budget/${bId}/depense-multi/`, form, {
     headers: { 'Content-Type': 'multipart/form-data' },
   })
 }

@@ -201,10 +201,13 @@ class BudgetListCreateView(generics.ListCreateAPIView):
         dept   = self.request.query_params.get('departement')
         if statut: qs = qs.filter(statut=statut)
         if dept:   qs = qs.filter(departement=dept)
-        if user.is_comptable:
-            # Le Comptable ne voit jamais les brouillons
+        if user.is_gestionnaire:
+            # Le Gestionnaire ne voit que ses propres budgets
+            qs = qs.filter(gestionnaire=user)
+        elif user.is_comptable:
+            # Le Comptable voit tout sauf les brouillons
             qs = qs.exclude(statut=StatutBudget.BROUILLON)
-        # L'Admin voit tout (lecture seule — pas de création/modification)
+        # L'Admin voit tout
         return qs
 
     def perform_create(self, serializer):
@@ -217,6 +220,19 @@ class BudgetListCreateView(generics.ListCreateAPIView):
             valeur_apres=f"{instance.code} – {instance.nom}",
             user_agent=self.request.META.get('HTTP_USER_AGENT', ''),
         )
+        # Notifier les comptables qu'un nouveau budget a été créé
+        from accounts.models import Utilisateur
+        gestionnaire = self.request.user
+        comptables = Utilisateur.objects.filter(role='COMPTABLE', is_active=True)
+        for comptable in comptables:
+            creer_notification(
+                destinataire=comptable,
+                type_notif='BUDGET_CREE',
+                message=f"{gestionnaire.get_full_name() or gestionnaire.email} a créé le budget {instance.code} – {instance.nom}.",
+                lien=f"/validation/{instance.id}",
+            )
+        logger.info("[CREE] %s | par %s | notif -> %d comptable(s)",
+                    instance.code, gestionnaire.email, comptables.count())
 
 
 class BudgetDetailView(generics.RetrieveUpdateDestroyAPIView):
@@ -256,6 +272,17 @@ class BudgetDetailView(generics.RetrieveUpdateDestroyAPIView):
             valeur_apres=str(self.request.data),
             user_agent=self.request.META.get('HTTP_USER_AGENT', ''),
         )
+        # Notifier les comptables d'une modification de budget
+        from accounts.models import Utilisateur
+        gestionnaire = self.request.user
+        comptables = Utilisateur.objects.filter(role='COMPTABLE', is_active=True)
+        for comptable in comptables:
+            creer_notification(
+                destinataire=comptable,
+                type_notif='BUDGET_SOUMIS',
+                message=f"{gestionnaire.get_full_name() or gestionnaire.email} a modifié le budget {instance.code} – {instance.nom}.",
+                lien=f"/validation/{instance.id}",
+            )
 
     def destroy(self, request, *args, **kwargs):
         budget = self.get_object()
@@ -985,3 +1012,122 @@ class EnregistrerConsommationMultiView(APIView):
             'niveau_alerte': ligne.budget.niveau_alerte,
             'taux':          ligne.budget.calculer_taux_consommation(),
         })
+
+
+class EnregistrerDepenseMultiLigneView(APIView):
+    """POST /budget/<uuid:pk>/depense-multi/ — dépense répartie sur plusieurs lignes budgétaires."""
+    permission_classes = [IsGestionnaire]
+
+    def post(self, request, pk):
+        try:
+            budget = Budget.objects.select_related('allocation').get(pk=pk, gestionnaire=request.user)
+        except Budget.DoesNotExist:
+            return Response({'detail': 'Budget introuvable ou accès refusé.'}, status=status.HTTP_404_NOT_FOUND)
+
+        if budget.statut != StatutBudget.APPROUVE:
+            return Response(
+                {'detail': 'Les dépenses ne peuvent être enregistrées que sur un budget approuvé.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # Support JSON body ou FormData (lignes envoyées en JSON string dans le champ 'lignes_json')
+        import json as _json
+        lignes_raw = request.data.get('lignes') or request.data.get('lignes_json')
+        if isinstance(lignes_raw, str):
+            try:
+                lignes_data = _json.loads(lignes_raw)
+            except Exception:
+                lignes_data = []
+        elif isinstance(lignes_raw, list):
+            lignes_data = lignes_raw
+        else:
+            lignes_data = []
+        if not lignes_data:
+            return Response({'detail': 'Fournissez une liste "lignes" avec au moins une entrée.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        note              = request.data.get('note', '')
+        piece_principale  = request.FILES.get('piece_justificative')
+        pieces_multiples  = request.FILES.getlist('pieces')
+        resultats         = []
+        erreurs           = []
+
+        for item in lignes_data:
+            ligne_id = item.get('ligne_id')
+            montant  = item.get('montant')
+            if not ligne_id or montant is None:
+                erreurs.append(f"Entrée invalide : {item}")
+                continue
+            try:
+                montant = float(montant)
+                if montant <= 0:
+                    raise ValueError()
+            except (ValueError, TypeError):
+                erreurs.append(f"Montant invalide pour la ligne {ligne_id}")
+                continue
+
+            try:
+                ligne = LigneBudgetaire.objects.select_related('budget').get(pk=ligne_id, budget=budget)
+            except LigneBudgetaire.DoesNotExist:
+                erreurs.append(f"Ligne {ligne_id} introuvable dans ce budget.")
+                continue
+
+            try:
+                ligne.enregistrer_consommation(
+                    montant,
+                    piece_justificative=piece_principale if not resultats else None,
+                    note=note,
+                    enregistre_par=request.user,
+                )
+            except ValidationError as e:
+                msg = e.message if hasattr(e, 'message') else (e.messages[0] if e.messages else str(e))
+                erreurs.append(f"{ligne.libelle} : {msg}")
+                continue
+
+            # Pièces supplémentaires sur la première ligne seulement
+            if not resultats and pieces_multiples:
+                last_depense = ligne.consommations.order_by('-date').first()
+                if last_depense:
+                    for f in pieces_multiples:
+                        PieceJustificative.objects.create(depense=last_depense, fichier=f, nom=f.name)
+
+            montant_avant = float(ligne.montant_consomme) - montant
+            LogAudit.enregistrer(
+                utilisateur=request.user, table='ligne_budgetaire',
+                enregistrement_id=str(ligne.id), action=ActionAudit.UPDATE,
+                valeur_avant=f"consommé: {montant_avant:,.0f} FCFA",
+                valeur_apres=f"consommé: {float(ligne.montant_consomme):,.0f} FCFA (+{montant:,.0f} FCFA)",
+                user_agent=request.META.get('HTTP_USER_AGENT', ''),
+            )
+            ligne.refresh_from_db()
+            resultats.append({'ligne_id': str(ligne.id), 'libelle': ligne.libelle, 'montant': montant})
+
+        if erreurs and not resultats:
+            return Response({'detail': 'Aucune dépense enregistrée.', 'erreurs': erreurs}, status=status.HTTP_400_BAD_REQUEST)
+
+        budget.refresh_from_db()
+
+        # Notifier tous les comptables qu'une dépense a été enregistrée
+        if resultats:
+            from accounts.models import Utilisateur
+            total_depense = sum(r['montant'] for r in resultats)
+            nb_lignes = len(resultats)
+            gest = request.user
+            comptables = Utilisateur.objects.filter(role='COMPTABLE', is_active=True)
+            for comptable in comptables:
+                creer_notification(
+                    destinataire=comptable,
+                    type_notif='DEPENSE_SAISIE',
+                    message=(
+                        f"{gest.get_full_name() or gest.email} a enregistré une dépense "
+                        f"de {total_depense:,.0f} FCFA sur {nb_lignes} ligne(s) "
+                        f"du budget {budget.code} – {budget.nom}."
+                    ),
+                    lien=f"/depenses",
+                )
+
+        return Response({
+            'enregistrements': resultats,
+            'erreurs':         erreurs,
+            'budget_statut':   budget.statut,
+            'taux':            budget.calculer_taux_consommation(),
+        }, status=status.HTTP_201_CREATED)

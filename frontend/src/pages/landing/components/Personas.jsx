@@ -5,7 +5,7 @@ const PERSONAS = [
     role: 'Administrateur',
     tagColor: '#B8973F',
     tagBg: '#FEF9EC',
-    avatarBg: 'linear-gradient(135deg, #292524, #1C1917)',
+    avatarBg: 'linear-gradient(135deg, #292524, #1E3A5F)',
     initials: 'AD',
     description: 'Responsable de la gouvernance budgétaire globale',
     features: [
@@ -138,7 +138,7 @@ export default function Personas() {
               Trois rôles, une plateforme unifiée
             </h2>
             <p className="text-lg text-gray-500 max-w-xl mx-auto leading-relaxed">
-              BudgetFlow définit des droits d'accès précis pour chaque profil d'utilisateur,
+              Gestion Budgétaire définit des droits d'accès précis pour chaque profil d'utilisateur,
               garantissant sécurité et traçabilité à chaque niveau.
             </p>
           </div>

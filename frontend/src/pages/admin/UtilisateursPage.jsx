@@ -1,7 +1,8 @@
 import { useEffect, useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { getUtilisateurs, createUtilisateur, updateUtilisateur, deleteUtilisateur, adminResetPassword, getUtilisateurActivite } from '../../api/accounts'
-import { Plus, KeyRound, Trash2, UserCheck, UserX, Building2, Search, X, Activity, Wallet, CreditCard, CheckCircle2, ChevronRight } from 'lucide-react'
+import { getUtilisateurs, createUtilisateur, updateUtilisateur, deleteUtilisateur, adminResetPassword, debloquerUtilisateur, getUtilisateurActivite } from '../../api/accounts'
+import { Plus, KeyRound, Trash2, UserCheck, UserX, Building2, Search, X, Activity, Wallet, CreditCard, CheckCircle2, ChevronRight, ShieldOff } from 'lucide-react'
+import { ConfirmModal } from '../../components/ui'
 import { RoleBadge, StatutBadge } from '../../components/StatusBadge'
 
 const fmt = n => new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 0 }).format(parseFloat(n || 0))
@@ -23,7 +24,7 @@ function TabBtn({ label, icon, count, active, onClick }) {
         borderBottom: active ? '2px solid #C9A84C' : '2px solid transparent',
         cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6,
         fontSize: 13, fontWeight: active ? 700 : 500,
-        color: active ? '#1C1917' : '#6B7280',
+        color: active ? '#1E3A5F' : '#6B7280',
         transition: 'all .15s',
       }}
     >
@@ -55,6 +56,7 @@ export default function UtilisateursPage() {
   const [activite,     setActivite]     = useState(null)
   const [activiteTab,  setActiviteTab]  = useState('budgets')
   const [activiteLoading, setActiviteLoading] = useState(false)
+  const [confirmModal,    setConfirmModal]    = useState(null)
 
   const load = () => {
     setLoading(true)
@@ -88,14 +90,16 @@ export default function UtilisateursPage() {
     }
   }
 
-  const handleDelete = async (user) => {
-    if (!confirm(`Supprimer l'utilisateur ${user.prenom} ${user.nom} ? Cette action est irréversible.`)) return
-    try {
-      await deleteUtilisateur(user.id)
-      load()
-    } catch (err) {
-      alert(err.response?.data?.detail || 'Impossible de supprimer cet utilisateur.')
-    }
+  const handleDelete = (user) => {
+    setConfirmModal({
+      title: "Supprimer l'utilisateur",
+      message: `Supprimer définitivement le compte de ${user.prenom} ${user.nom} (${user.email}) ? Cette action est irréversible.`,
+      confirmLabel: 'Supprimer',
+      onConfirm: async () => {
+        try { await deleteUtilisateur(user.id); load() }
+        catch (err) { alert(err.response?.data?.detail || 'Impossible de supprimer cet utilisateur.') }
+      },
+    })
   }
 
   const openResetPwd = (user) => {
@@ -103,6 +107,19 @@ export default function UtilisateursPage() {
     setPwdForm({ nouveau_password: '', confirmer: '' })
     setError(''); setSuccess('')
     setModal('resetPwd')
+  }
+
+  const handleDebloquer = (user) => {
+    setConfirmModal({
+      title: 'Débloquer le compte',
+      message: `Débloquer le compte de ${user.prenom} ${user.nom} ? Le compteur de tentatives sera réinitialisé.`,
+      confirmLabel: 'Débloquer',
+      variant: 'warning',
+      onConfirm: async () => {
+        try { await debloquerUtilisateur(user.id); load() }
+        catch (err) { alert(err.response?.data?.detail || 'Erreur lors du déblocage.') }
+      },
+    })
   }
 
   const openActivite = (user) => {
@@ -144,8 +161,9 @@ export default function UtilisateursPage() {
         u.departement_detail?.nom?.toLowerCase().includes(q)
       )) return false
       if (filterRole && u.role !== filterRole) return false
-      if (filterActif === 'actif' && !u.actif) return false
-      if (filterActif === 'inactif' && u.actif) return false
+      if (filterActif === 'actif'   && !u.actif)  return false
+      if (filterActif === 'inactif' && u.actif)   return false
+      if (filterActif === 'bloque'  && !u.bloque) return false
       return true
     })
   }, [users, search, filterRole, filterActif])
@@ -215,6 +233,7 @@ export default function UtilisateursPage() {
           <option value="">Tous les statuts</option>
           <option value="actif">Actifs</option>
           <option value="inactif">Inactifs</option>
+          <option value="bloque">Bloqués</option>
         </select>
 
         {/* Réinitialiser */}
@@ -239,7 +258,7 @@ export default function UtilisateursPage() {
           <div
             key={u.id}
             className="card"
-            style={{ opacity: u.actif ? 1 : 0.65 }}
+            style={{ opacity: u.actif ? 1 : 0.65, outline: u.bloque ? '2px solid #EF4444' : 'none' }}
           >
             {/* Avatar + nom */}
             <div className="flex items-center gap-3 mb-[14px]">
@@ -258,7 +277,12 @@ export default function UtilisateursPage() {
                   <span className="font-bold text-[14px] overflow-hidden text-ellipsis whitespace-nowrap text-gray-900">
                     {u.prenom} {u.nom}
                   </span>
-                  {!u.actif && (
+                  {u.bloque && (
+                    <span className="text-[9px] font-bold px-[6px] py-[1px] rounded-[20px] bg-[#FEE2E2] text-[#DC2626] shrink-0 tracking-[.3px]">
+                      BLOQUÉ
+                    </span>
+                  )}
+                  {!u.actif && !u.bloque && (
                     <span className="text-[9px] font-bold px-[6px] py-[1px] rounded-[20px] bg-[#E5E7EB] text-[#6B7280] shrink-0 tracking-[.3px]">
                       INACTIF
                     </span>
@@ -288,7 +312,7 @@ export default function UtilisateursPage() {
             )}
 
             {/* Actions */}
-            <div className="flex gap-[6px] pt-3 border-t border-[#F3F4F6] flex-wrap">
+            <div className="card-footer">
               {(u.role === 'GESTIONNAIRE' || u.role === 'COMPTABLE') && (
                 <button
                   onClick={() => openActivite(u)}
@@ -312,6 +336,16 @@ export default function UtilisateursPage() {
               >
                 <KeyRound size={12} strokeWidth={2} />
               </button>
+              {u.bloque && (
+                <button
+                  onClick={() => handleDebloquer(u)}
+                  className="btn btn-sm gap-[5px]"
+                  title="Débloquer le compte"
+                  style={{ background: '#FEE2E2', color: '#DC2626', border: '1px solid #FECACA' }}
+                >
+                  <ShieldOff size={12} strokeWidth={2} /> Débloquer
+                </button>
+              )}
               <button
                 onClick={() => handleDelete(u)}
                 className="btn btn-danger btn-sm gap-[5px]"
@@ -398,13 +432,13 @@ export default function UtilisateursPage() {
           <div className="modal-panel" style={{ maxWidth: 720, width: '95vw' }} onClick={e => e.stopPropagation()}>
 
             {/* Header */}
-            <div className="modal-header" style={{ background: 'linear-gradient(135deg, #1C1917, #2E2A27)', borderBottom: 'none' }}>
+            <div className="modal-header" style={{ background: 'linear-gradient(135deg, #1E3A5F, #1E3A5F)', borderBottom: 'none' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                 <div style={{ width: 40, height: 40, borderRadius: 10, background: 'linear-gradient(135deg, #C9A84C, #8A6B1E)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 800, fontSize: 15, flexShrink: 0 }}>
                   {(targetUser.prenom?.[0] || '?').toUpperCase()}
                 </div>
                 <div>
-                  <h2 style={{ fontFamily: 'Lora, serif', fontWeight: 700, fontSize: 15, color: '#FAF7F2', margin: 0 }}>
+                  <h2 style={{ fontFamily: 'Lora, serif', fontWeight: 700, fontSize: 15, color: '#F8FAFC', margin: 0 }}>
                     {targetUser.prenom} {targetUser.nom}
                   </h2>
                   <div style={{ fontSize: 11, color: 'rgba(201,168,76,.7)', marginTop: 2, letterSpacing: '.4px' }}>
@@ -518,7 +552,7 @@ export default function UtilisateursPage() {
             </div>
             <form onSubmit={handleResetPwd}>
               <div className="modal-body">
-                <div className="mb-[18px] px-[14px] py-[10px] rounded-[9px] bg-[#EFF6FF] border border-[#BFDBFE] text-[13px] text-[#1D4ED8]">
+                <div className="mb-[18px] px-[14px] py-[10px] rounded-[9px] bg-[#FEF9EC] border border-[#F3D07A] text-[13px] text-[#78350F]">
                   Utilisateur : <strong>{targetUser.prenom} {targetUser.nom}</strong> ({targetUser.email})
                 </div>
                 <div className="mb-[14px]">
@@ -544,6 +578,7 @@ export default function UtilisateursPage() {
           </div>
         </div>
       )}
+      {confirmModal && <ConfirmModal {...confirmModal} onClose={() => setConfirmModal(null)} />}
     </div>
   )
 }

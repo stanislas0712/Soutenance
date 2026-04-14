@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import { getBudgets, cloturerBudget, getRapportCloture } from '../../api/budget'
 import { StatutBadge, AlerteBadge } from '../../components/StatusBadge'
 import { Search, FileText, TrendingUp, Building2, X, Download, Printer } from 'lucide-react'
+import { ConfirmModal } from '../../components/ui'
 import { exportCSV, printPDF } from '../../utils/export'
 
 const fmt = (n) => new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 0 }).format(parseFloat(n || 0))
@@ -34,14 +35,22 @@ export default function BudgetsPage() {
   const [search,       setSearch]       = useState('')
   const [actionBusy,   setActionBusy]   = useState(null)
   const [visibleCount, setVisibleCount] = useState(10)
+  const [confirmModal, setConfirmModal] = useState(null)
 
-  const handleCloturer = async (b, e) => {
+  const handleCloturer = (b, e) => {
     e.stopPropagation()
-    if (!confirm(`Clôturer le budget ${b.code} – ${b.nom} ?`)) return
-    setActionBusy(b.id)
-    try { await cloturerBudget(b.id); load() }
-    catch (err) { alert(err.response?.data?.detail || 'Erreur') }
-    finally { setActionBusy(null) }
+    setConfirmModal({
+      title: 'Clôturer le budget',
+      message: `Clôturer définitivement le budget "${b.code} – ${b.nom}" ? Cette action est irréversible.`,
+      confirmLabel: 'Clôturer',
+      variant: 'warning',
+      onConfirm: async () => {
+        setActionBusy(b.id)
+        try { await cloturerBudget(b.id); load() }
+        catch (err) { alert(err.response?.data?.detail || 'Erreur') }
+        finally { setActionBusy(null) }
+      },
+    })
   }
 
   const handleRapport = async (b, e) => {
@@ -103,7 +112,7 @@ export default function BudgetsPage() {
           <p className="page-subtitle">Supervision et gestion complète des budgets</p>
         </div>
         <div className="flex items-center gap-2">
-          <div className="flex items-center gap-[6px] px-[14px] py-[6px] rounded-[20px] bg-[#EFF6FF] text-[#1D4ED8] text-[13px] font-semibold">
+          <div className="flex items-center gap-[6px] px-[14px] py-[6px] rounded-[20px] bg-[#FEF9EC] text-[#78350F] text-[13px] font-semibold">
             <TrendingUp size={14} strokeWidth={2} />
             {hasMore ? `${visibleCount} / ${filtered.length}` : filtered.length} budget{filtered.length !== 1 ? 's' : ''}
           </div>
@@ -316,6 +325,7 @@ export default function BudgetsPage() {
           </p>
         </div>
       )}
+      {confirmModal && <ConfirmModal {...confirmModal} onClose={() => setConfirmModal(null)} />}
     </div>
   )
 }

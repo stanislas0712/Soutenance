@@ -47,12 +47,10 @@ export default function Navbar() {
       >
         <div className="max-w-7xl mx-auto px-6 h-full flex items-center justify-between gap-8">
           {/* Logo */}
-          <a href="/" className="flex items-center gap-2.5 flex-shrink-0 no-underline" aria-label="BudgetFlow - Accueil">
-            <div className="rounded-xl w-9 h-9 flex items-center justify-center text-white font-bold text-sm flex-shrink-0" style={{ background: 'linear-gradient(135deg, #C9A84C, #8A6B1E)' }}>
-              B
-            </div>
-            <span className="text-lg font-bold tracking-tight" style={{ color: '#1C1917', fontFamily: 'Lora, Georgia, serif' }}>
-              Budget<span className="font-extrabold">Flow</span>
+          <a href="/" className="flex items-center gap-2.5 flex-shrink-0 no-underline" aria-label="Gestion Budgétaire - Accueil">
+            <img src="/budget.jpg" alt="Gestion Budgétaire" className="rounded-xl flex-shrink-0" style={{ width: 36, height: 36, objectFit: 'cover' }} />
+            <span className="text-lg font-bold tracking-tight" style={{ color: '#1E3A5F', fontFamily: 'Lora, Georgia, serif' }}>
+              Gestion <span className="font-extrabold">Budgétaire</span>
             </span>
           </a>
 
@@ -74,7 +72,7 @@ export default function Navbar() {
           <div className="hidden md:flex items-center gap-2 flex-shrink-0">
             <a
               href="/login"
-              className="text-white text-sm font-semibold px-5 py-2 rounded-lg transition-all no-underline whitespace-nowrap" style={{ background: 'linear-gradient(135deg, #292524, #1C1917)' }}
+              className="text-white text-sm font-semibold px-5 py-2 rounded-lg transition-all no-underline whitespace-nowrap" style={{ background: 'linear-gradient(135deg, #292524, #1E3A5F)' }}
             >
               Accéder à la plateforme
             </a>
@@ -115,11 +113,9 @@ export default function Navbar() {
         {/* Drawer header */}
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-2.5">
-            <div className="rounded-xl bg-blue-600 w-9 h-9 flex items-center justify-center text-white font-bold text-sm">
-              B
-            </div>
+            <img src="/budget.jpg" alt="Gestion Budgétaire" className="rounded-xl" style={{ width: 36, height: 36, objectFit: 'cover' }} />
             <span className="text-lg font-bold text-blue-600 tracking-tight">
-              Budget<span className="font-extrabold">Flow</span>
+              Gestion <span className="font-extrabold">Budgétaire</span>
             </span>
           </div>
           <button
@@ -149,7 +145,7 @@ export default function Navbar() {
         <div className="flex flex-col gap-3 mt-6">
           <a
             href="/login"
-            className="text-white text-sm font-semibold px-4 py-3 rounded-xl transition-all no-underline text-center" style={{ background: 'linear-gradient(135deg, #292524, #1C1917)' }}
+            className="text-white text-sm font-semibold px-4 py-3 rounded-xl transition-all no-underline text-center" style={{ background: 'linear-gradient(135deg, #292524, #1E3A5F)' }}
           >
             Accéder à la plateforme
           </a>

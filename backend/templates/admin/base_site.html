@@ -1,8 +1,289 @@
 {% extends 'admin/base.html' %}
+{% load i18n %}
 
 {% block extrahead %}
 {{ block.super }}
 <script>
   window.CURRENT_USER_PHOTO = "{% if request.user.photo %}{{ request.user.photo.url }}{% endif %}";
 </script>
+<style>
+  /* Masque le dump brut app_list de SimpleUI */
+  .menu-content { display: none !important; }
+
+  /* ── Navbar BudgetFlow ───────────────────────────────────────────── */
+  :root {
+    --bf-ink  : #1E3A5F;
+    --bf-gold : #C9A84C;
+    --bf-gold2: #B8973F;
+    --bf-cream: #FAF7F2;
+  }
+
+  #bf-navbar {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    background: var(--bf-ink);
+    padding: 0 20px;
+    height: 48px;
+    box-shadow: 0 2px 8px rgba(0,0,0,.35);
+    position: sticky;
+    top: 0;
+    z-index: 9999;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  }
+
+  /* Logo / brand */
+  #bf-navbar .bf-brand {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    text-decoration: none;
+    margin-right: 20px;
+  }
+  #bf-navbar .bf-brand img {
+    width: 28px; height: 28px;
+    border-radius: 6px;
+    object-fit: cover;
+  }
+  #bf-navbar .bf-brand span {
+    font-weight: 800;
+    font-size: 15px;
+    letter-spacing: -.3px;
+    color: var(--bf-gold);
+  }
+
+  /* Séparateur */
+  #bf-navbar .bf-sep {
+    width: 1px;
+    height: 24px;
+    background: rgba(255,255,255,.12);
+    margin: 0 16px 0 4px;
+  }
+
+  /* Liens nav */
+  #bf-navbar .bf-nav-links {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    flex: 1;
+  }
+  #bf-navbar .bf-link {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0 12px;
+    height: 34px;
+    border-radius: 7px;
+    text-decoration: none !important;
+    font-size: 12.5px;
+    font-weight: 600;
+    color: rgba(255,255,255,.7);
+    transition: background .13s, color .13s;
+    white-space: nowrap;
+  }
+  #bf-navbar .bf-link:hover,
+  #bf-navbar .bf-link.active {
+    background: rgba(201,168,76,.15);
+    color: var(--bf-gold);
+  }
+  #bf-navbar .bf-link i {
+    font-size: 11px;
+    opacity: .85;
+  }
+
+  /* Badge count */
+  #bf-navbar .bf-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 18px;
+    height: 16px;
+    padding: 0 5px;
+    background: var(--bf-gold);
+    color: var(--bf-ink);
+    font-size: 10px;
+    font-weight: 800;
+    border-radius: 8px;
+    line-height: 1;
+  }
+
+  /* Section droite */
+  #bf-navbar .bf-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-left: auto;
+  }
+
+  /* Bouton retour React */
+  #bf-navbar .bf-back-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0 13px;
+    height: 32px;
+    border-radius: 7px;
+    background: rgba(201,168,76,.18);
+    border: 1px solid rgba(201,168,76,.35);
+    color: var(--bf-gold);
+    font-size: 12px;
+    font-weight: 700;
+    text-decoration: none !important;
+    transition: background .13s;
+  }
+  #bf-navbar .bf-back-btn:hover {
+    background: rgba(201,168,76,.3);
+    color: var(--bf-gold);
+  }
+
+  /* Avatar utilisateur */
+  #bf-navbar .bf-user {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0 10px;
+    height: 34px;
+    border-radius: 7px;
+    background: rgba(255,255,255,.06);
+    border: 1px solid rgba(255,255,255,.1);
+    cursor: default;
+  }
+  #bf-navbar .bf-user-avatar {
+    width: 24px; height: 24px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--bf-gold), var(--bf-gold2));
+    display: flex; align-items: center; justify-content: center;
+    font-size: 10px; font-weight: 800; color: var(--bf-ink);
+    flex-shrink: 0;
+    overflow: hidden;
+  }
+  #bf-navbar .bf-user-avatar img {
+    width: 100%; height: 100%; object-fit: cover;
+  }
+  #bf-navbar .bf-user-name {
+    font-size: 12px;
+    font-weight: 600;
+    color: rgba(255,255,255,.85);
+    max-width: 120px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* Bouton déconnexion */
+  #bf-navbar .bf-logout {
+    display: flex; align-items: center; justify-content: center;
+    width: 32px; height: 32px;
+    border-radius: 7px;
+    background: rgba(220,38,38,.12);
+    border: 1px solid rgba(220,38,38,.25);
+    color: #f87171;
+    font-size: 12px;
+    cursor: pointer;
+    text-decoration: none !important;
+    transition: background .13s;
+  }
+  #bf-navbar .bf-logout:hover { background: rgba(220,38,38,.25); color: #fca5a5; }
+  #bf-navbar .bf-logout-form { margin: 0; }
+
+  /* Responsive : cacher les labels sur petit écran */
+  @media (max-width: 860px) {
+    #bf-navbar .bf-link span { display: none; }
+    #bf-navbar .bf-back-btn span { display: none; }
+    #bf-navbar .bf-user-name { display: none; }
+  }
+
+  /* Compenser la hauteur de la navbar dans le contenu */
+  #container { padding-top: 0 !important; }
+</style>
+{% endblock %}
+
+
+{% block pretitle %}
+{% load i18n %}
+<nav id="bf-navbar">
+
+  <!-- Brand -->
+  <a href="{% url 'admin:index' %}" class="bf-brand">
+    <img src="/gestion.jpg" alt="BudgetFlow">
+    <span>BudgetFlow</span>
+  </a>
+  <div class="bf-sep"></div>
+
+  <!-- Liens de navigation -->
+  <div class="bf-nav-links">
+
+    <a href="{% url 'admin:index' %}" class="bf-link {% if request.path == '/manager/' %}active{% endif %}">
+      <i class="fas fa-home"></i><span>Accueil</span>
+    </a>
+
+    <a href="{% url 'admin:accounts_utilisateur_changelist' %}"
+       class="bf-link {% if 'accounts/utilisateur' in request.path %}active{% endif %}">
+      <i class="fas fa-users"></i><span>Utilisateurs</span>
+    </a>
+
+    <a href="{% url 'admin:accounts_departement_changelist' %}"
+       class="bf-link {% if 'accounts/departement' in request.path %}active{% endif %}">
+      <i class="fas fa-building"></i><span>Départements</span>
+    </a>
+
+    <a href="{% url 'admin:budget_budgetannuel_changelist' %}"
+       class="bf-link {% if 'budget/budgetannuel' in request.path %}active{% endif %}">
+      <i class="fas fa-calendar-alt"></i><span>Budgets annuels</span>
+    </a>
+
+    <a href="{% url 'admin:budget_budget_changelist' %}"
+       class="bf-link {% if 'budget/budget' in request.path and 'budgetannuel' not in request.path %}active{% endif %}">
+      <i class="fas fa-wallet"></i><span>Budgets</span>
+    </a>
+
+    <a href="{% url 'admin:budget_budget_changelist' %}?statut=SOUMIS"
+       class="bf-link {% if 'statut=SOUMIS' in request.get_full_path %}active{% endif %}">
+      <i class="fas fa-hourglass-half"></i><span>En validation</span>
+    </a>
+
+    <a href="{% url 'admin:budget_consommationligne_changelist' %}"
+       class="bf-link {% if 'consommationligne' in request.path %}active{% endif %}">
+      <i class="fas fa-receipt"></i><span>Dépenses</span>
+    </a>
+
+    <a href="{% url 'admin:audit_logaudit_changelist' %}"
+       class="bf-link {% if 'audit/logaudit' in request.path %}active{% endif %}">
+      <i class="fas fa-shield-alt"></i><span>Audit</span>
+    </a>
+
+  </div>
+
+  <!-- Droite -->
+  <div class="bf-right">
+
+    <!-- Retour app React -->
+    <a href="/" class="bf-back-btn" target="_parent">
+      <i class="fas fa-arrow-left"></i><span>App</span>
+    </a>
+
+    <!-- Utilisateur connecté -->
+    <div class="bf-user" title="{{ request.user.email }}">
+      <div class="bf-user-avatar" id="bf-avatar-wrap">
+        {% if request.user.photo %}
+          <img src="{{ request.user.photo.url }}" alt="">
+        {% else %}
+          {{ request.user.prenom|slice:":1" }}{{ request.user.nom|slice:":1" }}
+        {% endif %}
+      </div>
+      <span class="bf-user-name">
+        {{ request.user.prenom|default:request.user.email }}
+      </span>
+    </div>
+
+    <!-- Déconnexion -->
+    <form method="post" action="{% url 'admin:logout' %}" class="bf-logout-form">
+      {% csrf_token %}
+      <button type="submit" class="bf-logout" title="Déconnexion">
+        <i class="fas fa-sign-out-alt"></i>
+      </button>
+    </form>
+
+  </div>
+</nav>
 {% endblock %}

@@ -65,8 +65,8 @@ export default function ProfilPage() {
       <div
         className="rounded-[var(--radius-lg)] px-8 py-7 mb-6 flex items-center gap-[22px] text-white relative overflow-hidden"
         style={{
-          background: 'linear-gradient(160deg, #1C1917 0%, #252120 60%, #2E2A27 100%)',
-          boxShadow: '0 8px 28px rgba(28,25,23,.4)',
+          background: 'linear-gradient(160deg, #1E3A5F 0%, #152B4B 60%, #1E3A5F 100%)',
+          boxShadow: '0 8px 28px rgba(15,34,64,.4)',
         }}
       >
         <div className="absolute rounded-full pointer-events-none" style={{ top: -40, right: -40, width: 180, height: 180, background: 'rgba(201,168,76,.06)' }} />
@@ -77,7 +77,7 @@ export default function ProfilPage() {
           {initiales}
         </div>
         <div className="relative">
-          <div className="font-extrabold text-[1.25rem] mb-1" style={{ fontFamily: "'Lora', serif", color: '#FAF7F2' }}>
+          <div className="font-extrabold text-[1.25rem] mb-1" style={{ fontFamily: "'Lora', serif", color: '#F8FAFC' }}>
             {user?.prenom} {user?.nom}
           </div>
           <div className="text-[13px] mb-[10px]" style={{ color: 'rgba(250,247,242,.65)' }}>{user?.email}</div>
@@ -102,7 +102,7 @@ export default function ProfilPage() {
 
       {/* Informations personnelles */}
       <div className="card mb-5">
-        <h2 className="flex items-center gap-[9px] font-bold text-[14px] text-[#1F2937] mb-5 pb-[14px] border-b border-[#F3F4F6]">
+        <h2 className="card-section-title font-bold text-[14px] text-[#1F2937]">
           <div className="w-7 h-7 rounded-[7px] flex items-center justify-center" style={{ background: '#FEF9EC' }}>
             <User size={14} strokeWidth={2} style={{ color: '#B8973F' }} />
           </div>
@@ -148,7 +148,7 @@ export default function ProfilPage() {
           {infoError   && <InlineAlert type="error"   msg={infoError} />}
           {infoSuccess && <InlineAlert type="success" msg="Informations mises à jour avec succès." />}
 
-          <div className="flex justify-end mt-5 pt-4 border-t border-[#F3F4F6]">
+          <div className="card-footer justify-end mt-5">
             <button type="submit" disabled={infoSaving} className="btn btn-primary btn-md">
               {infoSaving ? <><span className="spinner-sm" /> Enregistrement…</> : 'Enregistrer les modifications'}
             </button>
@@ -158,7 +158,7 @@ export default function ProfilPage() {
 
       {/* Changer le mot de passe */}
       <div className="card">
-        <h2 className="flex items-center gap-[9px] font-bold text-[14px] text-[#1F2937] mb-5 pb-[14px] border-b border-[#F3F4F6]">
+        <h2 className="card-section-title font-bold text-[14px] text-[#1F2937]">
           <div className="w-7 h-7 rounded-[7px] bg-[#FFFBEB] flex items-center justify-center">
             <Lock size={14} strokeWidth={2} className="text-[#D97706]" />
           </div>
@@ -205,7 +205,7 @@ export default function ProfilPage() {
           {pwdError   && <InlineAlert type="error"   msg={pwdError} />}
           {pwdSuccess && <InlineAlert type="success" msg="Mot de passe modifié avec succès." />}
 
-          <div className="flex justify-end mt-5 pt-4 border-t border-[#F3F4F6]">
+          <div className="card-footer justify-end mt-5">
             <button type="submit" disabled={pwdSaving} className="btn btn-primary btn-md">
               {pwdSaving ? <><span className="spinner-sm" /> Modification…</> : 'Changer le mot de passe'}
             </button>
@@ -228,7 +228,7 @@ function PasswordStrength({ pwd }) {
   const levels = [
     { label: 'Très faible', color: '#DC2626', w: '25%'  },
     { label: 'Faible',      color: '#F59E0B', w: '50%'  },
-    { label: 'Moyen',       color: '#3B82F6', w: '75%'  },
+    { label: 'Moyen',       color: '#C9A84C', w: '75%'  },
     { label: 'Fort',        color: '#16A34A', w: '100%' },
   ]
   const lvl = levels[score - 1] || levels[0]

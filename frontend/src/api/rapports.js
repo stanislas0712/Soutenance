@@ -3,9 +3,17 @@
  */
 import api from './axios'
 
-export const getKpis                   = ()       => api.get('/v1/rapports/kpis/')
-export const getEvolutionMensuelle     = (params) => api.get('/v1/rapports/evolution-mensuelle/', { params })
-export const getParDepartement         = ()       => api.get('/v1/rapports/par-departement/')
-export const getTauxUtilisationEnvelop = ()       => api.get('/v1/rapports/taux-utilisation-enveloppes/')
-export const getExecutionBudgetaire    = (params) => api.get('/v1/rapports/execution-budgetaire/', { params })
-export const getDepensesParFournisseur = ()       => api.get('/v1/rapports/depenses-par-fournisseur/')
+/* ── KPIs existants ─────────────────────────────────────────────────────── */
+export const getKpis                      = ()       => api.get('/v1/rapports/kpis/')
+export const getEvolutionMensuelle        = (params) => api.get('/v1/rapports/evolution-mensuelle/', { params })
+export const getParDepartement            = ()       => api.get('/v1/rapports/par-departement/')
+export const getTauxUtilisationEnveloppes = ()       => api.get('/v1/rapports/taux-utilisation-enveloppes/')
+export const getExecutionBudgetaire       = (params) => api.get('/v1/rapports/execution-budgetaire/', { params })
+export const getDepensesParFournisseur    = ()       => api.get('/v1/rapports/depenses-par-fournisseur/')
+
+/* ── Rapports détaillés ─────────────────────────────────────────────────── */
+export const getRapportMensuel     = (mois, annee)              => api.get('/v1/rapports/mensuel/',     { params: { mois, annee } })
+export const getRapportTrimestriel = (trimestre, annee)         => api.get('/v1/rapports/trimestriel/', { params: { trimestre, annee } })
+export const getRapportAnnuel      = (annee)                    => api.get('/v1/rapports/annuel/',      { params: { annee } })
+export const getRapportAdhoc       = (params)                   => api.post('/v1/rapports/adhoc/',      params)
+export const exportRapport         = (type, format, params)     => api.post('/v1/rapports/export/', { type, format, params }, { responseType: 'blob' })

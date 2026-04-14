@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { getDepartements, createDepartement, updateDepartement, deleteDepartement } from '../../api/accounts'
 import { getBudgetAnnuels } from '../../api/budget'
 import { Plus, Building2, Pencil, Trash2, UserCheck, UserX, FileText } from 'lucide-react'
+import { ConfirmModal } from '../../components/ui'
 
 const fmt = (n) => new Intl.NumberFormat('fr-FR').format(n ?? 0)
 
@@ -21,7 +22,8 @@ export default function DepartementsPage() {
   const [editTarget, setEditTarget] = useState(null)
   const [saving,     setSaving]     = useState(false)
   const [error,      setError]      = useState('')
-  const [form, setForm] = useState({ nom: '', description: '' })
+  const [form,         setForm]         = useState({ nom: '', description: '' })
+  const [confirmModal, setConfirmModal] = useState(null)
 
   const load = () => {
     setLoading(true)
@@ -55,10 +57,16 @@ export default function DepartementsPage() {
     catch (err) { alert(err.response?.data?.detail || 'Erreur') }
   }
 
-  const handleDelete = async (id) => {
-    if (!confirm('Supprimer ce département ? Cette action est irréversible.')) return
-    try { await deleteDepartement(id); load() }
-    catch (err) { alert(err.response?.data?.detail || 'Impossible de supprimer ce département.') }
+  const handleDelete = (id, nom) => {
+    setConfirmModal({
+      title: 'Supprimer le département',
+      message: `Supprimer définitivement le département "${nom}" ? Cette action est irréversible.`,
+      confirmLabel: 'Supprimer',
+      onConfirm: async () => {
+        try { await deleteDepartement(id); load() }
+        catch (err) { alert(err.response?.data?.detail || 'Impossible de supprimer ce département.') }
+      },
+    })
   }
 
   const anneeActuelle    = new Date().getFullYear()
@@ -177,24 +185,24 @@ export default function DepartementsPage() {
                 )}
 
                 {/* Actions */}
-                <div className="flex gap-[6px] pt-3 border-t border-[#F3F4F6]">
+                <div className="card-footer">
                   <button
                     onClick={() => navigate(`/budgets?departement=${dept.id}&nom=${encodeURIComponent(dept.nom)}`)}
                     className="btn btn-primary btn-sm flex-1 gap-[5px]"
                   >
                     <FileText size={12} strokeWidth={2} /> Voir les budgets
                   </button>
-                  <button onClick={() => openEdit(dept)} className="btn btn-secondary btn-sm gap-[5px]">
+                  <button onClick={() => openEdit(dept)} className="btn btn-secondary btn-sm" title="Modifier">
                     <Pencil size={12} strokeWidth={2} />
                   </button>
                   <button
                     onClick={() => handleToggle(dept)}
-                    className={`btn btn-sm gap-[5px] ${dept.actif ? 'btn-warning' : 'btn-success'}`}
+                    className={`btn btn-sm ${dept.actif ? 'btn-warning' : 'btn-success'}`}
                     title={dept.actif ? 'Désactiver' : 'Activer'}
                   >
                     {dept.actif ? <UserX size={12} strokeWidth={2} /> : <UserCheck size={12} strokeWidth={2} />}
                   </button>
-                  <button onClick={() => handleDelete(dept.id)} className="btn btn-danger btn-sm" title="Supprimer">
+                  <button onClick={() => handleDelete(dept.id, dept.nom)} className="btn btn-danger btn-sm" title="Supprimer">
                     <Trash2 size={12} strokeWidth={2} />
                   </button>
                 </div>
@@ -245,6 +253,7 @@ export default function DepartementsPage() {
           </div>
         </div>
       )}
+      {confirmModal && <ConfirmModal {...confirmModal} onClose={() => setConfirmModal(null)} />}
     </div>
   )
 }

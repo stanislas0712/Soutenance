@@ -13,12 +13,12 @@ import Footer       from './components/Footer'
 export default function LandingPage() {
   useEffect(() => {
     const prev = document.title
-    document.title = 'BudgetFlow — Gestion budgétaire intelligente pour votre organisation'
+    document.title = 'Gestion Budgétaire — Gestion budgétaire intelligente pour votre organisation'
     return () => { document.title = prev }
   }, [])
 
   return (
-    <div style={{ fontFamily: "'DM Sans', system-ui, sans-serif", background: '#FEFCF9', color: '#1C1917', overflowX: 'hidden' }}>
+    <div style={{ fontFamily: "'DM Sans', system-ui, sans-serif", background: '#FFFFFF', color: '#1E3A5F', overflowX: 'hidden' }}>
       <Navbar />
       <main>
         <Hero />

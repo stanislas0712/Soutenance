@@ -3,6 +3,8 @@ import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
 import { getBudgets, getBudget, getLignes, approuverBudget, rejeterBudget, cloturerBudget } from '../../api/budget'
 import { StatutBadge } from '../../components/StatusBadge'
 import { Search, ArrowLeft, ArrowRight, CheckCircle2, XCircle, TrendingUp, BarChart3, Download, Printer } from 'lucide-react'
+import { notifRefresh } from '../../utils/notifRefresh'
+import { ConfirmModal } from '../../components/ui'
 import { exportCSV, printPDF } from '../../utils/export'
 
 const fmt  = (n) => new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 0 }).format(parseFloat(n || 0))
@@ -108,6 +110,22 @@ export function BudgetsAValiderList() {
             <Printer size={13} strokeWidth={2} /> PDF
           </button>
         </div>
+      </div>
+
+      {/* KPI cards */}
+      <div className="kpi-grid">
+        {[
+          { label: 'EN ATTENTE',  val: countFor('SOUMIS'),   color: 'var(--color-warning-600)',  border: 'var(--color-warning-600)'  },
+          { label: 'APPROUVÉS',   val: countFor('APPROUVE'), color: 'var(--color-success-600)',  border: 'var(--color-success-600)'  },
+          { label: 'REJETÉS',     val: countFor('REJETE'),   color: 'var(--color-danger-600)',   border: 'var(--color-danger-600)'   },
+          { label: 'TOTAL',       val: countFor(null),       color: 'var(--color-primary-600)',  border: 'var(--color-primary-500)'  },
+        ].map(k => (
+          <div key={k.label} className="card" style={{ borderTop: `3px solid ${k.border}` }}>
+            <div style={{ fontSize: '10px', fontWeight: 700, color: k.color, textTransform: 'uppercase', letterSpacing: '.4px', marginBottom: 8 }}>{k.label}</div>
+            <div style={{ fontFamily: 'var(--font-mono)', fontWeight: 800, fontSize: '22px', color: 'var(--color-gray-900)' }}>{k.val}</div>
+            <div style={{ fontSize: '11px', color: 'var(--color-gray-400)', marginTop: 2 }}>budget{k.val !== 1 ? 's' : ''}</div>
+          </div>
+        ))}
       </div>
 
       {/* Barre recherche + filtres */}
@@ -219,9 +237,10 @@ export function BudgetValidationDetail() {
   const [lignes,      setLignes]      = useState([])
   const [loading,     setLoading]     = useState(true)
   const [saving,      setSaving]      = useState(false)
-  const [showRejet,   setShowRejet]   = useState(false)
-  const [motifRejet,  setMotifRejet]  = useState('')
-  const [motifError,  setMotifError]  = useState('')
+  const [showRejet,    setShowRejet]    = useState(false)
+  const [motifRejet,   setMotifRejet]   = useState('')
+  const [motifError,   setMotifError]   = useState('')
+  const [confirmModal, setConfirmModal] = useState(null)
 
   const load = () => {
     Promise.all([getBudget(id), getLignes(id)])
@@ -236,13 +255,19 @@ export function BudgetValidationDetail() {
       setMotifRejet(''); setMotifError(''); setShowRejet(true)
       return
     }
-    if (!confirm('Approuver ce budget ?')) return
-    setSaving(true)
-    try {
-      await approuverBudget(id)
-      navigate('/validation')
-    } catch (err) { alert(err.response?.data?.detail || 'Erreur') }
-    finally { setSaving(false) }
+    setConfirmModal({
+      title: 'Approuver le budget',
+      message: `Approuver le budget "${budget?.nom || ''}" ? Le gestionnaire sera notifié et pourra commencer à saisir des dépenses.`,
+      confirmLabel: 'Approuver',
+      variant: 'success',
+      onConfirm: async () => {
+        setSaving(true)
+        try { await approuverBudget(id); notifRefresh(); navigate('/validation') }
+        catch (err) { alert(err.response?.data?.detail || 'Erreur') }
+        finally { setSaving(false) }
+      },
+    })
+    return
   }
 
   const handleRejeterConfirm = async () => {
@@ -253,20 +278,26 @@ export function BudgetValidationDetail() {
     setSaving(true)
     try {
       await rejeterBudget(id, { motif: motifRejet })
+      notifRefresh()
       setShowRejet(false)
       navigate('/validation')
     } catch (err) { setMotifError(err.response?.data?.detail || 'Erreur') }
     finally { setSaving(false) }
   }
 
-  const handleCloturer = async () => {
-    if (!confirm('Clôturer ce budget ? Cette action est irréversible.')) return
-    setSaving(true)
-    try {
-      await cloturerBudget(id)
-      navigate('/validation')
-    } catch (err) { alert(err.response?.data?.detail || 'Erreur') }
-    finally { setSaving(false) }
+  const handleCloturer = () => {
+    setConfirmModal({
+      title: 'Clôturer le budget',
+      message: `Clôturer définitivement le budget "${budget?.nom || ''}" ? Cette action est irréversible et mettra fin à toute saisie de dépenses.`,
+      confirmLabel: 'Clôturer',
+      variant: 'warning',
+      onConfirm: async () => {
+        setSaving(true)
+        try { await cloturerBudget(id); navigate('/validation') }
+        catch (err) { alert(err.response?.data?.detail || 'Erreur') }
+        finally { setSaving(false) }
+      },
+    })
   }
 
   if (loading || !budget) return <div className="page-loader"><div className="spinner" /></div>
@@ -285,7 +316,7 @@ export function BudgetValidationDetail() {
       {/* Hero header */}
       <div
         className="rounded-[var(--radius-lg)] px-[30px] py-[26px] mb-6 text-white relative overflow-hidden"
-        style={{ background: 'linear-gradient(160deg, #1C1917 0%, #252120 60%, #2E2A27 100%)' }}
+        style={{ background: 'linear-gradient(160deg, #1E3A5F 0%, #152B4B 60%, #1E3A5F 100%)' }}
       >
         <div className="absolute rounded-full pointer-events-none" style={{ top: -50, right: -50, width: 200, height: 200, background: 'rgba(201,168,76,.06)' }} />
         <div className="relative flex items-start gap-4">
@@ -442,7 +473,7 @@ export function BudgetValidationDetail() {
       {(budget.statut === 'SOUMIS' || budget.statut === 'APPROUVE') && (
         <div
           className="mt-6 rounded-[var(--radius-lg)] px-7 py-[22px] flex justify-between items-center flex-wrap gap-4"
-          style={{ background: 'linear-gradient(135deg, #1C1917, #252120)' }}
+          style={{ background: 'linear-gradient(135deg, #1E3A5F, #152B4B)' }}
         >
           <div>
             <div className="font-display font-bold text-white mb-1 text-[15px]">
@@ -534,6 +565,7 @@ export function BudgetValidationDetail() {
           </div>
         </div>
       )}
+      {confirmModal && <ConfirmModal {...confirmModal} onClose={() => setConfirmModal(null)} />}
     </div>
   )
 }

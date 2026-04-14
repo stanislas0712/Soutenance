@@ -35,8 +35,8 @@ export default function ResetPasswordPage() {
   }
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#F5F0E8', fontFamily: "'DM Sans', system-ui, sans-serif", padding: 20 }}>
-      <div style={{ width: '100%', maxWidth: 440, background: '#FEFCF9', borderRadius: 20, border: '1px solid rgba(28,25,23,.07)', boxShadow: '0 12px 40px rgba(28,25,23,.1)', overflow: 'hidden' }}>
+    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#EEF2F8', fontFamily: "'DM Sans', system-ui, sans-serif", padding: 20 }}>
+      <div style={{ width: '100%', maxWidth: 440, background: '#FFFFFF', borderRadius: 20, border: '1px solid rgba(15,34,64,.07)', boxShadow: '0 12px 40px rgba(15,34,64,.1)', overflow: 'hidden' }}>
 
         {/* Bande dorée */}
         <div style={{ height: 4, background: 'linear-gradient(90deg, #C9A84C, #D4B355)' }} />
@@ -48,14 +48,14 @@ export default function ResetPasswordPage() {
               <Wallet size={17} strokeWidth={2.5} color="#fff" />
             </div>
             <div>
-              <div style={{ fontWeight: 700, fontSize: 15, color: '#1C1917', fontFamily: 'Lora, Georgia, serif', letterSpacing: '-.2px' }}>BudgetFlow</div>
+              <div style={{ fontWeight: 700, fontSize: 15, color: '#1E3A5F', fontFamily: 'Lora, Georgia, serif', letterSpacing: '-.2px' }}>Gestion Budgétaire</div>
               <div style={{ fontSize: 9, color: '#B8973F', letterSpacing: '.7px', textTransform: 'uppercase' }}>GESTION BUDGÉTAIRE</div>
             </div>
           </div>
 
           {invalidLink ? (
             <div>
-              <h2 style={{ fontFamily: 'Lora, Georgia, serif', fontWeight: 700, fontSize: 20, color: '#1C1917', marginBottom: 12 }}>Lien invalide</h2>
+              <h2 style={{ fontFamily: 'Lora, Georgia, serif', fontWeight: 700, fontSize: 20, color: '#1E3A5F', marginBottom: 12 }}>Lien invalide</h2>
               <p style={{ fontSize: 14, color: '#57534E', lineHeight: 1.7, marginBottom: 24 }}>
                 Ce lien de réinitialisation est manquant ou mal formé. Refaites une demande depuis la page de connexion.
               </p>
@@ -66,7 +66,7 @@ export default function ResetPasswordPage() {
           ) : done ? (
             <div style={{ textAlign: 'center' }}>
               <CheckCircle2 size={48} color="#16A34A" strokeWidth={1.5} style={{ marginBottom: 16 }} />
-              <h2 style={{ fontFamily: 'Lora, Georgia, serif', fontWeight: 700, fontSize: 20, color: '#1C1917', marginBottom: 10 }}>Mot de passe mis à jour !</h2>
+              <h2 style={{ fontFamily: 'Lora, Georgia, serif', fontWeight: 700, fontSize: 20, color: '#1E3A5F', marginBottom: 10 }}>Mot de passe mis à jour !</h2>
               <p style={{ fontSize: 14, color: '#57534E', lineHeight: 1.7, marginBottom: 28 }}>
                 Votre mot de passe a été réinitialisé avec succès. Vous pouvez maintenant vous connecter.
               </p>
@@ -77,7 +77,7 @@ export default function ResetPasswordPage() {
           ) : (
             <>
               <div style={{ marginBottom: 28 }}>
-                <h2 style={{ fontFamily: 'Lora, Georgia, serif', fontWeight: 700, fontSize: 20, color: '#1C1917', marginBottom: 6 }}>Nouveau mot de passe</h2>
+                <h2 style={{ fontFamily: 'Lora, Georgia, serif', fontWeight: 700, fontSize: 20, color: '#1E3A5F', marginBottom: 6 }}>Nouveau mot de passe</h2>
                 <p style={{ fontSize: 13.5, color: '#78716C', lineHeight: 1.6 }}>Choisissez un nouveau mot de passe pour votre compte.</p>
               </div>
 

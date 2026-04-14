@@ -4,7 +4,9 @@ import {
   getBudgetAnnuels, createBudgetAnnuel, updateBudgetAnnuel, deleteBudgetAnnuel,
   getAllocations, createAllocation, updateAllocation, deleteAllocation,
 } from '../../api/budget'
-import { Plus, Pencil, Trash2, Building2, CalendarDays, ChevronDown, AlertTriangle } from 'lucide-react'
+import { Plus, Pencil, Trash2, Building2, CalendarDays, ChevronDown, AlertTriangle, Download, Printer } from 'lucide-react'
+import { exportCSV, printPDF } from '../../utils/export'
+import { ConfirmModal } from '../../components/ui'
 
 const fmt = (n) => new Intl.NumberFormat('fr-FR').format(n ?? 0)
 
@@ -19,9 +21,10 @@ export default function BudgetAnnuelPage() {
   const [budgets,     setBudgets]     = useState([])
   const [selected,    setSelected]    = useState(null)
   const [loading,     setLoading]     = useState(true)
-  const [showNewBA,   setShowNewBA]   = useState(false)
-  const [editBA,      setEditBA]      = useState(null)
-  const [showAllouer, setShowAllouer] = useState(false)
+  const [showNewBA,    setShowNewBA]    = useState(false)
+  const [editBA,       setEditBA]       = useState(null)
+  const [showAllouer,  setShowAllouer]  = useState(false)
+  const [confirmModal, setConfirmModal] = useState(null)
 
   const load = () => {
     setLoading(true)
@@ -88,13 +91,15 @@ export default function BudgetAnnuelPage() {
                 active={selected?.id === ba.id}
                 onClick={() => setSelected(prev => prev?.id === ba.id ? null : ba)}
                 onEdit={() => setEditBA(ba)}
-                onDelete={() => {
-                  if (!confirm(`Supprimer le budget annuel ${ba.periode_display ?? ba.annee} ?`)) return
-                  deleteBudgetAnnuel(ba.id).then(() => {
+                onDelete={() => setConfirmModal({
+                  title: 'Supprimer le budget annuel',
+                  message: `Supprimer définitivement le budget annuel "${ba.periode_display ?? ba.annee}" ? Toutes les allocations associées seront également supprimées.`,
+                  confirmLabel: 'Supprimer',
+                  onConfirm: () => deleteBudgetAnnuel(ba.id).then(() => {
                     if (selected?.id === ba.id) setSelected(null)
                     load()
-                  })
-                }}
+                  }),
+                })}
               />
             ))}
           </div>
@@ -119,6 +124,7 @@ export default function BudgetAnnuelPage() {
       {showNewBA && <BudgetAnnuelModal onClose={() => setShowNewBA(false)} onSaved={() => { setShowNewBA(false); load() }} />}
       {editBA    && <BudgetAnnuelModal initial={editBA} onClose={() => setEditBA(null)} onSaved={() => { setEditBA(null); load() }} />}
       {showAllouer && <AllocationRapideModal budgets={budgets} onClose={() => setShowAllouer(false)} onSaved={handleAllouerSaved} />}
+      {confirmModal && <ConfirmModal {...confirmModal} onClose={() => setConfirmModal(null)} />}
     </div>
   )
 }
@@ -135,7 +141,7 @@ function BudgetAnnuelCard({ ba, active, onClick, onEdit, onDelete }) {
       className="card cursor-pointer mb-[12px]"
       style={{
         border: `2px solid ${active ? 'var(--color-primary-500)' : 'var(--color-gray-200)'}`,
-        boxShadow: active ? '0 0 0 3px rgba(59,130,246,.15)' : undefined,
+        boxShadow: active ? '0 0 0 3px rgba(201,168,76,.2)' : undefined,
         transition: 'border-color .15s, box-shadow .15s',
       }}
     >
@@ -198,8 +204,9 @@ function AllocationsPanel({ budgetAnnuel, onRefresh }) {
   const [allocs,    setAllocs]    = useState([])
   const [depts,     setDepts]     = useState([])
   const [loading,   setLoading]   = useState(true)
-  const [showForm,  setShowForm]  = useState(false)
-  const [editAlloc, setEditAlloc] = useState(null)
+  const [showForm,     setShowForm]     = useState(false)
+  const [editAlloc,    setEditAlloc]    = useState(null)
+  const [confirmModal, setConfirmModal] = useState(null)
 
   const load = () => {
     Promise.all([getAllocations(budgetAnnuel.id), getDepartements()])
@@ -210,8 +217,12 @@ function AllocationsPanel({ budgetAnnuel, onRefresh }) {
   useEffect(() => { load() }, [budgetAnnuel.id])
 
   const handleDelete = (alloc) => {
-    if (!confirm(`Supprimer l'allocation de ${alloc.departement_nom} ?`)) return
-    deleteAllocation(budgetAnnuel.id, alloc.id).then(() => { load(); onRefresh() })
+    setConfirmModal({
+      title: "Supprimer l'allocation",
+      message: `Supprimer l'allocation de "${alloc.departement_nom}" ? Le montant alloué sera restitué au budget global.`,
+      confirmLabel: 'Supprimer',
+      onConfirm: () => deleteAllocation(budgetAnnuel.id, alloc.id).then(() => { load(); onRefresh() }),
+    })
   }
 
   const allocDeptIds = allocs.map(a => String(a.departement))
@@ -224,7 +235,7 @@ function AllocationsPanel({ budgetAnnuel, onRefresh }) {
       {/* Header panel */}
       <div
         className="rounded-[var(--radius-lg)] px-6 py-5 mb-5 text-white relative overflow-hidden"
-        style={{ background: 'linear-gradient(160deg, #1C1917 0%, #252120 60%, #2E2A27 100%)' }}
+        style={{ background: 'linear-gradient(160deg, #1E3A5F 0%, #152B4B 60%, #1E3A5F 100%)' }}
       >
         <div className="absolute rounded-full pointer-events-none" style={{ top: -30, right: -30, width: 140, height: 140, background: 'rgba(255,255,255,.05)' }} />
         <div className="relative">
@@ -237,15 +248,49 @@ function AllocationsPanel({ budgetAnnuel, onRefresh }) {
                 Budget global : {fmt(budgetAnnuel.montant_global)} FCFA
               </div>
             </div>
-            {deptsDispos.length > 0 && (
-              <button
-                onClick={() => setShowForm(true)}
-                className="inline-flex items-center gap-[7px] px-4 py-2 rounded-[9px] text-white font-semibold text-[13px] cursor-pointer"
-                style={{ border: '1.5px solid rgba(255,255,255,.3)', background: 'rgba(255,255,255,.12)' }}
-              >
-                <Plus size={14} strokeWidth={2.5} /> Allouer
-              </button>
-            )}
+            <div className="flex gap-[8px] items-center">
+              {allocs.length > 0 && (
+                <>
+                  <button
+                    onClick={() => exportCSV(
+                      `allocations-${budgetAnnuel.periode_display ?? budgetAnnuel.annee}`,
+                      ['Département', 'Alloué (FCFA)', 'Consommé (FCFA)', 'Disponible (FCFA)'],
+                      allocs.map(a => [a.departement_nom, a.montant_alloue, a.montant_consomme, a.montant_disponible])
+                    )}
+                    className="inline-flex items-center gap-[6px] px-3 py-[6px] rounded-[8px] text-white text-[12px] font-semibold cursor-pointer"
+                    style={{ border: '1.5px solid rgba(255,255,255,.3)', background: 'rgba(255,255,255,.1)' }}
+                  >
+                    <Download size={13} strokeWidth={2} /> CSV
+                  </button>
+                  <button
+                    onClick={() => printPDF(
+                      `Allocations — Exercice ${budgetAnnuel.periode_display ?? budgetAnnuel.annee}`,
+                      ['Département', 'Alloué', 'Consommé', 'Disponible'],
+                      allocs.map(a => [a.departement_nom, `${fmt(a.montant_alloue)} FCFA`, `${fmt(a.montant_consomme)} FCFA`, `${fmt(a.montant_disponible)} FCFA`]),
+                      { subtitle: `Budget global : ${fmt(budgetAnnuel.montant_global)} FCFA`, stats: [
+                        { label: 'Global',   value: `${fmt(budgetAnnuel.montant_global)} FCFA` },
+                        { label: 'Alloué',   value: `${fmt(totalAlloue)} FCFA` },
+                        { label: 'Restant',  value: `${fmt(disponible)} FCFA` },
+                        { label: 'Depts',    value: allocs.length },
+                      ]}
+                    )}
+                    className="inline-flex items-center gap-[6px] px-3 py-[6px] rounded-[8px] text-white text-[12px] font-semibold cursor-pointer"
+                    style={{ border: '1.5px solid rgba(255,255,255,.3)', background: 'rgba(255,255,255,.1)' }}
+                  >
+                    <Printer size={13} strokeWidth={2} /> PDF
+                  </button>
+                </>
+              )}
+              {deptsDispos.length > 0 && (
+                <button
+                  onClick={() => setShowForm(true)}
+                  className="inline-flex items-center gap-[7px] px-4 py-2 rounded-[9px] text-white font-semibold text-[13px] cursor-pointer"
+                  style={{ border: '1.5px solid rgba(255,255,255,.3)', background: 'rgba(255,255,255,.12)' }}
+                >
+                  <Plus size={14} strokeWidth={2.5} /> Allouer
+                </button>
+              )}
+            </div>
           </div>
 
           {/* KPIs inline */}
@@ -290,7 +335,11 @@ function AllocationsPanel({ budgetAnnuel, onRefresh }) {
                 const pct   = parseFloat(a.montant_alloue) > 0 ? Math.min(100, (parseFloat(a.montant_consomme) / parseFloat(a.montant_alloue)) * 100) : 0
                 const color = jaugeColor(pct)
                 return (
-                  <tr key={a.id}>
+                  <tr
+                    key={a.id}
+                    onMouseEnter={e => e.currentTarget.style.background = 'var(--color-primary-50)'}
+                    onMouseLeave={e => e.currentTarget.style.background = ''}
+                  >
                     <td>
                       <div className="font-semibold text-[13px] mb-[5px]">{a.departement_nom}</div>
                       <div className="exec-bar w-[80px]">
@@ -344,6 +393,7 @@ function AllocationsPanel({ budgetAnnuel, onRefresh }) {
           onSaved={() => { setEditAlloc(null); load(); onRefresh() }}
         />
       )}
+      {confirmModal && <ConfirmModal {...confirmModal} onClose={() => setConfirmModal(null)} />}
     </div>
   )
 }
@@ -386,7 +436,7 @@ function BudgetAnnuelModal({ initial, onClose, onSaved }) {
         <form onSubmit={handle}>
           <div className="modal-body">
             {periodeLabel && (
-              <div className="mb-4 px-[14px] py-2 rounded-[9px] bg-[#EFF6FF] border border-[#BFDBFE] text-[13px] font-bold text-[#1D4ED8] font-mono tracking-[.5px]">
+              <div className="mb-4 px-[14px] py-2 rounded-[9px] bg-[#FEF9EC] border border-[#F3D07A] text-[13px] font-bold text-[#78350F] font-mono tracking-[.5px]">
                 Exercice : {periodeLabel}
               </div>
             )}
@@ -469,7 +519,7 @@ function AllocationModal({ budgetAnnuel, deptsDispos, disponible, initial, onClo
         </div>
         <form onSubmit={handle}>
           <div className="modal-body">
-            <div className="mb-[18px] px-[14px] py-[10px] rounded-[9px] bg-[#EFF6FF] border border-[#BFDBFE] text-[13px]">
+            <div className="mb-[18px] px-[14px] py-[10px] rounded-[9px] bg-[#FEF9EC] border border-[#F3D07A] text-[13px]">
               <span className="text-[#4B5563]">Disponible dans le budget global : </span>
               <span
                 className="font-bold font-mono"
@@ -593,7 +643,7 @@ function AllocationRapideModal({ budgets, onClose, onSaved }) {
                 </select>
               </div>
               {form.budget_annuel && disponible !== null && (
-                <div className="mb-[14px] px-[14px] py-[10px] rounded-[9px] bg-[#EFF6FF] border border-[#BFDBFE] text-[13px]">
+                <div className="mb-[14px] px-[14px] py-[10px] rounded-[9px] bg-[#FEF9EC] border border-[#F3D07A] text-[13px]">
                   <span className="text-[#4B5563]">Disponible : </span>
                   <span
                     className="font-bold font-mono"

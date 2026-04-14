@@ -8,8 +8,9 @@ export const createUtilisateur= (data)   => api.post('/accounts/utilisateurs/', 
 export const updateUtilisateur= (id, d)  => api.patch(`/accounts/utilisateurs/${id}/`, d)
 export const deleteUtilisateur= (id)     => api.delete(`/accounts/utilisateurs/${id}/`)
 
-export const adminResetPassword   = (id, data) => api.post(`/accounts/utilisateurs/${id}/reset-password/`, data)
-export const getUtilisateurActivite = (id)     => api.get(`/accounts/utilisateurs/${id}/activite/`)
+export const adminResetPassword     = (id, data) => api.post(`/accounts/utilisateurs/${id}/reset-password/`, data)
+export const debloquerUtilisateur   = (id)       => api.post(`/accounts/utilisateurs/${id}/debloquer/`)
+export const getUtilisateurActivite = (id)       => api.get(`/accounts/utilisateurs/${id}/activite/`)
 
 export const getDepartements    = ()         => api.get('/accounts/departements/')
 export const createDepartement  = (data)     => api.post('/accounts/departements/', data)

@@ -118,7 +118,7 @@ export default function MesDepenses() {
 
       {/* KPI cards */}
       {!loading && !error && (
-        <div className="kpi-grid" style={{ marginBottom: 20 }}>
+        <div className="kpi-grid">
           <div className="card">
             <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--color-gray-500)', textTransform: 'uppercase', letterSpacing: '.4px', marginBottom: 8 }}>Total dépenses</div>
             <div style={{ fontFamily: 'var(--font-mono)', fontWeight: 800, fontSize: '20px', color: 'var(--color-gray-900)' }}>{fmt(totaux.montant)}</div>

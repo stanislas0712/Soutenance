@@ -99,15 +99,15 @@ export default function GestionnaireDashboard() {
       {/* Hero greeting */}
       <div
         className="rounded-[14px] px-7 py-6 mb-7 text-white relative overflow-hidden"
-        style={{ background: 'linear-gradient(135deg, #1C1917 0%, #252120 55%, #2E2A27 100%)' }}
+        style={{ background: 'linear-gradient(135deg, #1E3A5F 0%, #152B4B 55%, #1E3A5F 100%)' }}
       >
         <div className="absolute rounded-full pointer-events-none" style={{ top: -60, right: -60, width: 200, height: 200, background: 'rgba(201,168,76,.06)' }} />
         <div className="absolute rounded-full pointer-events-none" style={{ bottom: -40, right: 80, width: 120, height: 120, background: 'rgba(201,168,76,.08)' }} />
         <div className="text-[13px] mb-1" style={{ color: 'rgba(201,168,76,.6)' }}>
           {new Date().toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
         </div>
-        <h1 className="font-extrabold text-[22px] tracking-[-0.03em] mb-[6px]" style={{ fontFamily: "'Lora', serif", color: '#FAF7F2' }}>
-          Bonjour, {user?.prenom} 👋
+        <h1 className="font-extrabold text-[22px] tracking-[-0.03em] mb-[6px]" style={{ fontFamily: "'Lora', serif", color: '#F8FAFC' }}>
+          Bonjour, {user?.prenom}
         </h1>
         <p className="text-[14px] mb-[18px]" style={{ color: 'rgba(250,247,242,.65)' }}>
           Vous avez {soumis > 0 ? `${soumis} budget${soumis > 1 ? 's' : ''} en attente de validation` : 'tous vos budgets à jour'}.
@@ -128,7 +128,7 @@ export default function GestionnaireDashboard() {
 
       {/* KPIs */}
       <div className="kpi-grid" style={{ gridTemplateColumns: 'repeat(auto-fit,minmax(170px,1fr))', marginBottom: 24 }}>
-        <KpiCard icon={<LayoutList size={22} strokeWidth={1.8}/>}  label="Mes budgets"     value={total}                                                                   color="#2563EB"  bgColor="#DBEAFE" sparklineData={sparkMois.map(m => m.count)} trendText={`${total} au total`} />
+        <KpiCard icon={<LayoutList size={22} strokeWidth={1.8}/>}  label="Mes budgets"     value={total}                                                                   color="#C9A84C"  bgColor="#FEF9EC" sparklineData={sparkMois.map(m => m.count)} trendText={`${total} au total`} />
         <KpiCard icon={<CheckCircle2 size={22} strokeWidth={1.8}/>} label="Approuvés"      value={approuves}                                                               color="#16A34A"  bgColor="#DCFCE7" trendText={approuves > 0 ? `${approuves} budget${approuves>1?'s':''} actifs` : 'Aucun approuvé'} />
         <KpiCard icon={<Clock size={22} strokeWidth={1.8}/>}        label="En validation"  value={soumis}                                                                  color="#D97706"  bgColor="#FEF3C7" trendText={soumis > 0 ? `${soumis} en attente` : 'Tout traité'} />
         <KpiCard icon={<XCircle size={22} strokeWidth={1.8}/>}      label="Rejetés"        value={rejetes}                                                                 color="#DC2626"  bgColor="#FEE2E2" trendText={rejetes > 0 ? `${rejetes} à corriger` : 'Aucun rejet'} trendPositive={rejetes === 0} />
@@ -138,7 +138,7 @@ export default function GestionnaireDashboard() {
 
       {/* ── Charts ────────────────────────────────────────────────────────── */}
       {chartBudgets.length > 0 && (
-        <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(min(300px,100%), 1fr))', gap:18, marginBottom:24 }}>
+        <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(min(300px,100%), 1fr))', gap:20, marginBottom:24 }}>
 
           {/* Alloué vs Consommé */}
           <div className="card" style={{ padding:'20px 24px' }}>
@@ -154,8 +154,8 @@ export default function GestionnaireDashboard() {
                 <YAxis type="category" dataKey="name" tick={{ fontSize:10, fill:'#6B7280' }} axisLine={false} tickLine={false} width={70} />
                 <Tooltip formatter={(v, n) => [`${v} K FCFA`, n === 'alloue' ? 'Alloué' : 'Consommé']} contentStyle={{ fontSize:11, borderRadius:8, border:'1px solid #E5E7EB' }} />
                 <Legend iconSize={7} iconType="circle" formatter={v => <span style={{ fontSize:11, color:'#6B7280' }}>{v === 'alloue' ? 'Alloué' : 'Consommé'}</span>} />
-                <Bar dataKey="alloue"   name="alloue"   fill="#DBEAFE" radius={[0,3,3,0]} />
-                <Bar dataKey="consomme" name="consomme" fill="#3B82F6" radius={[0,3,3,0]} />
+                <Bar dataKey="alloue"   name="alloue"   fill="#F3D07A" radius={[0,3,3,0]} />
+                <Bar dataKey="consomme" name="consomme" fill="#C9A84C" radius={[0,3,3,0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>
