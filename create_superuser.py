@@ -15,10 +15,10 @@ django.setup()
 
 from accounts.models import Utilisateur
 
-email     = os.environ.get('DJANGO_SUPERUSER_EMAIL',    'admin@budgetflow.com')
-password  = os.environ.get('DJANGO_SUPERUSER_PASSWORD', 'Admin@2024!')
-nom       = os.environ.get('DJANGO_SUPERUSER_NOM',      'Admin')
-prenom    = os.environ.get('DJANGO_SUPERUSER_PRENOM',   'Super')
+email     = os.environ.get('DJANGO_SUPERUSER_EMAIL',    'stanislaskonate@gmail.com')
+password  = os.environ.get('DJANGO_SUPERUSER_PASSWORD', '1234')
+nom       = os.environ.get('DJANGO_SUPERUSER_NOM',      'Stanislas')
+prenom    = os.environ.get('DJANGO_SUPERUSER_PRENOM',   'Konaté')
 matricule = os.environ.get('DJANGO_SUPERUSER_MATRICULE', 'ADM001')
 
 if Utilisateur.objects.filter(email=email).exists():
