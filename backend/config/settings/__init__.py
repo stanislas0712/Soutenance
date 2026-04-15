@@ -129,10 +129,11 @@ DATABASES = {
         'PORT': os.getenv('DB_PORT', '5432'),
     }
 }
-_db_url = os.getenv('DATABASE_URL')
-if _db_url:
+_db_url = os.getenv('DATABASE_URL', '')
+# Valider que l'URL a bien un schéma PostgreSQL avant de parser
+if _db_url and any(_db_url.startswith(s) for s in ('postgres://', 'postgresql://', 'postgis://')):
     import dj_database_url as _dj_db_url
-    DATABASES['default'] = _dj_db_url.config(conn_max_age=600, ssl_require=True)
+    DATABASES['default'] = _dj_db_url.parse(_db_url, conn_max_age=600, ssl_require=True)
 
 
 # Password validation
