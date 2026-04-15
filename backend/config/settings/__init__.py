@@ -23,7 +23,11 @@ DEBUG = os.getenv('DEBUG', 'True') == 'True'
 
 _extra_hosts = os.getenv('ALLOWED_HOSTS', '')
 _railway_domain = os.getenv('RAILWAY_PUBLIC_DOMAIN', '')
-ALLOWED_HOSTS = ['localhost', '127.0.0.1'] + [h.strip() for h in _extra_hosts.split(',') if h.strip()]
+ALLOWED_HOSTS = [
+    'localhost', '127.0.0.1',
+    '.railway.app',          # wildcard Railway (tous les sous-domaines)
+    '.up.railway.app',
+] + [h.strip() for h in _extra_hosts.split(',') if h.strip()]
 if _railway_domain:
     ALLOWED_HOSTS.append(_railway_domain)
 
@@ -168,6 +172,16 @@ PASSWORD_HASHERS = [
 SECURE_CONTENT_TYPE_NOSNIFF = True   # empêche MIME-sniffing (XSS)
 X_FRAME_OPTIONS             = 'DENY' # clickjacking
 SECURE_BROWSER_XSS_FILTER   = True   # header X-XSS-Protection
+
+# ── CSRF trusted origins (obligatoire en prod pour /admin/ et API POST) ───────
+CSRF_TRUSTED_ORIGINS = [
+    'https://*.railway.app',
+    'https://*.up.railway.app',
+]
+if _railway_domain:
+    CSRF_TRUSTED_ORIGINS.append(f'https://{_railway_domain}')
+_csrf_extra = os.getenv('CSRF_TRUSTED_ORIGINS', '')
+CSRF_TRUSTED_ORIGINS += [o.strip() for o in _csrf_extra.split(',') if o.strip()]
 
 # ── Sécurité — uniquement en production (HTTPS) ───────────────────────────────
 if not DEBUG:
