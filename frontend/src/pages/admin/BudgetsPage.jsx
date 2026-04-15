@@ -1,9 +1,8 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { getBudgets, cloturerBudget, getRapportCloture } from '../../api/budget'
+import { getBudgets, getRapportCloture } from '../../api/budget'
 import { StatutBadge, AlerteBadge } from '../../components/StatusBadge'
 import { Search, FileText, TrendingUp, Building2, X, Download, Printer } from 'lucide-react'
-import { ConfirmModal } from '../../components/ui'
 import { exportCSV, printPDF } from '../../utils/export'
 
 const fmt = (n) => new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 0 }).format(parseFloat(n || 0))
@@ -35,23 +34,6 @@ export default function BudgetsPage() {
   const [search,       setSearch]       = useState('')
   const [actionBusy,   setActionBusy]   = useState(null)
   const [visibleCount, setVisibleCount] = useState(10)
-  const [confirmModal, setConfirmModal] = useState(null)
-
-  const handleCloturer = (b, e) => {
-    e.stopPropagation()
-    setConfirmModal({
-      title: 'Clôturer le budget',
-      message: `Clôturer définitivement le budget "${b.code} – ${b.nom}" ? Cette action est irréversible.`,
-      confirmLabel: 'Clôturer',
-      variant: 'warning',
-      onConfirm: async () => {
-        setActionBusy(b.id)
-        try { await cloturerBudget(b.id); load() }
-        catch (err) { alert(err.response?.data?.detail || 'Erreur') }
-        finally { setActionBusy(null) }
-      },
-    })
-  }
 
   const handleRapport = async (b, e) => {
     e.stopPropagation()
@@ -272,33 +254,25 @@ export default function BudgetsPage() {
                     </td>
                     <td><StatutBadge statut={b.statut} /></td>
                     <td><AlerteBadge niveau={b.niveau_alerte} /></td>
-                    <td onClick={e => e.stopPropagation()} className="whitespace-nowrap" style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
-                      <button
-                        onClick={() => navigate(`/budgets/${b.id}`)}
-                        className="btn btn-secondary btn-sm"
-                      >
-                        Voir
-                      </button>
-                      {b.statut === 'APPROUVE' && (
+                    <td onClick={e => e.stopPropagation()}>
+                      <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
                         <button
-                          onClick={(e) => handleCloturer(b, e)}
-                          disabled={actionBusy === b.id}
-                          className="btn btn-sm"
-                          style={{ background: 'linear-gradient(135deg, #7C3AED, #6D28D9)', color: '#fff', border: 'none', gap: 4 }}
+                          onClick={() => navigate(`/budgets/${b.id}`)}
+                          className="btn btn-secondary btn-sm"
                         >
-                          Clôturer
+                          Voir
                         </button>
-                      )}
-                      {b.statut === 'CLOTURE' && (
-                        <button
-                          onClick={(e) => handleRapport(b, e)}
-                          disabled={actionBusy === b.id}
-                          className="btn btn-sm"
-                          style={{ background: 'var(--color-info-600)', color: '#fff', border: 'none', gap: 4 }}
-                        >
-                          Rapport
-                        </button>
-                      )}
+                        {b.statut === 'CLOTURE' && (
+                          <button
+                            onClick={(e) => handleRapport(b, e)}
+                            disabled={actionBusy === b.id}
+                            className="btn btn-sm"
+                            style={{ background: 'var(--color-info-600)', color: '#fff', border: 'none', gap: 4 }}
+                          >
+                            Rapport
+                          </button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 )
@@ -325,7 +299,6 @@ export default function BudgetsPage() {
           </p>
         </div>
       )}
-      {confirmModal && <ConfirmModal {...confirmModal} onClose={() => setConfirmModal(null)} />}
     </div>
   )
 }

@@ -3,63 +3,83 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { getDepenses, validerDepense, rejeterDepense } from '../../api/depenses'
 import {
   Search, CheckCircle2, XCircle, Receipt, Eye,
-  Paperclip, User, Calendar, Tag, Building2,
-  AlertCircle, FileText, ExternalLink, Download, Printer,
+  Paperclip, ChevronRight, Download, X,
 } from 'lucide-react'
-import { DepenseBadge } from '../../components/StatusBadge'
-import { exportCSV, printPDF } from '../../utils/export'
+import { exportCSV } from '../../utils/export'
 import { notifRefresh } from '../../utils/notifRefresh'
 
 const fmt     = (n)   => new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 0 }).format(parseFloat(n || 0))
-const fmtDate = (iso) => iso ? new Date(iso).toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' }) : '—'
+const fmtDate = (iso) => iso ? new Date(iso).toLocaleDateString('fr-FR') : '—'
+
+const STATUT = {
+  SAISIE:  { bg: 'var(--color-warning-50)',  color: 'var(--color-warning-700)', label: 'En attente' },
+  VALIDEE: { bg: 'var(--color-success-50)',  color: 'var(--color-success-700)', label: 'Validée'    },
+  REJETEE: { bg: 'var(--color-danger-50)',   color: 'var(--color-danger-700)',  label: 'Rejetée'    },
+}
+
+const TABS = [
+  { key: '',        label: 'Toutes',     color: 'var(--color-primary-600)' },
+  { key: 'SAISIE',  label: 'En attente', color: '#D97706' },
+  { key: 'VALIDEE', label: 'Validées',   color: '#059669' },
+  { key: 'REJETEE', label: 'Rejetées',   color: '#DC2626' },
+]
 
 /* ══════════════════════════════════════════════════════════
    Page principale
 ══════════════════════════════════════════════════════════ */
 export default function DepensesPage() {
-  const [filtreStatut, setFiltreStatut] = useState('SAISIE')
-  const [search,       setSearch]       = useState('')
-  const [detailModal,  setDetailModal]  = useState(null)
-  const [rejetModal,   setRejetModal]   = useState(null)
-  const [visibleCount, setVisibleCount] = useState(10)
+  const [tab,         setTab]         = useState('SAISIE')
+  const [search,      setSearch]      = useState('')
+  const [detailGroup, setDetailGroup] = useState(null)
   const qc = useQueryClient()
 
-  const { data, isLoading } = useQuery({
-    queryKey: ['depenses', filtreStatut, search],
-    queryFn: () => getDepenses({ statut: filtreStatut || undefined, search }).then(r => r.data),
-  })
-
-  const { mutate: valider, isPending: validating } = useMutation({
-    mutationFn: (id) => validerDepense(id, {}),
-    onSuccess: () => { qc.invalidateQueries(['depenses']); notifRefresh(); setDetailModal(null) },
-  })
-
-  const { mutate: rejeter } = useMutation({
-    mutationFn: ({ id, motif }) => rejeterDepense(id, { motif }),
-    onSuccess: () => { qc.invalidateQueries(['depenses']); notifRefresh(); setRejetModal(null); setDetailModal(null) },
-  })
-
-  const depenses       = Array.isArray(data?.data) ? data.data : (data?.data?.results || data?.results || [])
-  const visibleDep     = depenses.slice(0, visibleCount)
-  const hasMore        = visibleCount < depenses.length
-
-  const { data: allData } = useQuery({
+  const { data: allData, isLoading } = useQuery({
     queryKey: ['depenses-all'],
     queryFn: () => getDepenses({}).then(r => r.data),
-    retry: false,
   })
-  const allDepenses = Array.isArray(allData?.data) ? allData.data : (allData?.data?.results || allData?.results || [])
 
-  const FILTRES = [
-    { val: '',        label: 'Toutes'     },
-    { val: 'SAISIE',  label: 'En attente' },
-    { val: 'VALIDEE', label: 'Validées'   },
-    { val: 'REJETEE', label: 'Rejetées'   },
-  ]
-  const countFor = (val) => val ? allDepenses.filter(d => d.statut === val).length : allDepenses.length
+  const allDepenses = Array.isArray(allData?.data) ? allData.data
+    : (allData?.data?.results || allData?.results || [])
+
+  const countFor = (key) => key ? allDepenses.filter(d => d.statut === key).length : allDepenses.length
+
+  const q = search.trim().toLowerCase()
+  const filtered = allDepenses
+    .filter(d => !tab || d.statut === tab)
+    .filter(d => !q ||
+      d.budget_reference?.toLowerCase().includes(q) ||
+      d.budget_nom?.toLowerCase().includes(q) ||
+      d.ligne_designation?.toLowerCase().includes(q) ||
+      d.reference?.toLowerCase().includes(q) ||
+      d.fournisseur?.toLowerCase().includes(q)
+    )
+
+  const groups = Object.values(
+    filtered.reduce((acc, d) => {
+      const key = d.budget_reference || '—'
+      if (!acc[key]) acc[key] = {
+        reference: key,
+        nom: (d.budget_nom && d.budget_nom !== '—') ? d.budget_nom : key,
+        items: [],
+      }
+      acc[key].items.push(d)
+      return acc
+    }, {})
+  )
+
+  const refreshGroup = (ref) => {
+    qc.invalidateQueries(['depenses-all'])
+    notifRefresh()
+    // Mettre à jour le groupe ouvert si besoin
+    setDetailGroup(prev => {
+      if (!prev || prev.reference !== ref) return prev
+      return null // fermer et laisser la liste se rafraîchir
+    })
+  }
 
   return (
     <div>
+      {/* Header */}
       <div className="page-header">
         <div>
           <h1 className="page-title">Suivi des dépenses</h1>
@@ -67,44 +87,13 @@ export default function DepensesPage() {
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
           <button
-            onClick={() => {
-              const headers = ['Référence', 'Budget', 'Ligne budgétaire', 'Fournisseur', 'Montant (FCFA)', 'Saisi par', 'Date', 'Statut']
-              const rows = depenses.map(d => [
-                d.reference, d.budget_reference, d.ligne_designation,
-                d.fournisseur || '—', fmt(d.montant), d.enregistre_par || '—',
-                d.date_depense ? new Date(d.date_depense).toLocaleDateString('fr-FR') : '—',
-                d.statut,
-              ])
-              exportCSV(`depenses-${new Date().toISOString().slice(0,10)}`, headers, rows)
-            }}
-            className="btn btn-secondary btn-sm"
-            style={{ gap: 6 }}
+            onClick={() => exportCSV(`depenses-${new Date().toISOString().slice(0,10)}`,
+              ['Référence', 'Budget', 'Ligne', 'Fournisseur', 'Montant (FCFA)', 'Saisi par', 'Date', 'Statut'],
+              filtered.map(d => [d.reference, d.budget_reference, d.ligne_designation, d.fournisseur || '—', fmt(d.montant), d.enregistre_par || '—', fmtDate(d.date_depense), d.statut])
+            )}
+            className="btn btn-secondary btn-sm" style={{ gap: 6 }}
           >
             <Download size={13} strokeWidth={2} /> CSV
-          </button>
-          <button
-            onClick={() => {
-              const headers = ['Référence', 'Budget', 'Ligne', 'Montant', 'Saisi par', 'Date', 'Statut']
-              const rows = depenses.map(d => [
-                d.reference, d.budget_reference, d.ligne_designation,
-                fmt(d.montant) + ' FCFA', d.enregistre_par || '—',
-                d.date_depense ? new Date(d.date_depense).toLocaleDateString('fr-FR') : '—',
-                d.statut,
-              ])
-              printPDF('Rapport des dépenses', headers, rows, {
-                subtitle: filtreStatut ? `Filtre : ${filtreStatut}` : 'Toutes les dépenses',
-                stats: [
-                  { value: countFor('SAISIE'),  label: 'En attente' },
-                  { value: countFor('VALIDEE'), label: 'Validées'   },
-                  { value: countFor('REJETEE'), label: 'Rejetées'   },
-                  { value: fmt(depenses.reduce((s, d) => s + parseFloat(d.montant || 0), 0)) + ' FCFA', label: 'Total affiché' },
-                ],
-              })
-            }}
-            className="btn btn-secondary btn-sm"
-            style={{ gap: 6 }}
-          >
-            <Printer size={13} strokeWidth={2} /> PDF
           </button>
         </div>
       </div>
@@ -112,10 +101,10 @@ export default function DepensesPage() {
       {/* KPI */}
       <div className="kpi-grid">
         {[
-          { label: 'EN ATTENTE',  val: countFor('SAISIE'),  color: 'var(--color-warning-600)',  bg: 'var(--color-warning-50)'  },
-          { label: 'VALIDÉES',    val: countFor('VALIDEE'), color: 'var(--color-success-600)',  bg: 'var(--color-success-50)'  },
-          { label: 'REJETÉES',    val: countFor('REJETEE'), color: 'var(--color-danger-600)',   bg: 'var(--color-danger-50)'   },
-          { label: 'TOTAL',       val: countFor(''),        color: 'var(--color-primary-600)',  bg: 'var(--color-primary-50)'  },
+          { label: 'EN ATTENTE', val: countFor('SAISIE'),  color: 'var(--color-warning-600)', bg: 'var(--color-warning-50)'  },
+          { label: 'VALIDÉES',   val: countFor('VALIDEE'), color: 'var(--color-success-600)', bg: 'var(--color-success-50)'  },
+          { label: 'REJETÉES',   val: countFor('REJETEE'), color: 'var(--color-danger-600)',  bg: 'var(--color-danger-50)'   },
+          { label: 'TOTAL',      val: countFor(''),        color: 'var(--color-primary-600)', bg: 'var(--color-primary-50)'  },
         ].map(k => (
           <div key={k.label} className="card" style={{ borderTop: `3px solid ${k.color}` }}>
             <div style={{ fontSize: '10px', fontWeight: 700, color: k.color, textTransform: 'uppercase', letterSpacing: '.4px', marginBottom: 8 }}>{k.label}</div>
@@ -124,364 +113,376 @@ export default function DepensesPage() {
         ))}
       </div>
 
-      {/* Filtres */}
-      <div className="filter-bar mb-[20px]">
-        <div className="search-wrapper flex-1 max-w-[360px]">
-          <Search size={14} strokeWidth={2} className="search-icon" />
-          <input
-            className="search-input"
-            value={search}
-            onChange={e => { setSearch(e.target.value); setVisibleCount(10) }}
-            placeholder="Rechercher fournisseur, référence, note…"
-          />
-        </div>
-        <div className="flex gap-[6px]">
-          {FILTRES.map(({ val, label }) => (
-            <button
-              key={val}
-              onClick={() => { setFiltreStatut(val); setVisibleCount(10) }}
-              className={`filter-pill${filtreStatut === val ? ' active' : ''}`}
-            >
-              {label}
+      {/* Tabs */}
+      <div style={{ display: 'flex', gap: 4, marginBottom: 16, borderBottom: '1px solid var(--color-gray-200)' }}>
+        {TABS.map(t => {
+          const active = tab === t.key
+          return (
+            <button key={t.key} onClick={() => setTab(t.key)} style={{
+              background: 'none', border: 'none', cursor: 'pointer',
+              padding: '8px 18px 10px', fontSize: '13px',
+              fontWeight: active ? 700 : 500,
+              color: active ? t.color : 'var(--color-gray-500)',
+              borderBottom: active ? `2.5px solid ${t.color}` : '2.5px solid transparent',
+              display: 'flex', alignItems: 'center', gap: 6, transition: 'color .15s',
+            }}>
+              {t.label}
               <span style={{
-                marginLeft: 5,
-                background: filtreStatut === val ? 'rgba(255,255,255,.25)' : 'var(--color-gray-200)',
-                color: filtreStatut === val ? '#fff' : 'var(--color-gray-600)',
-                fontSize: '10px', padding: '0px 5px', borderRadius: 8, fontWeight: 700,
+                background: active ? t.color : 'var(--color-gray-200)',
+                color: active ? '#fff' : 'var(--color-gray-600)',
+                fontSize: '10px', fontWeight: 700, padding: '1px 6px', borderRadius: 9,
               }}>
-                {countFor(val)}
+                {countFor(t.key)}
               </span>
             </button>
-          ))}
-        </div>
+          )
+        })}
       </div>
 
-      {/* Table */}
-      <div className="card p-0 overflow-hidden">
-        {isLoading ? (
-          <div className="p-[60px] text-center">
-            <div className="spinner mx-auto mb-[12px]" />
-            <p className="text-[13px] text-gray-400">Chargement…</p>
-          </div>
-        ) : depenses.length === 0 ? (
-          <div className="empty-state">
-            <div className="empty-icon">
-              <Receipt size={28} strokeWidth={1.5} className="text-gray-400" />
-            </div>
-            <p className="empty-title">Aucune dépense</p>
-            <p className="empty-body">
-              {filtreStatut ? 'Aucune dépense avec ce statut.' : 'Aucune dépense enregistrée.'}
-            </p>
-          </div>
-        ) : (
-          <table className="data-table">
-            <thead>
-              <tr>
-                {['Référence', 'Budget / Ligne', 'Montant', 'Saisi par', 'Validé / Rejeté par', 'Date', 'Statut', 'Actions'].map(h => (
-                  <th key={h}>{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {visibleDep.map(d => (
-                <tr
-                  key={d.id}
-                  className="cursor-pointer"
-                  onClick={() => setDetailModal(d)}
-                  onMouseEnter={e => e.currentTarget.style.background = 'var(--color-primary-50)'}
-                  onMouseLeave={e => e.currentTarget.style.background = ''}
-                >
-                  <td><span className="code-tag">{d.reference}</span></td>
-                  <td>
-                    <div className="font-semibold text-[13px] text-gray-800">{d.budget_reference}</div>
-                    <div className="text-[11px] text-gray-400 mt-[1px] max-w-[180px] overflow-hidden text-ellipsis whitespace-nowrap">
-                      {d.ligne_designation}
-                    </div>
-                  </td>
-                  <td className="font-mono font-bold whitespace-nowrap">
-                    {fmt(d.montant)} <span className="text-[10px] text-gray-400 font-normal">FCFA</span>
-                  </td>
-                  <td className="text-gray-500 text-[12px]">{d.enregistre_par || '—'}</td>
-                  <td className="text-[12px]" style={{ color: d.validateur_nom ? (d.statut === 'REJETEE' ? 'var(--color-danger-600)' : 'var(--color-success-700)') : 'var(--color-gray-300)' }}>
-                    {d.validateur_nom || '—'}
-                  </td>
-                  <td className="text-gray-400 text-[12px] font-mono">
-                    {d.date_depense ? new Date(d.date_depense).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'}
-                  </td>
-                  <td><DepenseBadge statut={d.statut} /></td>
-                  <td onClick={e => e.stopPropagation()}>
-                    <button onClick={() => setDetailModal(d)} className="btn btn-secondary btn-sm gap-[5px]">
-                      <Eye size={12} strokeWidth={2} /> Examiner
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+      {/* Recherche */}
+      <div className="filter-bar" style={{ marginBottom: 16 }}>
+        <div className="search-wrapper" style={{ maxWidth: 380 }}>
+          <Search size={14} strokeWidth={2} className="search-icon" />
+          <input className="search-input" value={search} onChange={e => setSearch(e.target.value)} placeholder="Rechercher budget, fournisseur, ligne…" />
+        </div>
+        {search && (
+          <button onClick={() => setSearch('')} className="btn btn-secondary btn-sm" style={{ gap: 5 }}>
+            <X size={12} strokeWidth={2} /> Effacer
+          </button>
         )}
       </div>
 
-      {!isLoading && hasMore && (
-        <div className="flex flex-col items-center gap-[6px] mt-[20px]">
-          <button
-            onClick={() => setVisibleCount(c => c + 10)}
-            className="btn btn-secondary btn-md gap-[7px]"
-            style={{ minWidth: 180 }}
-          >
-            Charger plus
-            <span style={{ background: 'var(--color-gray-200)', color: 'var(--color-gray-600)', fontSize: '11px', padding: '1px 7px', borderRadius: 8, fontWeight: 700, fontFamily: 'var(--font-mono)' }}>
-              +{Math.min(10, depenses.length - visibleCount)}
-            </span>
-          </button>
-          <p style={{ fontSize: '11px', color: 'var(--color-gray-400)' }}>
-            {visibleCount} sur {depenses.length} dépenses affichées
-          </p>
+      {/* Contenu */}
+      {isLoading ? (
+        <div style={{ padding: 60, textAlign: 'center' }}>
+          <div className="spinner" style={{ margin: '0 auto 12px' }} />
+          <p style={{ fontSize: '13px', color: 'var(--color-gray-400)' }}>Chargement…</p>
+        </div>
+      ) : groups.length === 0 ? (
+        <div className="empty-state">
+          <div className="empty-icon"><Receipt size={28} strokeWidth={1.5} style={{ color: 'var(--color-gray-400)' }} /></div>
+          <p className="empty-title">Aucune dépense</p>
+          <p className="empty-body">{tab ? 'Aucune dépense avec ce statut.' : 'Aucune dépense enregistrée.'}</p>
+        </div>
+      ) : (
+        <div className="card p-0 overflow-hidden" style={{ overflowX: 'auto' }}>
+          {/* Entêtes */}
+          <div style={{
+            display: 'grid', gridTemplateColumns: '1fr 180px 160px 130px',
+            minWidth: 600, padding: '8px 20px',
+            background: 'var(--color-gray-50)', borderBottom: '1px solid var(--color-gray-200)',
+            fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.4px', color: 'var(--color-gray-500)',
+          }}>
+            <span>Budget</span>
+            <span style={{ textAlign: 'right' }}>Montant total</span>
+            <span style={{ textAlign: 'center' }}>Avancement</span>
+            <span style={{ textAlign: 'right' }}>Actions</span>
+          </div>
+
+          {groups.map((g, i) => {
+            const total     = g.items.reduce((s, d) => s + parseFloat(d.montant || 0), 0)
+            const validated = g.items.filter(d => d.statut === 'VALIDEE').length
+            const pending   = g.items.filter(d => d.statut === 'SAISIE').length
+            const rejected  = g.items.filter(d => d.statut === 'REJETEE').length
+            const tauxValid = g.items.length > 0 ? (validated / g.items.length) * 100 : 0
+
+            return (
+              <div key={g.reference} style={{
+                display: 'grid', gridTemplateColumns: '1fr 180px 160px 130px',
+                minWidth: 600, padding: '14px 20px',
+                borderBottom: i < groups.length - 1 ? '1px solid var(--color-gray-100)' : 'none',
+                alignItems: 'center', cursor: 'pointer', transition: 'background .12s',
+              }}
+                onMouseEnter={e => e.currentTarget.style.background = 'var(--color-gray-50)'}
+                onMouseLeave={e => e.currentTarget.style.background = ''}
+                onClick={() => setDetailGroup(g)}
+              >
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4, flexWrap: 'wrap' }}>
+                    <span className="code-tag">{g.reference}</span>
+                    {pending > 0 && (
+                      <span style={{ background: 'var(--color-warning-50)', color: 'var(--color-warning-700)', fontSize: '10px', fontWeight: 700, padding: '1px 7px', borderRadius: 9 }}>
+                        {pending} à valider
+                      </span>
+                    )}
+                    {rejected > 0 && (
+                      <span style={{ background: 'var(--color-danger-50)', color: 'var(--color-danger-700)', fontSize: '10px', fontWeight: 700, padding: '1px 7px', borderRadius: 9 }}>
+                        {rejected} rejetée{rejected > 1 ? 's' : ''}
+                      </span>
+                    )}
+                  </div>
+                  <div style={{ fontWeight: 600, fontSize: '14px', color: 'var(--color-gray-900)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', marginBottom: 2 }}>
+                    {g.nom}
+                  </div>
+                  <div style={{ fontSize: '11px', color: 'var(--color-gray-400)' }}>
+                    {g.items.length} dépense{g.items.length > 1 ? 's' : ''} · {validated} validée{validated !== 1 ? 's' : ''}
+                  </div>
+                </div>
+
+                <div style={{ textAlign: 'right' }}>
+                  <div style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, fontSize: '14px', color: 'var(--color-gray-900)' }}>{fmt(total)}</div>
+                  <div style={{ fontSize: '10px', color: 'var(--color-gray-400)', marginTop: 1 }}>FCFA</div>
+                </div>
+
+                <div style={{ padding: '0 12px' }}>
+                  <div className="progress-track">
+                    <div className={`progress-fill ${tauxValid >= 100 ? 'progress-fill-green' : tauxValid > 0 ? 'progress-fill-orange' : ''}`} style={{ width: `${Math.min(tauxValid, 100)}%` }} />
+                  </div>
+                  <div style={{ fontSize: '10px', color: 'var(--color-gray-500)', textAlign: 'center', marginTop: 3, fontWeight: 600 }}>
+                    {tauxValid.toFixed(0)}% validé
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end', alignItems: 'center' }} onClick={e => e.stopPropagation()}>
+                  <button onClick={() => setDetailGroup(g)} className="btn btn-secondary btn-sm" style={{ gap: 5 }}>
+                    <Eye size={12} strokeWidth={2} /> Examiner
+                  </button>
+                  <ChevronRight size={14} strokeWidth={2} style={{ color: 'var(--color-gray-300)' }} />
+                </div>
+              </div>
+            )
+          })}
         </div>
       )}
 
-      {detailModal && (
-        <DepenseDetailModal
-          dep={detailModal}
-          onValider={() => valider(detailModal.id)}
-          onRejeter={() => setRejetModal(detailModal.id)}
-          onClose={() => setDetailModal(null)}
-          validating={validating}
+      {detailGroup && (
+        <DepenseGroupDetail
+          group={detailGroup}
+          onClose={() => setDetailGroup(null)}
+          onRefresh={() => { qc.invalidateQueries(['depenses-all']); notifRefresh() }}
         />
       )}
+    </div>
+  )
+}
 
+/* ══════════════════════════════════════════════════════════
+   Modal détail d'un groupe — version Comptable (avec actions)
+══════════════════════════════════════════════════════════ */
+function DepenseGroupDetail({ group, onClose, onRefresh }) {
+  const [items,      setItems]      = useState(group.items)
+  const [rejetModal, setRejetModal] = useState(null)  // id de la dépense à rejeter
+  const [busy,       setBusy]       = useState(null)
+
+  const total          = items.reduce((s, d) => s + parseFloat(d.montant || 0), 0)
+  const validated      = items.filter(d => d.statut === 'VALIDEE')
+  const pending        = items.filter(d => d.statut === 'SAISIE')
+  const rejected       = items.filter(d => d.statut === 'REJETEE')
+  const totalValidated = validated.reduce((s, d) => s + parseFloat(d.montant || 0), 0)
+
+  const updateItem = (id, patch) =>
+    setItems(prev => prev.map(d => d.id === id ? { ...d, ...patch } : d))
+
+  const handleValider = async (d) => {
+    setBusy(d.id)
+    try {
+      await validerDepense(d.id, {})
+      updateItem(d.id, { statut: 'VALIDEE' })
+      onRefresh()
+    } catch (err) {
+      alert(err.response?.data?.detail || 'Erreur lors de la validation')
+    } finally {
+      setBusy(null)
+    }
+  }
+
+  const handleRejeter = async (id, motif) => {
+    setBusy(id)
+    try {
+      await rejeterDepense(id, { motif })
+      updateItem(id, { statut: 'REJETEE', motif_rejet: motif })
+      onRefresh()
+    } catch (err) {
+      alert(err.response?.data?.detail || 'Erreur lors du rejet')
+    } finally {
+      setBusy(null)
+      setRejetModal(null)
+    }
+  }
+
+  return (
+    <>
+      <div className="modal-overlay" onClick={e => { if (e.target === e.currentTarget) onClose() }}>
+        <div className="modal-panel" onClick={e => e.stopPropagation()} style={{ maxWidth: 720, padding: 0, overflow: 'hidden' }}>
+
+          {/* En-tête gradient */}
+          <div style={{ background: 'linear-gradient(135deg, #0F4C2A, #166534)', padding: '24px 28px 20px', color: '#fff', position: 'relative', overflow: 'hidden' }}>
+            <div style={{ position: 'absolute', top: -30, right: -30, width: 130, height: 130, borderRadius: '50%', background: 'rgba(255,255,255,.06)', pointerEvents: 'none' }} />
+            <div style={{ position: 'absolute', bottom: -20, right: 80, width: 80, height: 80, borderRadius: '50%', background: 'rgba(255,255,255,.04)', pointerEvents: 'none' }} />
+            <button onClick={onClose} style={{ position: 'absolute', top: 16, right: 16, background: 'rgba(255,255,255,.15)', border: 'none', borderRadius: 7, padding: '5px 8px', cursor: 'pointer', color: '#fff', display: 'flex', alignItems: 'center' }}>
+              <X size={15} strokeWidth={2} />
+            </button>
+
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16, paddingRight: 40 }}>
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                  <div style={{ background: 'rgba(255,255,255,.18)', borderRadius: 7, padding: '4px 10px', fontSize: '12px', fontWeight: 700, fontFamily: 'var(--font-mono)', letterSpacing: '.5px' }}>
+                    {group.reference}
+                  </div>
+                  <span style={{ fontSize: '11px', opacity: .7 }}>{items.length} dépense{items.length > 1 ? 's' : ''}</span>
+                </div>
+                <div style={{ fontWeight: 800, fontSize: '1.1rem', marginBottom: 8 }}>{group.nom}</div>
+                <div style={{ display: 'flex', gap: 16, fontSize: '12px', opacity: .85 }}>
+                  <span>✓ {validated.length} validée{validated.length !== 1 ? 's' : ''}</span>
+                  <span>⏳ {pending.length} en attente</span>
+                  {rejected.length > 0 && <span>✕ {rejected.length} rejetée{rejected.length > 1 ? 's' : ''}</span>}
+                </div>
+              </div>
+              <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                <div style={{ fontSize: '10px', opacity: .6, textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: 4 }}>Total</div>
+                <div style={{ fontFamily: 'var(--font-mono)', fontWeight: 900, fontSize: '1.6rem', lineHeight: 1 }}>{fmt(total)}</div>
+                <div style={{ fontSize: '11px', opacity: .65, marginTop: 3 }}>FCFA</div>
+              </div>
+            </div>
+          </div>
+
+          {/* Mini KPI */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', borderBottom: '1px solid var(--color-gray-100)' }}>
+            {[
+              { label: 'Validé',     val: fmt(totalValidated) + ' FCFA',                                     color: 'var(--color-success-700)', bg: 'var(--color-success-50)' },
+              { label: 'En attente', val: pending.length + ' dépense' + (pending.length !== 1 ? 's' : ''),   color: 'var(--color-warning-700)', bg: 'var(--color-warning-50)' },
+              { label: 'Rejeté',     val: rejected.length + ' dépense' + (rejected.length !== 1 ? 's' : ''), color: 'var(--color-danger-700)',  bg: 'var(--color-danger-50)'  },
+            ].map((k, idx, arr) => (
+              <div key={k.label} style={{ padding: '12px 20px', background: k.bg, borderRight: idx < arr.length - 1 ? '1px solid var(--color-gray-100)' : 'none', textAlign: 'center' }}>
+                <div style={{ fontSize: '10px', fontWeight: 700, color: k.color, textTransform: 'uppercase', letterSpacing: '.4px', marginBottom: 4 }}>{k.label}</div>
+                <div style={{ fontFamily: 'var(--font-mono)', fontWeight: 800, fontSize: '13px', color: k.color }}>{k.val}</div>
+              </div>
+            ))}
+          </div>
+
+          {/* Liste des lignes */}
+          <div style={{ maxHeight: '50vh', overflowY: 'auto' }}>
+            {items.map((d, i) => {
+              const s = STATUT[d.statut] || { bg: 'var(--color-gray-100)', color: 'var(--color-gray-600)', label: d.statut }
+              const isBusy = busy === d.id
+              return (
+                <div key={d.id} style={{
+                  padding: '14px 24px',
+                  borderBottom: i < items.length - 1 ? '1px solid var(--color-gray-100)' : 'none',
+                  display: 'grid', gridTemplateColumns: '1fr 120px 130px',
+                  alignItems: 'center', gap: 16,
+                  background: d.statut === 'SAISIE' ? 'rgba(245,158,11,.03)' : 'transparent',
+                }}>
+                  {/* Info ligne */}
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4, flexWrap: 'wrap' }}>
+                      <span style={{ fontFamily: 'var(--font-mono)', fontSize: '10px', background: 'var(--color-gray-100)', color: 'var(--color-gray-700)', padding: '2px 7px', borderRadius: 5, fontWeight: 700 }}>
+                        {d.reference}
+                      </span>
+                      <span style={{ padding: '2px 9px', borderRadius: 20, fontSize: '10px', fontWeight: 700, background: s.bg, color: s.color }}>
+                        {s.label}
+                      </span>
+                    </div>
+                    <div style={{ fontWeight: 600, fontSize: '13px', color: 'var(--color-gray-800)', marginBottom: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {d.ligne_designation || '—'}
+                    </div>
+                    <div style={{ fontSize: '11px', color: 'var(--color-gray-400)' }}>
+                      {fmtDate(d.date_depense)}
+                      {d.enregistre_par && ` · ${d.enregistre_par}`}
+                      {d.fournisseur && d.fournisseur !== '—' && ` · ${d.fournisseur}`}
+                    </div>
+                    {d.statut === 'REJETEE' && d.motif_rejet && (
+                      <div style={{ marginTop: 4, fontSize: '11px', color: 'var(--color-danger-600)', fontStyle: 'italic' }}>
+                        Motif : {d.motif_rejet}
+                      </div>
+                    )}
+                    {d.note && d.statut !== 'REJETEE' && (
+                      <div style={{ marginTop: 4, fontSize: '11px', color: 'var(--color-gray-500)' }}>{d.note}</div>
+                    )}
+                  </div>
+
+                  {/* Montant */}
+                  <div style={{ textAlign: 'right' }}>
+                    <div style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, fontSize: '14px', color: 'var(--color-gray-900)' }}>{fmt(d.montant)}</div>
+                    <div style={{ fontSize: '10px', color: 'var(--color-gray-400)' }}>FCFA</div>
+                  </div>
+
+                  {/* Actions */}
+                  <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end', alignItems: 'center' }}>
+                    {d.piece_justificative_url && (
+                      <a href={d.piece_justificative_url} target="_blank" rel="noreferrer" style={{ textDecoration: 'none' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '5px 8px', borderRadius: 7, background: 'var(--color-primary-50)', border: '1px solid var(--color-primary-200)', fontSize: '11px', color: 'var(--color-primary-700)', fontWeight: 600, cursor: 'pointer' }}>
+                          <Paperclip size={11} strokeWidth={2} />
+                        </div>
+                      </a>
+                    )}
+                    {d.statut === 'SAISIE' && (
+                      <>
+                        <button
+                          onClick={() => setRejetModal(d.id)}
+                          disabled={isBusy}
+                          className="btn btn-sm"
+                          style={{ background: 'var(--color-danger-50)', color: 'var(--color-danger-700)', border: '1px solid var(--color-danger-200)', gap: 4, padding: '5px 10px' }}
+                        >
+                          <XCircle size={12} strokeWidth={2} /> Rejeter
+                        </button>
+                        <button
+                          onClick={() => handleValider(d)}
+                          disabled={isBusy}
+                          className="btn btn-sm"
+                          style={{ background: 'var(--color-success-600)', color: '#fff', border: 'none', gap: 4, padding: '5px 10px' }}
+                        >
+                          {isBusy ? <span className="spinner-sm" /> : <CheckCircle2 size={12} strokeWidth={2} />}
+                          Valider
+                        </button>
+                      </>
+                    )}
+                    {d.statut === 'VALIDEE' && (
+                      <span style={{ fontSize: '11px', color: 'var(--color-success-600)', fontWeight: 700 }}>
+                        {d.validateur_nom ? `✓ ${d.validateur_nom}` : '✓ Validée'}
+                      </span>
+                    )}
+                    {d.statut === 'REJETEE' && (
+                      <span style={{ fontSize: '11px', color: 'var(--color-danger-600)', fontWeight: 700 }}>
+                        {d.validateur_nom ? `✕ ${d.validateur_nom}` : '✕ Rejetée'}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+
+          {/* Footer */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 24px', borderTop: '1px solid var(--color-gray-100)', background: 'var(--color-gray-50)' }}>
+            <span style={{ fontSize: '12px', color: 'var(--color-gray-400)' }}>
+              {pending.length > 0 ? `${pending.length} dépense${pending.length > 1 ? 's' : ''} en attente de validation` : 'Toutes les dépenses ont été traitées'}
+            </span>
+            <button onClick={onClose} className="btn btn-primary btn-md">Fermer</button>
+          </div>
+        </div>
+      </div>
+
+      {/* Modal rejet */}
       {rejetModal && (
         <RejetModal
-          onConfirm={(motif) => rejeter({ id: rejetModal, motif })}
+          onConfirm={(motif) => handleRejeter(rejetModal, motif)}
           onClose={() => setRejetModal(null)}
         />
       )}
-    </div>
+    </>
   )
 }
 
 /* ══════════════════════════════════════════════════════════
-   Modal détail dépense — version Comptable (avec actions)
-══════════════════════════════════════════════════════════ */
-function DepenseDetailModal({ dep, onValider, onRejeter, onClose, validating }) {
-  const cfg = {
-    SAISIE:  { gradient: 'linear-gradient(135deg, #92400E, #D97706)', label: 'En attente', icon: '⏳' },
-    VALIDEE: { gradient: 'linear-gradient(135deg, #065F46, #059669)', label: 'Validée',    icon: '✓'  },
-    REJETEE: { gradient: 'linear-gradient(135deg, #7F1D1D, #DC2626)', label: 'Rejetée',    icon: '✕'  },
-  }
-  const c = cfg[dep.statut] || { gradient: 'linear-gradient(135deg, #374151, #6B7280)', label: dep.statut, icon: '?' }
-
-  return (
-    <div
-      className="modal-overlay"
-      onClick={e => { if (e.target === e.currentTarget) onClose() }}
-    >
-      <div
-        className="modal-panel"
-        onClick={e => e.stopPropagation()}
-        style={{ maxWidth: 600, padding: 0, overflow: 'hidden' }}
-      >
-        {/* ── Hero header ─────────────────────────────────────── */}
-        <div style={{ background: c.gradient, padding: '24px 28px 20px', color: '#fff', position: 'relative', overflow: 'hidden' }}>
-          {/* Cercle déco */}
-          <div style={{ position: 'absolute', top: -30, right: -30, width: 120, height: 120, borderRadius: '50%', background: 'rgba(255,255,255,.08)', pointerEvents: 'none' }} />
-          <div style={{ position: 'absolute', bottom: -20, right: 60, width: 80, height: 80, borderRadius: '50%', background: 'rgba(255,255,255,.05)', pointerEvents: 'none' }} />
-
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16 }}>
-            <div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
-                <div style={{ background: 'rgba(255,255,255,.18)', borderRadius: 7, padding: '4px 10px', fontSize: '12px', fontWeight: 700, fontFamily: 'var(--font-mono)', letterSpacing: '.5px' }}>
-                  {dep.reference}
-                </div>
-                <span style={{ background: 'rgba(255,255,255,.15)', border: '1px solid rgba(255,255,255,.3)', borderRadius: 20, padding: '2px 10px', fontSize: '11px', fontWeight: 700 }}>
-                  {c.icon} {c.label}
-                </span>
-              </div>
-              <div style={{ fontSize: '12px', opacity: .75, marginBottom: 4 }}>Examen de la dépense</div>
-              <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '1.05rem', opacity: .95 }}>
-                {dep.budget_nom && dep.budget_nom !== '—' ? dep.budget_nom : dep.budget_reference}
-              </div>
-            </div>
-
-            <div style={{ textAlign: 'right', flexShrink: 0 }}>
-              <div style={{ fontSize: '10px', opacity: .65, textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: 4 }}>Montant</div>
-              <div style={{ fontFamily: 'var(--font-mono)', fontWeight: 900, fontSize: '1.6rem', lineHeight: 1 }}>
-                {fmt(dep.montant)}
-              </div>
-              <div style={{ fontSize: '11px', opacity: .7, marginTop: 3 }}>FCFA</div>
-            </div>
-          </div>
-        </div>
-
-        {/* ── Corps ───────────────────────────────────────────── */}
-        <div style={{ padding: '22px 28px', display: 'flex', flexDirection: 'column', gap: 0 }}>
-
-          {/* Grille 2 colonnes */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(220px,100%), 1fr))', gap: '16px 32px', marginBottom: 20 }}>
-            <InfoField icon={<Tag size={13} />}       label="Référence"         value={dep.reference} mono />
-            <InfoField icon={<Building2 size={13} />} label="Budget"            value={`${dep.budget_reference}${dep.budget_nom && dep.budget_nom !== '—' ? ` — ${dep.budget_nom}` : ''}`} />
-            <InfoField icon={<Receipt size={13} />}   label="Ligne budgétaire"  value={dep.ligne_designation} />
-            <InfoField icon={<Calendar size={13} />}  label="Date d'enregistrement" value={fmtDate(dep.date_depense)} mono />
-            <InfoField icon={<User size={13} />}      label="Saisi par"         value={dep.enregistre_par} />
-            {dep.validateur_nom && (
-              <InfoField
-                icon={<CheckCircle2 size={13} />}
-                label={dep.statut === 'REJETEE' ? 'Rejeté par' : 'Validé par'}
-                value={dep.validateur_nom}
-              />
-            )}
-            {dep.fournisseur && dep.fournisseur !== '—' && (
-              <InfoField icon={<FileText size={13} />} label="Fournisseur" value={dep.fournisseur} />
-            )}
-            {dep.note && (
-              <div style={{ gridColumn: 'span 2' }}>
-                <InfoField icon={<FileText size={13} />} label="Note / Description" value={dep.note} />
-              </div>
-            )}
-          </div>
-
-          {/* Séparateur */}
-          <div style={{ height: 1, background: 'var(--color-gray-100)', marginBottom: 20 }} />
-
-          {/* Pièces justificatives */}
-          <div style={{ marginBottom: dep.statut === 'REJETEE' ? 20 : 0 }}>
-            <div style={{ fontSize: '10px', fontWeight: 700, color: 'var(--color-gray-400)', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: 10 }}>
-              Pièces justificatives
-            </div>
-            {/* Pièce principale */}
-            {dep.piece_justificative_url && (
-              <a href={dep.piece_justificative_url} target="_blank" rel="noreferrer" style={{ textDecoration: 'none', display: 'block', marginBottom: 6 }}>
-                <div style={{
-                  display: 'flex', alignItems: 'center', gap: 14, padding: '12px 16px', borderRadius: 10,
-                  background: 'var(--color-primary-50)', border: '1.5px solid var(--color-primary-200)', cursor: 'pointer',
-                }}>
-                  <Paperclip size={16} strokeWidth={2} style={{ color: 'var(--color-primary-600)', flexShrink: 0 }} />
-                  <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--color-primary-800)', flex: 1 }}>Justificatif principal</span>
-                  <ExternalLink size={14} strokeWidth={2} style={{ color: 'var(--color-primary-400)', flexShrink: 0 }} />
-                </div>
-              </a>
-            )}
-            {/* Pièces supplémentaires */}
-            {dep.pieces && dep.pieces.length > 0 && dep.pieces.map((p, i) => (
-              <a key={p.id} href={p.url} target="_blank" rel="noreferrer" style={{ textDecoration: 'none', display: 'block', marginBottom: 6 }}>
-                <div style={{
-                  display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px', borderRadius: 10,
-                  background: 'var(--color-gray-50)', border: '1px solid var(--color-gray-200)', cursor: 'pointer',
-                }}>
-                  <Paperclip size={14} strokeWidth={2} style={{ color: 'var(--color-gray-500)', flexShrink: 0 }} />
-                  <span style={{ fontSize: '12px', color: 'var(--color-gray-700)', flex: 1 }}>{p.nom || `Pièce ${i + 2}`}</span>
-                  <ExternalLink size={13} strokeWidth={2} style={{ color: 'var(--color-gray-400)', flexShrink: 0 }} />
-                </div>
-              </a>
-            ))}
-            {!dep.piece_justificative_url && (!dep.pieces || dep.pieces.length === 0) && (
-              <div style={{
-                display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px', borderRadius: 10,
-                background: 'var(--color-gray-50)', border: '1.5px dashed var(--color-gray-200)',
-              }}>
-                <Paperclip size={16} strokeWidth={1.5} style={{ color: 'var(--color-gray-300)', flexShrink: 0 }} />
-                <span style={{ fontSize: '13px', color: 'var(--color-gray-400)', fontStyle: 'italic' }}>
-                  Aucune pièce justificative jointe
-                </span>
-              </div>
-            )}
-          </div>
-
-          {/* Motif rejet */}
-          {dep.statut === 'REJETEE' && dep.motif_rejet && (
-            <div style={{
-              display: 'flex', gap: 12, alignItems: 'flex-start',
-              padding: '14px 16px', borderRadius: 10,
-              background: '#FFF1F2', border: '1.5px solid #FECDD3',
-            }}>
-              <AlertCircle size={16} strokeWidth={2} style={{ color: '#E11D48', flexShrink: 0, marginTop: 1 }} />
-              <div>
-                <div style={{ fontSize: '11px', fontWeight: 800, color: '#BE123C', textTransform: 'uppercase', letterSpacing: '.4px', marginBottom: 4 }}>
-                  Motif du rejet
-                </div>
-                <p style={{ fontSize: '13px', color: '#9F1239', margin: 0, lineHeight: 1.5 }}>{dep.motif_rejet}</p>
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* ── Footer ──────────────────────────────────────────── */}
-        <div style={{
-          display: 'flex', justifyContent: 'flex-end', gap: 10,
-          padding: '16px 28px', borderTop: '1px solid var(--color-gray-100)',
-          background: 'var(--color-gray-50)',
-        }}>
-          <button onClick={onClose} className="btn btn-secondary btn-md">Fermer</button>
-          {dep.statut === 'SAISIE' && (
-            <>
-              <button
-                onClick={onRejeter}
-                className="btn btn-danger btn-md"
-                style={{ gap: 7 }}
-              >
-                <XCircle size={15} strokeWidth={2} /> Rejeter
-              </button>
-              <button
-                onClick={onValider}
-                disabled={validating}
-                className="btn btn-success btn-md"
-                style={{ gap: 7 }}
-              >
-                <CheckCircle2 size={15} strokeWidth={2} />
-                {validating ? 'Validation…' : 'Valider la dépense'}
-              </button>
-            </>
-          )}
-        </div>
-      </div>
-    </div>
-  )
-}
-
-/* ══════════════════════════════════════════════════════════
-   Champ d'info avec label + icône
-══════════════════════════════════════════════════════════ */
-function InfoField({ label, value, icon, mono }) {
-  return (
-    <div>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: 5 }}>
-        <span style={{ color: 'var(--color-gray-400)' }}>{icon}</span>
-        <span style={{ fontSize: '10px', fontWeight: 700, color: 'var(--color-gray-400)', textTransform: 'uppercase', letterSpacing: '.4px' }}>
-          {label}
-        </span>
-      </div>
-      <div style={{
-        fontSize: '13px', fontWeight: 600,
-        color: 'var(--color-gray-800)',
-        fontFamily: mono ? 'var(--font-mono)' : 'inherit',
-      }}>
-        {value || '—'}
-      </div>
-    </div>
-  )
-}
-
-/* ══════════════════════════════════════════════════════════
-   Modal rejet
+   Modal de rejet avec motif
 ══════════════════════════════════════════════════════════ */
 function RejetModal({ onConfirm, onClose }) {
   const [motif, setMotif] = useState('')
   const valid = motif.length >= 10
 
   return (
-    <div className="modal-overlay" onClick={e => { if (e.target === e.currentTarget) onClose() }}>
+    <div className="modal-overlay" style={{ zIndex: 60 }} onClick={e => { if (e.target === e.currentTarget) onClose() }}>
       <div className="modal-panel" style={{ maxWidth: 440, padding: 0, overflow: 'hidden' }} onClick={e => e.stopPropagation()}>
-
-        {/* Header rouge */}
         <div style={{ background: 'linear-gradient(135deg, #7F1D1D, #DC2626)', padding: '20px 24px', color: '#fff', display: 'flex', alignItems: 'center', gap: 12 }}>
           <div style={{ width: 36, height: 36, borderRadius: 9, background: 'rgba(255,255,255,.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
             <XCircle size={18} strokeWidth={2} />
           </div>
           <div>
-            <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '15px' }}>Rejeter la dépense</div>
+            <div style={{ fontWeight: 800, fontSize: '15px' }}>Rejeter la dépense</div>
             <div style={{ fontSize: '12px', opacity: .75 }}>Indiquez la raison du rejet</div>
           </div>
         </div>
-
         <div style={{ padding: '22px 24px' }}>
           <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: 'var(--color-gray-600)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '.4px' }}>
             Motif du rejet
@@ -495,24 +496,17 @@ function RejetModal({ onConfirm, onClose }) {
             style={{
               width: '100%', boxSizing: 'border-box',
               border: `1.5px solid ${motif && !valid ? 'var(--color-danger-400)' : 'var(--color-gray-200)'}`,
-              borderRadius: 9, padding: '10px 14px',
-              fontSize: '13px', resize: 'vertical',
-              outline: 'none', fontFamily: 'inherit',
-              transition: 'border-color .15s',
+              borderRadius: 9, padding: '10px 14px', fontSize: '13px', resize: 'vertical',
+              outline: 'none', fontFamily: 'inherit', transition: 'border-color .15s',
             }}
-            onFocus={e => e.target.style.borderColor = 'var(--color-danger-400)'}
-            onBlur={e => e.target.style.borderColor = motif && !valid ? 'var(--color-danger-400)' : 'var(--color-gray-200)'}
           />
           <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 6, fontSize: '11px' }}>
             <span style={{ color: valid ? 'var(--color-success-600)' : 'var(--color-gray-400)' }}>
-              {valid ? '✓ Longueur suffisante' : `Minimum 10 caractères`}
+              {valid ? '✓ Longueur suffisante' : 'Minimum 10 caractères'}
             </span>
-            <span style={{ color: 'var(--color-gray-400)', fontFamily: 'var(--font-mono)' }}>
-              {motif.length} / 10+
-            </span>
+            <span style={{ color: 'var(--color-gray-400)', fontFamily: 'var(--font-mono)' }}>{motif.length} / 10+</span>
           </div>
         </div>
-
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, padding: '14px 24px', borderTop: '1px solid var(--color-gray-100)', background: 'var(--color-gray-50)' }}>
           <button onClick={onClose} className="btn btn-secondary btn-md">Annuler</button>
           <button
@@ -521,8 +515,7 @@ function RejetModal({ onConfirm, onClose }) {
             className="btn btn-danger btn-md"
             style={{ gap: 7, opacity: valid ? 1 : 0.5 }}
           >
-            <XCircle size={14} strokeWidth={2} />
-            Confirmer le rejet
+            <XCircle size={14} strokeWidth={2} /> Confirmer le rejet
           </button>
         </div>
       </div>
