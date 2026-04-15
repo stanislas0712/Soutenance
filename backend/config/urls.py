@@ -45,9 +45,9 @@ urlpatterns = [
             static_serve,
             {'document_root': settings.BASE_DIR / 'frontend_dist'}),
 
+    # Fichiers media uploadés (justificatifs, etc.) — servis en dev ET prod
+    re_path(r'^media/(?P<path>.*)$', static_serve, {'document_root': settings.MEDIA_ROOT}),
+
     # React SPA — catch-all (doit être en dernier)
     re_path(r'^(?!api|manager|static|media).*$', TemplateView.as_view(template_name='index.html')),
 ]
-
-if settings.DEBUG:
-    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
