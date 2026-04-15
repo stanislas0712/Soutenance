@@ -350,8 +350,42 @@ function DepenseGroupDetail({ group, onClose, onRefresh }) {
             ))}
           </div>
 
+          {/* Pièces justificatives — niveau dépense (une pour tout le groupe) */}
+          {(() => {
+            const urls   = [...new Set(items.map(d => d.piece_justificative_url).filter(Boolean))]
+            const extras = items.flatMap(d => d.pieces || [])
+            const note   = items.find(d => d.note)?.note
+            return (
+              <div style={{ padding: '12px 24px', borderBottom: '1px solid var(--color-gray-100)', background: 'var(--color-gray-50)', display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                <div style={{ fontSize: '10px', fontWeight: 700, color: 'var(--color-gray-500)', textTransform: 'uppercase', letterSpacing: '.4px', flexShrink: 0 }}>
+                  Pièces justificatives
+                </div>
+                {urls.map((url, i) => (
+                  <a key={i} href={url} target="_blank" rel="noreferrer" style={{ textDecoration: 'none' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '5px 12px', borderRadius: 7, background: '#fff', border: '1px solid var(--color-primary-200)', fontSize: '12px', color: 'var(--color-primary-700)', fontWeight: 600, cursor: 'pointer' }}>
+                      <Paperclip size={12} strokeWidth={2} /> Justificatif {urls.length > 1 ? i + 1 : ''}
+                    </div>
+                  </a>
+                ))}
+                {extras.map((p, i) => (
+                  <a key={`extra-${i}`} href={p.url} target="_blank" rel="noreferrer" style={{ textDecoration: 'none' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '5px 12px', borderRadius: 7, background: '#fff', border: '1px solid var(--color-gray-200)', fontSize: '12px', color: 'var(--color-gray-600)', fontWeight: 600, cursor: 'pointer' }}>
+                      <Paperclip size={12} strokeWidth={2} /> {p.nom || `Pièce ${i + 2}`}
+                    </div>
+                  </a>
+                ))}
+                {note && (
+                  <span style={{ fontSize: '12px', color: 'var(--color-gray-500)', fontStyle: 'italic' }}>Note : {note}</span>
+                )}
+                {!urls.length && !extras.length && (
+                  <span style={{ fontSize: '12px', color: 'var(--color-gray-400)', fontStyle: 'italic' }}>Aucune pièce justificative jointe</span>
+                )}
+              </div>
+            )
+          })()}
+
           {/* Liste des lignes */}
-          <div style={{ maxHeight: '50vh', overflowY: 'auto' }}>
+          <div style={{ maxHeight: '46vh', overflowY: 'auto' }}>
             {items.map((d, i) => {
               const s = STATUT[d.statut] || { bg: 'var(--color-gray-100)', color: 'var(--color-gray-600)', label: d.statut }
               const isBusy = busy === d.id
@@ -359,7 +393,7 @@ function DepenseGroupDetail({ group, onClose, onRefresh }) {
                 <div key={d.id} style={{
                   padding: '14px 24px',
                   borderBottom: i < items.length - 1 ? '1px solid var(--color-gray-100)' : 'none',
-                  display: 'grid', gridTemplateColumns: '1fr 120px 130px',
+                  display: 'grid', gridTemplateColumns: '1fr 120px 120px',
                   alignItems: 'center', gap: 16,
                   background: d.statut === 'SAISIE' ? 'rgba(245,158,11,.03)' : 'transparent',
                 }}>
@@ -386,9 +420,6 @@ function DepenseGroupDetail({ group, onClose, onRefresh }) {
                         Motif : {d.motif_rejet}
                       </div>
                     )}
-                    {d.note && d.statut !== 'REJETEE' && (
-                      <div style={{ marginTop: 4, fontSize: '11px', color: 'var(--color-gray-500)' }}>{d.note}</div>
-                    )}
                   </div>
 
                   {/* Montant */}
@@ -399,13 +430,6 @@ function DepenseGroupDetail({ group, onClose, onRefresh }) {
 
                   {/* Actions */}
                   <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end', alignItems: 'center' }}>
-                    {d.piece_justificative_url && (
-                      <a href={d.piece_justificative_url} target="_blank" rel="noreferrer" style={{ textDecoration: 'none' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '5px 8px', borderRadius: 7, background: 'var(--color-primary-50)', border: '1px solid var(--color-primary-200)', fontSize: '11px', color: 'var(--color-primary-700)', fontWeight: 600, cursor: 'pointer' }}>
-                          <Paperclip size={11} strokeWidth={2} />
-                        </div>
-                      </a>
-                    )}
                     {d.statut === 'SAISIE' && (
                       <>
                         <button

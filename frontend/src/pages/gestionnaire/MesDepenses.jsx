@@ -325,15 +325,50 @@ function DepenseGroupDetail({ group, onClose }) {
           ))}
         </div>
 
+        {/* Pièces justificatives — niveau dépense (une pour tout le groupe) */}
+        {(() => {
+          const urls = [...new Set(group.items.map(d => d.piece_justificative_url).filter(Boolean))]
+          const extras = group.items.flatMap(d => d.pieces || [])
+          const note = group.items.find(d => d.note)?.note
+          if (!urls.length && !extras.length && !note) return null
+          return (
+            <div style={{ padding: '12px 24px', borderBottom: '1px solid var(--color-gray-100)', background: 'var(--color-gray-50)', display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+              <div style={{ fontSize: '10px', fontWeight: 700, color: 'var(--color-gray-500)', textTransform: 'uppercase', letterSpacing: '.4px', flexShrink: 0 }}>
+                Pièces justificatives
+              </div>
+              {urls.map((url, i) => (
+                <a key={i} href={url} target="_blank" rel="noreferrer" style={{ textDecoration: 'none' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '5px 12px', borderRadius: 7, background: '#fff', border: '1px solid var(--color-primary-200)', fontSize: '12px', color: 'var(--color-primary-700)', fontWeight: 600, cursor: 'pointer' }}>
+                    <Paperclip size={12} strokeWidth={2} /> Justificatif {urls.length > 1 ? i + 1 : ''}
+                  </div>
+                </a>
+              ))}
+              {extras.map((p, i) => (
+                <a key={`extra-${i}`} href={p.url} target="_blank" rel="noreferrer" style={{ textDecoration: 'none' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '5px 12px', borderRadius: 7, background: '#fff', border: '1px solid var(--color-gray-200)', fontSize: '12px', color: 'var(--color-gray-600)', fontWeight: 600, cursor: 'pointer' }}>
+                    <Paperclip size={12} strokeWidth={2} /> {p.nom || `Pièce ${i + 2}`}
+                  </div>
+                </a>
+              ))}
+              {note && (
+                <span style={{ fontSize: '12px', color: 'var(--color-gray-500)', fontStyle: 'italic' }}>Note : {note}</span>
+              )}
+              {!urls.length && !extras.length && (
+                <span style={{ fontSize: '12px', color: 'var(--color-gray-400)', fontStyle: 'italic' }}>Aucune pièce justificative jointe</span>
+              )}
+            </div>
+          )
+        })()}
+
         {/* Liste des lignes */}
-        <div style={{ maxHeight: '52vh', overflowY: 'auto' }}>
+        <div style={{ maxHeight: '48vh', overflowY: 'auto' }}>
           {group.items.map((d, i) => {
             const s = STATUT[d.statut] || { bg: 'var(--color-gray-100)', color: 'var(--color-gray-600)', label: d.statut }
             return (
               <div key={d.id} style={{
                 padding: '14px 24px',
                 borderBottom: i < group.items.length - 1 ? '1px solid var(--color-gray-100)' : 'none',
-                display: 'grid', gridTemplateColumns: '1fr 130px 100px',
+                display: 'grid', gridTemplateColumns: '1fr 130px',
                 alignItems: 'center', gap: 16,
               }}>
                 {/* Info ligne */}
@@ -358,28 +393,12 @@ function DepenseGroupDetail({ group, onClose }) {
                       Motif : {d.motif_rejet}
                     </div>
                   )}
-                  {d.note && d.statut !== 'REJETEE' && (
-                    <div style={{ marginTop: 4, fontSize: '11px', color: 'var(--color-gray-500)' }}>{d.note}</div>
-                  )}
                 </div>
 
                 {/* Montant */}
                 <div style={{ textAlign: 'right' }}>
                   <div style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, fontSize: '14px', color: 'var(--color-gray-900)' }}>{fmt(d.montant)}</div>
                   <div style={{ fontSize: '10px', color: 'var(--color-gray-400)' }}>FCFA</div>
-                </div>
-
-                {/* Pièce */}
-                <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                  {d.piece_justificative_url ? (
-                    <a href={d.piece_justificative_url} target="_blank" rel="noreferrer" style={{ textDecoration: 'none' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '5px 10px', borderRadius: 7, background: 'var(--color-primary-50)', border: '1px solid var(--color-primary-200)', fontSize: '11px', color: 'var(--color-primary-700)', fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap' }}>
-                        <Paperclip size={11} strokeWidth={2} /> Justif.
-                      </div>
-                    </a>
-                  ) : (
-                    <span style={{ fontSize: '11px', color: 'var(--color-gray-300)', fontStyle: 'italic', whiteSpace: 'nowrap' }}>Aucune pièce</span>
-                  )}
                 </div>
               </div>
             )
