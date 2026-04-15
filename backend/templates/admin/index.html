@@ -92,7 +92,7 @@
     <div class="d-hero-inner">
       <div>
         <div class="role-badge"><i class="fas fa-shield-alt"></i> Administrateur</div>
-        <h1>Bonjour, {{ request.user.matricule|default:request.user.email }} &#128075;</h1>
+        <h1>Bonjour, {{ request.user.prenom|default:request.user.email }}</h1>
         <p>Tableau de bord d'administration &mdash; gérez les comptes, les budgets annuels et supervisez l'activité.</p>
       </div>
       <div class="hero-chips">
