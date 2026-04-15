@@ -223,7 +223,7 @@ class BudgetListCreateView(generics.ListCreateAPIView):
         # Notifier les comptables qu'un nouveau budget a été créé
         from accounts.models import Utilisateur
         gestionnaire = self.request.user
-        comptables = Utilisateur.objects.filter(role='COMPTABLE', is_active=True)
+        comptables = Utilisateur.objects.filter(role='COMPTABLE', actif=True)
         for comptable in comptables:
             creer_notification(
                 destinataire=comptable,
@@ -275,7 +275,7 @@ class BudgetDetailView(generics.RetrieveUpdateDestroyAPIView):
         # Notifier les comptables d'une modification de budget
         from accounts.models import Utilisateur
         gestionnaire = self.request.user
-        comptables = Utilisateur.objects.filter(role='COMPTABLE', is_active=True)
+        comptables = Utilisateur.objects.filter(role='COMPTABLE', actif=True)
         for comptable in comptables:
             creer_notification(
                 destinataire=comptable,
@@ -439,7 +439,7 @@ class SoumettreView(APIView):
         )
         # Notifications pour tous les comptables
         from accounts.models import Utilisateur
-        comptables = Utilisateur.objects.filter(role='COMPTABLE', is_active=True)
+        comptables = Utilisateur.objects.filter(role='COMPTABLE', actif=True)
         for comptable in comptables:
             creer_notification(
                 destinataire=comptable,
@@ -1112,7 +1112,7 @@ class EnregistrerDepenseMultiLigneView(APIView):
             total_depense = sum(r['montant'] for r in resultats)
             nb_lignes = len(resultats)
             gest = request.user
-            comptables = Utilisateur.objects.filter(role='COMPTABLE', is_active=True)
+            comptables = Utilisateur.objects.filter(role='COMPTABLE', actif=True)
             for comptable in comptables:
                 creer_notification(
                     destinataire=comptable,
