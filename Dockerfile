@@ -30,6 +30,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Code backend
 COPY backend/ ./backend/
 
+# Script de création superuser
+COPY create_superuser.py /app/backend/create_superuser.py
+
 # Build React (depuis le stage 1)
 COPY --from=frontend-builder /build/backend/frontend_dist ./backend/frontend_dist/
 

@@ -1,9 +1,12 @@
 #!/bin/sh
-# Script de démarrage — migrations puis gunicorn
+# Script de démarrage — migrations, superuser, gunicorn
 set -e
 
 echo "==> Migrations..."
 python /app/backend/manage.py migrate --noinput
+
+echo "==> Superuser (si nécessaire)..."
+python /app/backend/create_superuser.py || true
 
 echo "==> Démarrage gunicorn..."
 exec gunicorn \
