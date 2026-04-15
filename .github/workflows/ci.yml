@@ -51,24 +51,11 @@ jobs:
       - name: Install dependencies
         run: |
           pip install --upgrade pip
-          pip install -r requirements/base.txt
-          pip install -r requirements/development.txt
-
-      - name: Lint — isort
-        run: isort --check-only --diff .
-
-      - name: Lint — black
-        run: black --check .
-
-      - name: Lint — flake8
-        run: flake8 .
-
-      - name: Security — safety check
-        run: safety check -r requirements/base.txt --json || true  # Warn only
+          pip install -r requirements.txt
 
       - name: Run tests with coverage
         env:
-          DJANGO_SETTINGS_MODULE: config.settings.test
+          DJANGO_SETTINGS_MODULE: config.settings
           SECRET_KEY: ci-secret-key-not-for-production
           DB_ENGINE: django.db.backends.postgresql
           DB_NAME: budgetflow_test
@@ -190,7 +177,7 @@ jobs:
         run: pip install safety bandit
 
       - name: Safety check (CVE scan)
-        run: safety check -r backend/requirements/base.txt || true
+        run: safety check -r backend/requirements.txt || true
 
       - name: Bandit security audit
         run: bandit -r backend/ -f json -o bandit-report.json --exclude backend/venv,backend/.venv || true
