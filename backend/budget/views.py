@@ -228,7 +228,7 @@ class BudgetListCreateView(generics.ListCreateAPIView):
             creer_notification(
                 destinataire=comptable,
                 type_notif='BUDGET_CREE',
-                message=f"{gestionnaire.get_full_name() or gestionnaire.email} a créé le budget {instance.code} – {instance.nom}.",
+                message=f"{gestionnaire.prenom} {gestionnaire.nom} a créé le budget {instance.code} – {instance.nom}.",
                 lien=f"/validation/{instance.id}",
             )
         logger.info("[CREE] %s | par %s | notif -> %d comptable(s)",
@@ -280,7 +280,7 @@ class BudgetDetailView(generics.RetrieveUpdateDestroyAPIView):
             creer_notification(
                 destinataire=comptable,
                 type_notif='BUDGET_SOUMIS',
-                message=f"{gestionnaire.get_full_name() or gestionnaire.email} a modifié le budget {instance.code} – {instance.nom}.",
+                message=f"{gestionnaire.prenom} {gestionnaire.nom} a modifié le budget {instance.code} – {instance.nom}.",
                 lien=f"/validation/{instance.id}",
             )
 
@@ -1118,7 +1118,7 @@ class EnregistrerDepenseMultiLigneView(APIView):
                     destinataire=comptable,
                     type_notif='DEPENSE_SAISIE',
                     message=(
-                        f"{gest.get_full_name() or gest.email} a enregistré une dépense "
+                        f"{gest.prenom} {gest.nom} a enregistré une dépense "
                         f"de {total_depense:,.0f} FCFA sur {nb_lignes} ligne(s) "
                         f"du budget {budget.code} – {budget.nom}."
                     ),
