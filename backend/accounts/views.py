@@ -411,32 +411,40 @@ class ForgotPasswordView(APIView):
             # Réponse identique pour ne pas révéler les comptes existants
             return Response({'detail': 'Si cet email existe, un lien a été envoyé.'})
 
-        uid   = urlsafe_base64_encode(force_bytes(user.pk))
-        token = default_token_generator.make_token(user)
-        reset_url = f"{settings.FRONTEND_URL}/reset-password?uid={uid}&token={token}"
-
-        html_body = render_to_string('emails/reset_password.html', {
-            'prenom':    user.prenom,
-            'nom':       user.nom,
-            'reset_url': reset_url,
-        })
-
         try:
+            uid   = urlsafe_base64_encode(force_bytes(user.pk))
+            token = default_token_generator.make_token(user)
+            frontend_url = getattr(settings, 'FRONTEND_URL', 'http://localhost:5173')
+            reset_url = f"{frontend_url}/reset-password?uid={uid}&token={token}"
+
+            try:
+                html_body = render_to_string('emails/reset_password.html', {
+                    'prenom':    user.prenom,
+                    'nom':       user.nom,
+                    'reset_url': reset_url,
+                })
+            except Exception as tmpl_err:
+                logger.error("RESET_PASSWORD | Erreur template pour %s : %s", user.email, tmpl_err)
+                html_body = None
+
+            plain_body = (
+                f"Bonjour {user.prenom} {user.nom},\n\n"
+                f"Cliquez sur ce lien pour réinitialiser votre mot de passe :\n{reset_url}\n\n"
+                "Ce lien est valable 24 heures.\n\n— BudgetFlow"
+            )
+
             send_mail(
                 subject='Réinitialisation de votre mot de passe — BudgetFlow',
-                message=(
-                    f"Bonjour {user.prenom} {user.nom},\n\n"
-                    f"Cliquez sur ce lien pour réinitialiser votre mot de passe :\n{reset_url}\n\n"
-                    "Ce lien est valable 24 heures.\n\n— BudgetFlow"
-                ),
+                message=plain_body,
                 html_message=html_body,
-                from_email=settings.DEFAULT_FROM_EMAIL,
+                from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@budgetflow.bf'),
                 recipient_list=[user.email],
                 fail_silently=False,
             )
             logger.info("RESET_PASSWORD | Email envoyé à %s", user.email)
+
         except Exception as e:
-            logger.error("RESET_PASSWORD | Échec envoi email pour %s : %s", user.email, e)
+            logger.error("RESET_PASSWORD | Échec pour %s : %s", user.email, e, exc_info=True)
             return Response(
                 {'detail': "Impossible d'envoyer l'email. Contactez l'administrateur."},
                 status=status.HTTP_503_SERVICE_UNAVAILABLE,
