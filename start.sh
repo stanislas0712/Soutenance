@@ -2,6 +2,8 @@
 # Script de démarrage — migrations puis gunicorn
 set -e
 
+cd /app/backend
+
 echo "==> Migrations..."
 python manage.py migrate --noinput
 
