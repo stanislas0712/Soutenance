@@ -22,7 +22,10 @@ SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-y2(m0&q27a$6os9%+fxf@(fqq1
 DEBUG = os.getenv('DEBUG', 'True') == 'True'
 
 _extra_hosts = os.getenv('ALLOWED_HOSTS', '')
+_railway_domain = os.getenv('RAILWAY_PUBLIC_DOMAIN', '')
 ALLOWED_HOSTS = ['localhost', '127.0.0.1'] + [h.strip() for h in _extra_hosts.split(',') if h.strip()]
+if _railway_domain:
+    ALLOWED_HOSTS.append(_railway_domain)
 
 
 # Application definition
@@ -111,9 +114,7 @@ TEMPLATES = [
 WSGI_APPLICATION = 'config.wsgi.application'
 
 
-# Database — DATABASE_URL (Render) a priorité, sinon variables individuelles
-import dj_database_url as _dj_db_url
-
+# Database — DATABASE_URL (production Docker) a priorité, sinon variables individuelles
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
@@ -126,6 +127,7 @@ DATABASES = {
 }
 _db_url = os.getenv('DATABASE_URL')
 if _db_url:
+    import dj_database_url as _dj_db_url
     DATABASES['default'] = _dj_db_url.config(conn_max_age=600, ssl_require=True)
 
 
@@ -206,13 +208,16 @@ SIMPLE_JWT = {
 }
 
 
-# CORS - autorise le frontend React (Vite port 5173)
+# CORS - autorise le frontend React (Vite port 5173) + Railway
+_cors_extra = os.getenv('CORS_ALLOWED_ORIGINS', '')
 CORS_ALLOWED_ORIGINS = [
     'http://localhost:5173',
     'http://127.0.0.1:5173',
     'http://localhost:3000',
     'http://127.0.0.1:3000',
-]
+] + [o.strip() for o in _cors_extra.split(',') if o.strip()]
+if _railway_domain:
+    CORS_ALLOWED_ORIGINS.append(f'https://{_railway_domain}')
 CORS_ALLOW_CREDENTIALS = True
 
 # ── Logging ───────────────────────────────────────────────────────────────────

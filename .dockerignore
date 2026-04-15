@@ -1,0 +1,29 @@
+# Git
+.git
+.gitignore
+
+# Environnement Python
+venv/
+**/__pycache__/
+**/*.pyc
+**/*.pyo
+
+# Secrets
+.env
+
+# Node
+frontend/node_modules/
+
+# Fichiers générés (recréés pendant le build Docker)
+backend/staticfiles/
+backend/frontend_dist/
+
+# Docs et config IDE
+*.md
+.vscode/
+.idea/
+docs/
+
+# Docker
+Dockerfile
+.dockerignore

@@ -338,13 +338,25 @@ export function BudgetValidationDetail() {
               <StatutBadge statut={budget.statut} />
               <span className="text-[12px] opacity-70">{budget.date_debut} → {budget.date_fin}</span>
             </div>
-            <h1 className="font-display font-extrabold text-[1.4rem] tracking-[-0.4px] mb-[6px]">
+            <h1 className="font-display font-extrabold text-[1.4rem] tracking-[-0.4px] mb-[8px]" style={{ color: '#F8FAFC' }}>
               {budget.nom}
             </h1>
-            <p className="opacity-75 text-[13px]">
-              Gestionnaire : <strong>{budget.gestionnaire_nom || '—'}</strong>
-              &nbsp;·&nbsp;Département : <strong>{budget.departement_nom}</strong>
-            </p>
+            <div className="flex flex-wrap gap-x-5 gap-y-1 text-[13px]" style={{ color: 'rgba(255,255,255,.85)' }}>
+              <span>
+                <span style={{ color: 'rgba(255,255,255,.5)' }}>Gestionnaire</span>{' '}
+                <strong className="text-white">{budget.gestionnaire_nom || '—'}</strong>
+              </span>
+              <span>
+                <span style={{ color: 'rgba(255,255,255,.5)' }}>Département</span>{' '}
+                <strong className="text-white">{budget.departement_nom || '—'}</strong>
+              </span>
+              {budget.comptable_nom && (
+                <span>
+                  <span style={{ color: 'rgba(255,255,255,.5)' }}>Comptable</span>{' '}
+                  <strong className="text-white">{budget.comptable_nom}</strong>
+                </span>
+              )}
+            </div>
           </div>
           <div className="flex gap-[10px] shrink-0">
             {budget.statut === 'SOUMIS' && (

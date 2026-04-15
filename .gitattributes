@@ -1,0 +1,7 @@
+# Force LF line endings for shell scripts (needed in Linux containers)
+*.sh        text eol=lf
+Dockerfile  text eol=lf
+Makefile    text eol=lf
+
+# Auto-detect everything else
+*           text=auto

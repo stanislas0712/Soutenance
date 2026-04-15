@@ -273,8 +273,11 @@ class BudgetDetailSerializer(serializers.ModelSerializer):
     statut_display                = serializers.CharField(source='get_statut_display', read_only=True)
     technique_estimation_display  = serializers.CharField(source='get_technique_estimation_display', read_only=True)
     departement_detail            = DepartementSerializer(source='departement', read_only=True)
+    departement_nom               = serializers.CharField(source='departement.nom', read_only=True, default=None)
     gestionnaire_detail           = UtilisateurSerializer(source='gestionnaire', read_only=True)
+    gestionnaire_nom              = serializers.SerializerMethodField()
     comptable_detail              = UtilisateurSerializer(source='comptable', read_only=True)
+    comptable_nom                 = serializers.SerializerMethodField()
     allocation_detail             = AllocationDepartementaleSerializer(source='allocation', read_only=True)
     lignes                        = LigneBudgetaireSerializer(many=True, read_only=True)
     taux_consommation             = serializers.SerializerMethodField()
@@ -296,10 +299,10 @@ class BudgetDetailSerializer(serializers.ModelSerializer):
         model  = Budget
         fields = [
             'id', 'code', 'nom',
-            'gestionnaire', 'gestionnaire_detail',
-            'comptable', 'comptable_detail',
+            'gestionnaire', 'gestionnaire_detail', 'gestionnaire_nom',
+            'comptable', 'comptable_detail', 'comptable_nom',
             'budget_annuel', 'allocation', 'allocation_detail',
-            'departement', 'departement_detail',
+            'departement', 'departement_detail', 'departement_nom',
             'annee', 'periode_display',
             'montant_global', 'montant_consomme', 'montant_disponible',
             'montant_global_fmt', 'montant_consomme_fmt', 'montant_disponible_fmt',
@@ -311,6 +314,16 @@ class BudgetDetailSerializer(serializers.ModelSerializer):
             'taux_consommation', 'taux_consommation_fmt', 'couleur_execution',
             'lignes',
         ]
+
+    def get_gestionnaire_nom(self, obj):
+        if obj.gestionnaire:
+            return f"{obj.gestionnaire.prenom} {obj.gestionnaire.nom}"
+        return None
+
+    def get_comptable_nom(self, obj):
+        if obj.comptable:
+            return f"{obj.comptable.prenom} {obj.comptable.nom}"
+        return None
 
     def get_annee(self, obj):
         ba = obj.budget_annuel or (obj.allocation.budget_annuel if obj.allocation else None)

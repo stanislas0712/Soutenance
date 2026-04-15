@@ -110,7 +110,7 @@ export default function ProfilPage() {
         </h2>
 
         <form onSubmit={handleInfoSubmit}>
-          <div className="grid grid-cols-2 gap-4 mb-4">
+          <div className="grid form-grid-2 gap-4 mb-4" style={{ gridTemplateColumns: 'repeat(2, 1fr)' }}>
             <div>
               <label className="form-label">Prénom</label>
               <input className="form-input" required value={infoForm.prenom}
@@ -128,7 +128,7 @@ export default function ProfilPage() {
               onChange={e => setInfoForm(f => ({ ...f, email: e.target.value }))} />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid form-grid-2 gap-4" style={{ gridTemplateColumns: 'repeat(2, 1fr)' }}>
             <div>
               <label className="form-label">Matricule</label>
               <input

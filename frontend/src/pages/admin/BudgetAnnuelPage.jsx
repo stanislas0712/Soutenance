@@ -440,7 +440,7 @@ function BudgetAnnuelModal({ initial, onClose, onSaved }) {
                 Exercice : {periodeLabel}
               </div>
             )}
-            <div className="grid grid-cols-2 gap-[14px] mb-[14px]">
+            <div className="grid form-grid-2 gap-[14px] mb-[14px]" style={{ gridTemplateColumns: 'repeat(2, 1fr)' }}>
               <div>
                 <label className="form-label">Année de début</label>
                 <input className="form-input" type="number" required min="2000" max="2099" value={form.annee}

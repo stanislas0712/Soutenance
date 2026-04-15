@@ -1,5 +1,22 @@
 .env
 venv/
 __pycache__/
+**/__pycache__/
 *.pyc
+*.pyo
 db.sqlite3
+
+# Build outputs (recréés au déploiement)
+backend/staticfiles/
+backend/media/
+backend/frontend_dist/
+node_modules/
+frontend/node_modules/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db

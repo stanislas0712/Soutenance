@@ -72,7 +72,7 @@ export default function RapportsKPIPage() {
       </div>
 
       {/* Graphiques */}
-      <div className="grid grid-cols-2 gap-[18px] mb-6">
+      <div className="grid form-grid-2 gap-[18px] mb-6" style={{ gridTemplateColumns: 'repeat(2, 1fr)' }}>
         {/* Évolution mensuelle */}
         <div className="card">
           <h3 className="font-display font-bold text-[14px] text-[#1F2937] mb-[18px]">

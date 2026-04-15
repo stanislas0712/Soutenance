@@ -385,7 +385,7 @@ export default function UtilisateursPage() {
             </div>
             <form onSubmit={handleCreate}>
               <div className="modal-body">
-                <div className="grid grid-cols-2 gap-[14px]">
+                <div className="grid form-grid-2 gap-[14px]" style={{ gridTemplateColumns: 'repeat(2, 1fr)' }}>
                   <div>
                     <label className="form-label">Prénom</label>
                     <input className="form-input" required value={createForm.prenom} onChange={e => setCreateForm(f => ({ ...f, prenom: e.target.value }))} />
