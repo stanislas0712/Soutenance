@@ -2,16 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { forgotPassword } from '../api/accounts'
-import {
-  Eye, EyeOff, Mail, Lock, X, KeyRound, ArrowRight,
-  TrendingUp, CheckCircle2, Bell,
-} from 'lucide-react'
-
-const FEATURES = [
-  { Icon: TrendingUp,   text: 'Suivi en temps réel des consommations'  },
-  { Icon: CheckCircle2, text: 'Workflow de validation multi-niveaux'   },
-  { Icon: Bell,         text: 'Alertes automatiques de dépassement'    },
-]
+import { Eye, EyeOff, Mail, Lock, X, KeyRound, ArrowRight } from 'lucide-react'
 
 /* ── Modal Mot de passe oublié ───────────────────────────────────────────── */
 function ForgotPasswordModal({ onClose }) {
@@ -38,75 +29,40 @@ function ForgotPasswordModal({ onClose }) {
   return (
     <div style={{
       position: 'fixed', inset: 0,
-      background: 'rgba(13,34,64,.55)',
-      backdropFilter: 'blur(4px)',
+      background: 'rgba(13,34,64,.55)', backdropFilter: 'blur(4px)',
       zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center',
       padding: 20, animation: 'fadeIn .15s ease',
     }}>
       <div style={{
-        background: '#FFFFFF', borderRadius: 16,
-        width: '100%', maxWidth: 420,
-        boxShadow: '0 20px 60px rgba(13,34,64,.18)',
-        border: '1px solid #D1D8E0',
-        overflow: 'hidden',
-        animation: 'scaleIn .2s cubic-bezier(.34,1.56,.64,1)',
+        background: '#FFF', borderRadius: 16, width: '100%', maxWidth: 420,
+        boxShadow: '0 20px 60px rgba(13,34,64,.18)', border: '1px solid #D1D8E0',
+        overflow: 'hidden', animation: 'scaleIn .2s cubic-bezier(.34,1.56,.64,1)',
       }}>
         {/* Header */}
-        <div style={{
-          background: '#1E3A8A',
-          padding: '16px 24px',
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        }}>
+        <div style={{ background: '#1E3A8A', padding: '16px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <div style={{
-              width: 32, height: 32, borderRadius: 8,
-              background: 'rgba(255,255,255,.12)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-            }}>
+            <div style={{ width: 32, height: 32, borderRadius: 8, background: 'rgba(255,255,255,.12)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <KeyRound size={15} strokeWidth={1.8} color="#C9910A" />
             </div>
             <div>
-              <div style={{ fontWeight: 600, fontSize: 14, color: '#FFFFFF', fontFamily: 'IBM Plex Sans, sans-serif' }}>
-                Mot de passe oublié
-              </div>
-              <div style={{ fontSize: 11, color: 'rgba(255,255,255,.45)', marginTop: 1 }}>
-                Un lien vous sera envoyé par email
-              </div>
+              <div style={{ fontWeight: 600, fontSize: 14, color: '#FFF' }}>Mot de passe oublié</div>
+              <div style={{ fontSize: 11, color: 'rgba(255,255,255,.45)', marginTop: 1 }}>Un lien vous sera envoyé par email</div>
             </div>
           </div>
-          <button
-            onClick={onClose}
-            aria-label="Fermer"
-            style={{
-              width: 28, height: 28, borderRadius: 6,
-              background: 'rgba(255,255,255,.1)', border: 'none',
-              color: 'rgba(255,255,255,.7)', cursor: 'pointer',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-            }}
-          >
+          <button onClick={onClose} aria-label="Fermer" style={{ width: 28, height: 28, borderRadius: 6, background: 'rgba(255,255,255,.1)', border: 'none', color: 'rgba(255,255,255,.7)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <X size={14} strokeWidth={2} />
           </button>
         </div>
 
-        <div style={{ padding: '24px' }}>
+        <div style={{ padding: 24 }}>
           {done ? (
             <div style={{ textAlign: 'center', padding: '8px 0' }}>
-              <div style={{
-                width: 48, height: 48, borderRadius: '50%',
-                background: '#D4EDDA', border: '2px solid #1B7C3E',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                margin: '0 auto 16px',
-              }}>
-                <span style={{ fontSize: 20 }}>✉️</span>
-              </div>
+              <div style={{ width: 48, height: 48, borderRadius: '50%', background: '#D4EDDA', border: '2px solid #1B7C3E', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px', fontSize: 20 }}>✉️</div>
               <p style={{ fontSize: 14, color: '#0D1B2A', fontWeight: 600, marginBottom: 6 }}>Email envoyé !</p>
               <p style={{ fontSize: 13, color: '#3D5166', lineHeight: 1.7, marginBottom: 20 }}>
-                Si un compte correspond à cet email, vous recevrez un lien de réinitialisation.
-                Vérifiez également vos spams.
+                Si un compte correspond à cet email, vous recevrez un lien de réinitialisation. Vérifiez vos spams.
               </p>
-              <button onClick={onClose} className="btn btn-secondary btn-sm" style={{ width: '100%', justifyContent: 'center' }}>
-                Fermer
-              </button>
+              <button onClick={onClose} className="btn btn-secondary btn-sm" style={{ width: '100%', justifyContent: 'center' }}>Fermer</button>
             </div>
           ) : (
             <form onSubmit={handleSubmit} noValidate>
@@ -114,22 +70,10 @@ function ForgotPasswordModal({ onClose }) {
                 Entrez l'adresse email associée à votre compte.
               </p>
               <div style={{ marginBottom: 16 }}>
-                <label className="form-label" htmlFor="forgot-email">
-                  Adresse email <span style={{ color: '#C0392B' }}>*</span>
-                </label>
+                <label className="form-label" htmlFor="forgot-email">Adresse email <span style={{ color: '#C0392B' }}>*</span></label>
                 <div style={{ position: 'relative' }}>
                   <Mail size={14} strokeWidth={1.8} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#7A8FA6', pointerEvents: 'none' }} />
-                  <input
-                    id="forgot-email"
-                    type="email"
-                    required
-                    autoFocus
-                    value={email}
-                    onChange={e => setEmail(e.target.value)}
-                    placeholder="votre@email.com"
-                    className="form-input"
-                    style={{ paddingLeft: 38 }}
-                  />
+                  <input id="forgot-email" type="email" required autoFocus value={email} onChange={e => setEmail(e.target.value)} placeholder="votre@email.com" className="form-input" style={{ paddingLeft: 38 }} />
                 </div>
               </div>
               {error && (
@@ -139,9 +83,7 @@ function ForgotPasswordModal({ onClose }) {
                 </div>
               )}
               <div style={{ display: 'flex', gap: 10 }}>
-                <button type="button" onClick={onClose} className="btn btn-secondary btn-sm" style={{ flex: 1, justifyContent: 'center' }}>
-                  Annuler
-                </button>
+                <button type="button" onClick={onClose} className="btn btn-secondary btn-sm" style={{ flex: 1, justifyContent: 'center' }}>Annuler</button>
                 <button type="submit" disabled={loading} className="btn btn-primary btn-sm" style={{ flex: 2, justifyContent: 'center' }}>
                   {loading ? <><span className="spinner-sm" /> Envoi…</> : 'Envoyer le lien'}
                 </button>
@@ -158,10 +100,10 @@ function ForgotPasswordModal({ onClose }) {
 export default function LoginPage() {
   const { login }   = useAuth()
   const navigate    = useNavigate()
-  const [form,    setForm]    = useState({ email: '', password: '' })
-  const [error,   setError]   = useState('')
-  const [loading, setLoading] = useState(false)
-  const [showPwd, setShowPwd] = useState(false)
+  const [form,       setForm]       = useState({ email: '', password: '' })
+  const [error,      setError]      = useState('')
+  const [loading,    setLoading]    = useState(false)
+  const [showPwd,    setShowPwd]    = useState(false)
   const [showForgot, setShowForgot] = useState(false)
 
   const handleSubmit = async (e) => {
@@ -173,124 +115,58 @@ export default function LoginPage() {
       navigate('/dashboard')
     } catch (err) {
       const detail = err?.response?.data?.detail
-      if (err?.response?.status === 403) {
-        setError(detail || 'Compte bloqué après 3 tentatives. Contactez votre administrateur.')
-      } else {
-        setError(detail || 'Email ou mot de passe incorrect. Vérifiez vos identifiants.')
-      }
+      setError(
+        err?.response?.status === 403
+          ? detail || 'Compte bloqué après 3 tentatives. Contactez votre administrateur.'
+          : detail || 'Email ou mot de passe incorrect. Vérifiez vos identifiants.'
+      )
     } finally {
       setLoading(false)
     }
   }
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', fontFamily: 'IBM Plex Sans, system-ui, sans-serif', background: '#F8FAFC' }}>
+    <div style={{
+      minHeight: '100vh',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      background: '#F1F5F9',
+      padding: '20px 16px',
+      fontFamily: "'Inter', system-ui, sans-serif",
+    }}>
       {showForgot && <ForgotPasswordModal onClose={() => setShowForgot(false)} />}
 
-      {/* ── Panneau gauche — illustration ─────────────────────────────── */}
-      <div className="login-left" style={{
-        flex: 1,
-        background: '#1E3A8A',
-        display: 'flex', flexDirection: 'column',
-        justifyContent: 'center', padding: '56px 64px',
-        position: 'relative', overflow: 'hidden',
+      {/* Carte formulaire */}
+      <div style={{
+        width: '100%', maxWidth: 440,
+        background: '#FFFFFF',
+        borderRadius: 16,
+        border: '1px solid #E2E8F0',
+        boxShadow: '0 4px 24px rgba(30,58,138,.08), 0 1px 4px rgba(30,58,138,.06)',
+        overflow: 'hidden',
       }}>
-        {/* Déco cercles subtils */}
-        <div style={{ position: 'absolute', top: -80, right: -80, width: 320, height: 320, borderRadius: '50%', background: 'rgba(26,58,107,.5)', pointerEvents: 'none' }} />
-        <div style={{ position: 'absolute', bottom: -60, left: -60, width: 240, height: 240, borderRadius: '50%', background: 'rgba(27,124,62,.12)', pointerEvents: 'none' }} />
 
-        {/* Logo */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 48 }}>
-          <img src="/budget.jpg" alt="" style={{ width: 40, height: 40, borderRadius: 10, objectFit: 'cover', flexShrink: 0 }} />
-          <div>
-            <div style={{ fontWeight: 600, fontSize: 17, color: '#F0F5FF' }}>Gestion Budgétaire</div>
-            <div style={{ fontSize: 10, color: 'rgba(255,255,255,.3)', letterSpacing: '.08em', textTransform: 'uppercase', marginTop: 1 }}>
-              Plateforme institutionnelle
-            </div>
-          </div>
-        </div>
-
-        {/* Image */}
-        <div style={{ position: 'relative', marginBottom: 36 }}>
-          <img
-            src="/gestion.jpg"
-            alt="Professionnel en bureau"
-            style={{
-              width: '100%', maxWidth: 380,
-              aspectRatio: '4/3', objectFit: 'cover',
-              borderRadius: 12,
-              border: '1px solid rgba(255,255,255,.08)',
-            }}
-          />
-          <div style={{
-            position: 'absolute', bottom: -12, right: 16,
-            background: '#fff', borderRadius: 8, padding: '8px 14px',
-            boxShadow: '0 4px 16px rgba(0,0,0,.15)',
-            display: 'flex', alignItems: 'center', gap: 8,
-            border: '1px solid #D1D8E0',
-          }}>
-            <div style={{ width: 7, height: 7, borderRadius: '50%', background: '#1B7C3E', flexShrink: 0 }} />
-            <span style={{ fontSize: 12, fontWeight: 600, color: '#1B7C3E', whiteSpace: 'nowrap' }}>
-              BDG-2025-001 approuvé
+        {/* Header navy */}
+        <div style={{
+          background: '#1E3A8A',
+          padding: '28px 32px 24px',
+          textAlign: 'center',
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, marginBottom: 16 }}>
+            <img src="/budget.jpg" alt="Gestion Budgétaire" style={{ width: 38, height: 38, borderRadius: 9, objectFit: 'cover', flexShrink: 0 }} />
+            <span style={{ fontWeight: 700, fontSize: 16, color: '#F0F5FF', letterSpacing: '-.01em' }}>
+              Gestion <span style={{ fontWeight: 800 }}>Budgétaire</span>
             </span>
           </div>
+          <h1 style={{ fontWeight: 700, fontSize: 20, color: '#FFFFFF', marginBottom: 6, letterSpacing: '-.02em' }}>
+            Connexion
+          </h1>
+          <p style={{ fontSize: 13, color: 'rgba(255,255,255,.6)', margin: 0 }}>
+            Accédez à votre espace de gestion budgétaire
+          </p>
         </div>
 
-        {/* Headline */}
-        <h2 style={{
-          fontWeight: 600, color: '#F0F5FF',
-          fontSize: 'clamp(1.4rem, 2.2vw, 1.9rem)',
-          lineHeight: 1.25, marginBottom: 12,
-        }}>
-          Planifiez.<br />
-          Dépensez.<br />
-          <span style={{ color: '#C9910A' }}>Maîtrisez.</span>
-        </h2>
-
-        <p style={{ fontSize: 13, color: 'rgba(255,255,255,.55)', lineHeight: 1.7, maxWidth: 360, marginBottom: 28 }}>
-          Plateforme de gestion budgétaire collaborative pour les institutions.
-        </p>
-
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-          {FEATURES.map(({ Icon, text }) => (
-            <div key={text} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <div style={{
-                width: 32, height: 32, borderRadius: 8, flexShrink: 0,
-                background: 'rgba(201,145,10,.15)', border: '1px solid rgba(201,145,10,.25)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-              }}>
-                <Icon size={14} strokeWidth={1.8} color="#C9910A" />
-              </div>
-              <span style={{ fontSize: 13, color: 'rgba(255,255,255,.65)', fontWeight: 400 }}>{text}</span>
-            </div>
-          ))}
-        </div>
-
-        <div style={{ marginTop: 'auto', paddingTop: 40, fontSize: 11, color: 'rgba(255,255,255,.2)' }}>
-          © 2025 Gestion Budgétaire — Accès réservé aux utilisateurs autorisés
-        </div>
-      </div>
-
-      {/* ── Panneau droit — formulaire ──────────────────────────────────── */}
-      <div style={{
-        width: 480, flexShrink: 0,
-        background: '#FFFFFF',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        padding: 40,
-        borderLeft: '1px solid #D1D8E0',
-      }}>
-        <div style={{ width: '100%', maxWidth: 380 }}>
-
-          {/* Header */}
-          <div style={{ marginBottom: 32 }}>
-            <h2 style={{ fontWeight: 600, fontSize: 22, color: '#0D1B2A', marginBottom: 6, letterSpacing: '-.01em' }}>
-              Connexion
-            </h2>
-            <p style={{ fontSize: 13, color: '#3D5166', lineHeight: 1.55 }}>
-              Accédez à votre espace de gestion budgétaire
-            </p>
-          </div>
-
+        {/* Corps formulaire */}
+        <div style={{ padding: '28px 32px 24px' }}>
           <form onSubmit={handleSubmit} noValidate>
 
             {/* Email */}
@@ -299,65 +175,52 @@ export default function LoginPage() {
                 Adresse email <span style={{ color: '#C0392B' }}>*</span>
               </label>
               <div style={{ position: 'relative' }}>
-                <Mail size={14} strokeWidth={1.8} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#7A8FA6', pointerEvents: 'none' }} />
+                <Mail size={15} strokeWidth={1.8} style={{ position: 'absolute', left: 13, top: '50%', transform: 'translateY(-50%)', color: '#94A3B8', pointerEvents: 'none' }} />
                 <input
-                  id="email"
-                  type="email"
-                  required
-                  autoComplete="email"
-                  autoFocus
+                  id="email" type="email" required autoComplete="email" autoFocus
                   value={form.email}
                   onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
                   placeholder="votre@email.com"
                   className={`form-input${error ? ' error' : ''}`}
-                  style={{ paddingLeft: 38 }}
+                  style={{ paddingLeft: 40 }}
                 />
               </div>
             </div>
 
             {/* Mot de passe */}
-            <div style={{ marginBottom: 20 }}>
+            <div style={{ marginBottom: 14 }}>
               <label className="form-label" htmlFor="password">
                 Mot de passe <span style={{ color: '#C0392B' }}>*</span>
               </label>
               <div style={{ position: 'relative' }}>
-                <Lock size={14} strokeWidth={1.8} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#7A8FA6', pointerEvents: 'none' }} />
+                <Lock size={15} strokeWidth={1.8} style={{ position: 'absolute', left: 13, top: '50%', transform: 'translateY(-50%)', color: '#94A3B8', pointerEvents: 'none' }} />
                 <input
                   id="password"
                   type={showPwd ? 'text' : 'password'}
-                  required
-                  autoComplete="current-password"
+                  required autoComplete="current-password"
                   value={form.password}
                   onChange={e => setForm(f => ({ ...f, password: e.target.value }))}
                   placeholder="••••••••"
                   className={`form-input${error ? ' error' : ''}`}
-                  style={{ paddingLeft: 38, paddingRight: 44 }}
+                  style={{ paddingLeft: 40, paddingRight: 44 }}
                 />
                 <button
                   type="button"
                   onClick={() => setShowPwd(s => !s)}
                   aria-label={showPwd ? 'Masquer' : 'Afficher'}
-                  style={{
-                    position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)',
-                    background: 'none', border: 'none', cursor: 'pointer', padding: 4,
-                    color: '#7A8FA6', display: 'flex', alignItems: 'center',
-                  }}
+                  style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', padding: 4, color: '#94A3B8', display: 'flex', alignItems: 'center' }}
                 >
-                  {showPwd ? <EyeOff size={14} strokeWidth={1.8} /> : <Eye size={14} strokeWidth={1.8} />}
+                  {showPwd ? <EyeOff size={15} strokeWidth={1.8} /> : <Eye size={15} strokeWidth={1.8} />}
                 </button>
               </div>
             </div>
 
-            {/* Se souvenir + mot de passe oublié */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
-              <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', userSelect: 'none' }}>
-                <input type="checkbox" style={{ width: 15, height: 15, borderRadius: 4, cursor: 'pointer', accentColor: '#1D4ED8' }} />
-                <span style={{ fontSize: 13, color: '#3D5166' }}>Se souvenir de moi</span>
-              </label>
+            {/* Mot de passe oublié */}
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 20 }}>
               <button
                 type="button"
                 onClick={() => setShowForgot(true)}
-                style={{ fontSize: 12, color: '#1D4ED8', fontWeight: 600, background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+                style={{ fontSize: 12.5, color: '#2563EB', fontWeight: 600, background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
               >
                 Mot de passe oublié ?
               </button>
@@ -366,29 +229,33 @@ export default function LoginPage() {
             {/* Erreur */}
             {error && (
               <div role="alert" className="alert alert-error" style={{ marginBottom: 16 }}>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ flexShrink: 0 }}>
-                  <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
-                </svg>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ flexShrink: 0 }}><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
                 <span>{error}</span>
               </div>
             )}
 
-            {/* Submit — 44px minimum (WCAG 2.5.5) */}
+            {/* Bouton */}
             <button
               type="submit"
               disabled={loading}
               className="btn btn-primary btn-md"
               style={{ width: '100%', justifyContent: 'center', gap: 8 }}
             >
-              {loading ? (
-                <><span className="spinner-sm" /> Connexion en cours…</>
-              ) : (
-                <>Se connecter <ArrowRight size={14} strokeWidth={2.5} /></>
-              )}
+              {loading
+                ? <><span className="spinner-sm" /> Connexion en cours…</>
+                : <>Se connecter <ArrowRight size={14} strokeWidth={2.5} /></>
+              }
             </button>
           </form>
+        </div>
 
-          <p style={{ textAlign: 'center', marginTop: 24, fontSize: 12, color: '#7A8FA6', lineHeight: 1.6 }}>
+        {/* Footer */}
+        <div style={{
+          padding: '12px 32px 20px',
+          textAlign: 'center',
+          borderTop: '1px solid #F1F5F9',
+        }}>
+          <p style={{ fontSize: 12, color: '#94A3B8', margin: 0, lineHeight: 1.6 }}>
             Accès réservé aux utilisateurs autorisés.<br />
             Contactez votre administrateur pour tout problème.
           </p>

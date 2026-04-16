@@ -174,6 +174,7 @@ export default function ParametresPage() {
   useEffect(() => {
     applyTheme(load('pref_theme', 'light'))
     applyDensity(load('pref_densite', 'normal'))
+    document.documentElement.setAttribute('lang', load('pref_lang', 'fr') === 'en' ? 'en' : 'fr')
     const mq = window.matchMedia('(prefers-color-scheme: dark)')
     const handler = () => { if (load('pref_theme', 'light') === 'system') applyTheme('system') }
     mq.addEventListener('change', handler)
@@ -185,7 +186,12 @@ export default function ParametresPage() {
 
   const handleTheme = (v) => { setThemeState(v); applyTheme(v); flash() }
   const handleDensity = (v) => { setDensityState(v); applyDensity(v); flash() }
-  const handleLang = (v) => { setLangState(v); save('pref_lang', v); flash() }
+  const handleLang = (v) => {
+    setLangState(v)
+    save('pref_lang', v)
+    document.documentElement.setAttribute('lang', v === 'en' ? 'en' : 'fr')
+    flash(v === 'en' ? 'Anglais sélectionné — traduction en cours de déploiement' : 'Français activé')
+  }
 
   const handleToggle = (setter, key) => (v) => {
     setter(v); save(key, v)
