@@ -769,3 +769,117 @@
     .stat-value { font-size: 19px; }
   }
 }
+
+/* ── Dark Mode ──────────────────────────────────────────────────────────────── */
+html.dark {
+  color-scheme: dark;
+}
+html.dark body {
+  background: #0F172A !important;
+  color: #E2E8F0;
+}
+html.dark .card,
+html.dark .table-card {
+  background: #1E293B !important;
+  border-color: #334155 !important;
+}
+html.dark .card:hover { border-color: #475569 !important; }
+html.dark .card-footer,
+html.dark .table-card-header {
+  background: #1E293B !important;
+  border-color: #334155 !important;
+}
+html.dark .card-section-title { border-color: #334155 !important; }
+html.dark .page-title  { color: #F1F5F9 !important; }
+html.dark .page-subtitle { color: #94A3B8 !important; }
+html.dark .form-label  { color: #CBD5E1 !important; }
+html.dark .form-input,
+html.dark .form-select {
+  background: #1E293B !important;
+  border-color: #475569 !important;
+  color: #F1F5F9 !important;
+}
+html.dark .form-input:focus,
+html.dark .form-select:focus { border-color: #C9910A !important; }
+html.dark .form-input::placeholder { color: #475569 !important; }
+
+/* Tables */
+html.dark .data-table thead tr { background: #1E293B !important; border-color: #334155 !important; }
+html.dark .data-table thead th { color: #94A3B8 !important; }
+html.dark .data-table tbody tr { border-color: #1E293B !important; }
+html.dark .data-table tbody tr:hover { background: #334155 !important; }
+html.dark .data-table td { color: #CBD5E1 !important; }
+
+/* Filter pills */
+html.dark .filter-pill {
+  background: #1E293B !important;
+  border-color: #334155 !important;
+  color: #CBD5E1 !important;
+}
+html.dark .filter-pill:hover { border-color: #60A5FA !important; color: #60A5FA !important; }
+html.dark .filter-pill.active { background: #1E3A8A !important; border-color: #1E3A8A !important; color: #fff !important; }
+
+/* Search */
+html.dark .search-input {
+  background: #1E293B !important;
+  border-color: #334155 !important;
+  color: #F1F5F9 !important;
+}
+html.dark .search-input::placeholder { color: #475569 !important; }
+
+/* Dropdown */
+html.dark .dropdown-menu  { background: #1E293B !important; border-color: #334155 !important; }
+html.dark .dropdown-item  { color: #CBD5E1 !important; }
+html.dark .dropdown-item:hover { background: #334155 !important; color: #F1F5F9 !important; }
+html.dark .dropdown-divider { background: #334155 !important; }
+
+/* Modal */
+html.dark .modal-panel { background: #1E293B !important; border-color: #334155 !important; }
+html.dark .modal-body  { background: #1E293B; }
+html.dark .modal-footer { background: #0F172A !important; border-color: #334155 !important; }
+
+/* Badges — légèrement assombris */
+html.dark .badge-BROUILLON { background: #312e81 !important; color: #c4b5fd !important; }
+html.dark .badge-SOUMIS    { background: #1e3a8a !important; color: #93c5fd !important; }
+html.dark .badge-APPROUVE  { background: #14532d !important; color: #86efac !important; }
+html.dark .badge-REJETE    { background: #7f1d1d !important; color: #fca5a5 !important; }
+
+/* KPI card backgrounds — via inline style, override avec attribut */
+html.dark [style*="background: #FFFFFF"],
+html.dark [style*='background: #FFFFFF'],
+html.dark [style*="background:#FFFFFF"],
+html.dark [style*='background:#FFFFFF'] { background: #1E293B !important; }
+html.dark [style*="background: #F8FAFC"],
+html.dark [style*='background: #F8FAFC'] { background: #0F172A !important; }
+html.dark [style*="background: #F9FAFB"],
+html.dark [style*='background: #F9FAFB'] { background: #1E293B !important; }
+
+/* Text color overrides for inline-style text */
+html.dark [style*="color: #111827"],
+html.dark [style*='color: #111827'] { color: #F1F5F9 !important; }
+html.dark [style*="color: #1F2937"],
+html.dark [style*='color: #1F2937'] { color: #E2E8F0 !important; }
+html.dark [style*="color: #374151"],
+html.dark [style*='color: #374151'] { color: #CBD5E1 !important; }
+html.dark [style*="color: #6B7280"],
+html.dark [style*='color: #6B7280'] { color: #94A3B8 !important; }
+html.dark [style*="color: #9CA3AF"],
+html.dark [style*='color: #9CA3AF'] { color: #64748B !important; }
+
+/* Main layout area */
+html.dark main[class*="overflow-y-auto"] { background: #0F172A !important; }
+
+/* ── Table density ───────────────────────────────────────────────────────── */
+html[data-density="compact"] .data-table td {
+  padding: 6px 16px !important;
+  font-size: 12.5px;
+}
+html[data-density="compact"] .data-table thead th {
+  padding: 7px 16px !important;
+}
+html[data-density="relaxed"] .data-table td {
+  padding: 18px 16px !important;
+}
+html[data-density="relaxed"] .data-table thead th {
+  padding: 14px 16px !important;
+}

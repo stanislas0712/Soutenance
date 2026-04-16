@@ -32,7 +32,7 @@ const fmtDate = (iso) => {
 
 const PAGE_SIZE = 10
 
-export default function AuditLogsPage() {
+export default function AuditLogsPage({ embedded = false }) {
   const [logs,         setLogs]         = useState([])
   const [loading,      setLoading]      = useState(true)
   const [error,        setError]        = useState('')
@@ -56,18 +56,20 @@ export default function AuditLogsPage() {
 
   return (
     <div>
-      <div className="page-header">
-        <div>
-          <h1 className="page-title">Journal d'audit</h1>
-          <p className="page-subtitle">Traçabilité de toutes les actions effectuées dans le système</p>
-        </div>
-        {!loading && !error && (
-          <div className="flex items-center gap-[6px] px-[14px] py-[6px] rounded-[20px] bg-[#F3F4F6] text-[#4B5563] text-[13px] font-semibold">
-            <ClipboardList size={14} strokeWidth={2} />
-            {visibleCount < logs.length ? `${visibleCount} / ${logs.length}` : logs.length} entrée{logs.length !== 1 ? 's' : ''}
+      {!embedded && (
+        <div className="page-header">
+          <div>
+            <h1 className="page-title">Journal d'audit</h1>
+            <p className="page-subtitle">Traçabilité de toutes les actions effectuées dans le système</p>
           </div>
-        )}
-      </div>
+          {!loading && !error && (
+            <div className="flex items-center gap-[6px] px-[14px] py-[6px] rounded-[20px] bg-[#F3F4F6] text-[#4B5563] text-[13px] font-semibold">
+              <ClipboardList size={14} strokeWidth={2} />
+              {visibleCount < logs.length ? `${visibleCount} / ${logs.length}` : logs.length} entrée{logs.length !== 1 ? 's' : ''}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Filtres */}
       <div className="filter-bar mb-[20px]">

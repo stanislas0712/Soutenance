@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthContext'
 import { getNotifications, marquerLue, marquerToutesLues } from '../api/notifications'
 import {
   LayoutDashboard, Wallet, CalendarDays, Building2, Users,
-  ClipboardList, BarChart3, FileBarChart, CreditCard,
+  BarChart3, FileBarChart, CreditCard,
   CheckCircle2, ChevronRight, ChevronDown, LogOut, User,
   Menu, Bell, Settings,
 } from 'lucide-react'
@@ -23,7 +23,6 @@ function navItems(role) {
     { to: '/budget-annuel', icon: CalendarDays,    label: 'Budget annuel' },
     { to: '/departements',  icon: Building2,       label: 'Départements' },
     { to: '/utilisateurs',  icon: Users,           label: 'Utilisateurs' },
-    { to: '/audit',               icon: ClipboardList, label: "Journal d'audit"     },
     { to: '/rapports',            icon: BarChart3,    label: 'Statistiques'     },
     { to: '/rapports-detailles',  icon: FileBarChart, label: 'Rapports détaillés'  },
     { to: '/parametres',          icon: Settings,     label: 'Paramètres'          },
@@ -49,9 +48,9 @@ function getSections(role, items) {
   if (role === 'ADMINISTRATEUR') {
     return [
       { label: 'PRINCIPAL',      items: items.slice(0, 1) },
-      { label: 'ADMINISTRATION', items: items.slice(1, 5) },
-      { label: 'RAPPORTS',       items: items.slice(5, 7) },
-      { label: 'SYSTÈME',        items: items.slice(7) },
+      { label: 'ADMINISTRATION', items: items.slice(1, 4) },
+      { label: 'RAPPORTS',       items: items.slice(4, 6) },
+      { label: 'SYSTÈME',        items: items.slice(6) },
     ]
   }
   if (role === 'GESTIONNAIRE') {
@@ -321,10 +320,44 @@ function NotificationBell({ navigate }) {
   const btnRef   = useRef(null)
   const panelRef = useRef(null)
 
+  /* ── Préférences notifications ── */
+  const prefBudget  = () => { try { return JSON.parse(localStorage.getItem('notif_budget')  ?? 'true') } catch { return true } }
+  const prefDepense = () => { try { return JSON.parse(localStorage.getItem('notif_depense') ?? 'true') } catch { return true } }
+  const prefSon     = () => { try { return JSON.parse(localStorage.getItem('notif_son')     ?? 'false') } catch { return false } }
+
+  const playSound = () => {
+    if (!prefSon()) return
+    try {
+      const ctx  = new (window.AudioContext || window.webkitAudioContext)()
+      const osc  = ctx.createOscillator()
+      const gain = ctx.createGain()
+      osc.connect(gain); gain.connect(ctx.destination)
+      osc.type = 'sine'
+      osc.frequency.setValueAtTime(880, ctx.currentTime)
+      osc.frequency.exponentialRampToValueAtTime(660, ctx.currentTime + 0.1)
+      gain.gain.setValueAtTime(0.15, ctx.currentTime)
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.35)
+      osc.start(ctx.currentTime); osc.stop(ctx.currentTime + 0.35)
+    } catch {}
+  }
+
+  const BUDGET_TYPES  = ['BUDGET_CREE', 'BUDGET_APPROUVE', 'BUDGET_REJETE', 'BUDGET_SOUMIS']
+  const DEPENSE_TYPES = ['DEPENSE_SAISIE', 'DEPENSE_VALIDEE', 'DEPENSE_REJETEE']
+
+  const filterNotifs = (list) => list.filter(n => {
+    if (BUDGET_TYPES.includes(n.type_notif)  && !prefBudget())  return false
+    if (DEPENSE_TYPES.includes(n.type_notif) && !prefDepense()) return false
+    return true
+  })
+
   const loadNotifs = () => {
     getNotifications().then(r => {
-      setNotifs(r.data?.data ?? [])
-      setNbNonLues(r.data?.nb_non_lues ?? 0)
+      const all = r.data?.data ?? []
+      const prevCount = nbNonLues
+      const newNbNonLues = r.data?.nb_non_lues ?? 0
+      if (newNbNonLues > prevCount) playSound()
+      setNotifs(filterNotifs(all))
+      setNbNonLues(newNbNonLues)
     }).catch(() => {})
   }
 
