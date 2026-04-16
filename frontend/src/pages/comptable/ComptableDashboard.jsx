@@ -76,37 +76,18 @@ export default function ComptableDashboard() {
 
   return (
     <div>
-      {/* Hero banner */}
-      <div
-        className="rounded-[var(--radius-lg)] px-8 py-7 mb-7 text-white relative overflow-hidden"
-        style={{ background: '#0D2240' }}
-      >
-        <div className="absolute rounded-full pointer-events-none" style={{ top: -50, right: -50, width: 200, height: 200, background: 'rgba(201,168,76,.06)' }} />
-        <div className="absolute rounded-full pointer-events-none" style={{ bottom: -30, right: 80, width: 120, height: 120, background: 'rgba(201,168,76,.08)' }} />
-        <div className="relative">
-          <div className="text-[12px] mb-[6px] font-medium tracking-[.3px]" style={{ color: 'rgba(201,168,76,.6)' }}>
-            ESPACE COMPTABLE
-          </div>
-          <h1 className="font-extrabold text-[1.6rem] tracking-[-0.3px] mb-2" style={{ fontFamily: "'Lora', serif", color: '#F8FAFC' }}>
-            Bonjour, {user?.prenom} {user?.nom}
-          </h1>
-          <p className={`text-[14px]${aValider.length > 0 ? ' mb-5' : ''}`} style={{ color: 'rgba(250,247,242,.65)' }}>
-            {aValider.length > 0
-              ? `Vous avez ${aValider.length} budget${aValider.length > 1 ? 's' : ''} en attente de validation`
-              : 'Aucun budget en attente — tout est à jour ✓'
-            }
-          </p>
-          {aValider.length > 0 && (
-            <button
-              onClick={() => navigate('/validation')}
-              className="inline-flex items-center gap-2 px-5 py-[9px] rounded-[9px] text-white font-bold text-[13px] cursor-pointer"
-              style={{ border: '1.5px solid rgba(255,255,255,.35)', background: 'rgba(255,255,255,.12)' }}
-            >
-              Voir les budgets à valider
-              <ArrowRight size={14} strokeWidth={2.5} />
-            </button>
-          )}
+      {/* Page header */}
+      <div className="page-header" style={{ marginBottom: 24 }}>
+        <div>
+          <h1 className="page-title">Tableau de bord</h1>
+          <p className="page-subtitle">Bonjour, {user?.prenom} {user?.nom} — {aValider.length > 0 ? `${aValider.length} budget${aValider.length > 1 ? 's' : ''} en attente de validation` : 'Tout est à jour ✓'}</p>
         </div>
+        {aValider.length > 0 && (
+          <button onClick={() => navigate('/validation')} className="btn btn-primary btn-sm">
+            Voir les budgets à valider
+            <ArrowRight size={14} strokeWidth={2.5} />
+          </button>
+        )}
       </div>
 
       {/* KPIs */}

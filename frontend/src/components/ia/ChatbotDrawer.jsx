@@ -143,7 +143,7 @@ export default function ChatbotDrawer() {
         aria-label="Ouvrir l'assistant IA"
         className="fixed bottom-6 right-6 z-[1000] w-[52px] h-[52px] rounded-full border-none cursor-pointer flex items-center justify-center transition-[transform_.2s,box-shadow_.2s] hover:scale-110"
         style={{
-          background: '#0D2240',
+          background: '#1E3A8A',
           boxShadow: '0 4px 16px rgba(13,34,64,.35)',
         }}
       >
@@ -160,7 +160,7 @@ export default function ChatbotDrawer() {
           {/* Header */}
           <div
             className="px-4 py-3 flex items-center justify-between shrink-0"
-            style={{ background: '#0D2240', borderBottom: '2px solid rgba(201,168,76,.3)' }}
+            style={{ background: '#1E3A8A', borderBottom: '2px solid rgba(201,168,76,.3)' }}
           >
             <div className="flex items-center gap-[10px]">
               <div style={{
@@ -257,7 +257,7 @@ export default function ChatbotDrawer() {
               type="submit"
               disabled={!input.trim() || sending || !convId}
               className="border-none rounded-[8px] px-[14px] py-2 text-[.85rem] cursor-pointer transition-opacity"
-              style={{ background: '#0D2240', color: '#C9910A', border: '1px solid rgba(201,145,10,.4)', opacity: (!input.trim() || sending || !convId) ? 0.45 : 1 }}
+              style={{ background: '#1E3A8A', color: '#C9910A', border: '1px solid rgba(201,145,10,.4)', opacity: (!input.trim() || sending || !convId) ? 0.45 : 1 }}
             >
               ➤
             </button>
@@ -310,7 +310,7 @@ function MessageBubble({ msg }) {
       <div
         className="max-w-[82%] px-3 py-[9px] text-[.78rem] leading-[1.6] break-words"
         style={{
-          background: isUser ? '#0D2240' : '#F3F4F6',
+          background: isUser ? '#1E3A8A' : '#F3F4F6',
           color: isUser ? '#fff' : '#1F2937',
           borderRadius: isUser ? '12px 12px 0 12px' : '0 12px 12px 12px',
         }}

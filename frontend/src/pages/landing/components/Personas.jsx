@@ -5,7 +5,7 @@ const PERSONAS = [
     role: 'Administrateur',
     tagColor: '#C9910A',
     tagBg: '#FDF6E3',
-    avatarBg: '#1A3A6B',
+    avatarBg: '#1D4ED8',
     initials: 'AD',
     description: 'Responsable de la gouvernance budgétaire globale',
     features: [

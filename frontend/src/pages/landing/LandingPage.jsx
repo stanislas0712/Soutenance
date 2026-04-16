@@ -18,7 +18,7 @@ export default function LandingPage() {
   }, [])
 
   return (
-    <div style={{ fontFamily: "'IBM Plex Sans', system-ui, sans-serif", background: '#FFFFFF', color: '#0D2240', overflowX: 'hidden' }}>
+    <div style={{ fontFamily: "'IBM Plex Sans', system-ui, sans-serif", background: '#FFFFFF', color: '#1E3A8A', overflowX: 'hidden' }}>
       <Navbar />
       <main>
         <Hero />

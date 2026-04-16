@@ -118,67 +118,11 @@ export default function AdminDashboard() {
   return (
     <div>
 
-      {/* ── Hero header ───────────────────────────────────────────────────── */}
-      <div style={{
-        background: '#0D2240',
-        borderRadius: 12, padding: '28px 32px', marginBottom: 24,
-        position: 'relative', overflow: 'hidden',
-      }}>
-        {/* Decoration circles */}
-        <div style={{ position:'absolute', top:-60, right:-40, width:220, height:220, borderRadius:'50%', background:'rgba(201,168,76,.07)', pointerEvents:'none' }} />
-        <div style={{ position:'absolute', bottom:-40, right:140, width:140, height:140, borderRadius:'50%', background:'rgba(201,168,76,.05)', pointerEvents:'none' }} />
-
-        <div style={{ position:'relative', display:'flex', justifyContent:'space-between', alignItems:'flex-start', flexWrap:'wrap', gap:20 }}>
-          <div>
-            <div style={{ fontSize:12, fontWeight:700, color:'rgba(201,168,76,.6)', letterSpacing:'.8px', textTransform:'uppercase', marginBottom:6 }}>
-              TABLEAU DE BORD ADMINISTRATEUR
-            </div>
-            <h1 style={{ fontWeight:700, fontSize:'1.6rem', color:'#F8FAFC', letterSpacing:'-.02em', marginBottom:6, fontFamily:"'IBM Plex Sans', system-ui, sans-serif" }}>
-              Gestion Budgétaire — Exercice {ba?.annee ?? new Date().getFullYear()}
-            </h1>
-            <p style={{ fontSize:13, color:'rgba(255,255,255,.45)', marginBottom:0 }}>{now}</p>
-            <div style={{ display:'inline-flex', alignItems:'center', gap:5, background:'rgba(201,168,76,.12)', borderRadius:9999, padding:'3px 12px', border:'1px solid rgba(201,168,76,.25)', marginTop:6 }}>
-              <div style={{ width:6, height:6, borderRadius:'50%', background:'#4ADE80' }} />
-              <span style={{ fontSize:'11px', fontWeight:700, color:'rgba(255,255,255,.85)', letterSpacing:'.4px' }}>ADMINISTRATEUR</span>
-            </div>
-          </div>
-
-          {/* Mini stats inline */}
-          <div style={{ display:'flex', gap:24, flexWrap:'wrap' }}>
-            {[
-              { label:'Budgets',    value: totalBudgets,     color:'#FFFFFF' },
-              { label:'Approuvés',  value: budgetsApprouves, color:'#22C55E' },
-              { label:'En attente', value: budgetsSoumis,    color:'rgba(255,255,255,.65)' },
-              { label:'Rejetés',    value: budgetsRejetes,   color:'#EF4444' },
-            ].map(s => (
-              <div key={s.label} style={{ textAlign:'center' }}>
-                <div style={{ fontWeight:800, fontSize:'1.6rem', color:s.color, lineHeight:1, letterSpacing:'-.04em' }}>{s.value}</div>
-                <div style={{ fontSize:11, color:'rgba(255,255,255,.4)', marginTop:3, letterSpacing:'.3px' }}>{s.label}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Barre de consommation globale */}
-        <div style={{ position:'relative', marginTop:24, paddingTop:18, borderTop:'1px solid rgba(255,255,255,.08)' }}>
-          <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:8 }}>
-            <span style={{ fontSize:12, color:'rgba(255,255,255,.5)', fontWeight:600 }}>Taux de consommation global</span>
-            <span style={{ fontSize:15, fontWeight:800, color: tauxGlobal >= 90 ? '#EF4444' : tauxGlobal >= 75 ? '#F97316' : '#22C55E', fontFamily:'var(--font-kpi)' }}>
-              {tauxGlobal}%
-            </span>
-          </div>
-          <div style={{ height:8, background:'rgba(255,255,255,.1)', borderRadius:99, overflow:'hidden' }}>
-            <div style={{
-              height:'100%', borderRadius:99,
-              width:`${Math.min(tauxGlobal,100)}%`,
-              background: tauxGlobal >= 90 ? '#EF4444' : tauxGlobal >= 75 ? '#F97316' : '#22C55E',
-              transition:'width .7s ease',
-            }} />
-          </div>
-          <div style={{ display:'flex', justifyContent:'space-between', marginTop:6, fontSize:11, color:'rgba(255,255,255,.35)', fontFamily:'var(--font-mono)' }}>
-            <span>{fmtFull(montantConsom)} consommés</span>
-            <span>sur {fmtFull(montantTotal)} alloués</span>
-          </div>
+      {/* ── Page header ───────────────────────────────────────────────────── */}
+      <div className="page-header" style={{ marginBottom: 24 }}>
+        <div>
+          <h1 className="page-title">Tableau de bord</h1>
+          <p className="page-subtitle">{now} — Exercice {ba?.annee ?? new Date().getFullYear()}</p>
         </div>
       </div>
 

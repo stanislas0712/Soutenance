@@ -69,7 +69,7 @@ export default function Footer() {
   const currentYear = new Date().getFullYear()
 
   return (
-    <footer className="text-gray-400 py-16 px-6" style={{ background: '#0D2240' }} aria-label="Pied de page">
+    <footer className="text-gray-400 py-16 px-6" style={{ background: '#1E3A8A' }} aria-label="Pied de page">
       <div className="max-w-6xl mx-auto">
         {/* Top grid */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-12 pb-12 border-b border-gray-800">
@@ -77,7 +77,7 @@ export default function Footer() {
           <div className="col-span-2 md:col-span-1">
             {/* Logo */}
             <div className="flex items-center gap-2.5 mb-4">
-              <div className="rounded-lg w-9 h-9 flex items-center justify-center text-white font-bold text-sm flex-shrink-0" style={{ background: '#1A3A6B' }}>
+              <div className="rounded-lg w-9 h-9 flex items-center justify-center text-white font-bold text-sm flex-shrink-0" style={{ background: '#1D4ED8' }}>
                 B
               </div>
               <span className="text-lg font-bold text-white tracking-tight" style={{ fontFamily: "'IBM Plex Sans', system-ui, sans-serif" }}>

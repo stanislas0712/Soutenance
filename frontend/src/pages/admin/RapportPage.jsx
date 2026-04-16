@@ -123,7 +123,7 @@ function ResultPanel({ rapport, isLoading, error }) {
     <div style={{ display: 'flex', flexDirection: 'column', gap: 28 }}>
       {/* En-tête du rapport */}
       <div style={{
-        background: '#0D2240',
+        background: '#1E3A8A',
         borderRadius: 12, padding: '20px 28px',
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
       }}>
@@ -162,7 +162,7 @@ function ResultPanel({ rapport, isLoading, error }) {
 
       {rapport.detail_mois?.length > 0 && (
         <div>
-          <h2 style={{ fontSize: '15px', fontWeight: 700, color: '#0D2240', marginBottom: 14 }}>
+          <h2 style={{ fontSize: '15px', fontWeight: 700, color: '#1E3A8A', marginBottom: 14 }}>
             Détail mensuel
           </h2>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
@@ -303,8 +303,8 @@ export default function RapportPage() {
                 background: 'none', border: 'none', cursor: 'pointer',
                 padding: '8px 18px 10px',
                 fontSize: '13px', fontWeight: active ? 700 : 500,
-                color: active ? '#0D2240' : 'var(--color-gray-500)',
-                borderBottom: active ? '2.5px solid #0D2240' : '2.5px solid transparent',
+                color: active ? '#1E3A8A' : 'var(--color-gray-500)',
+                borderBottom: active ? '2.5px solid #1E3A8A' : '2.5px solid transparent',
                 display: 'flex', alignItems: 'center', gap: 7,
                 transition: 'color .15s',
               }}
@@ -326,10 +326,10 @@ export default function RapportPage() {
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 18 }}>
             <div style={{
-              width: 30, height: 30, borderRadius: 8, background: '#F4F6F9',
+              width: 30, height: 30, borderRadius: 8, background: '#F8FAFC',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
             }}>
-              <FileBarChart size={14} strokeWidth={2} style={{ color: '#0D2240' }} />
+              <FileBarChart size={14} strokeWidth={2} style={{ color: '#1E3A8A' }} />
             </div>
             <span style={{ fontSize: '13px', fontWeight: 700, color: '#111827' }}>Paramètres</span>
           </div>

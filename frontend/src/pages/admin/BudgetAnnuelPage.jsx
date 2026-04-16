@@ -235,7 +235,7 @@ function AllocationsPanel({ budgetAnnuel, onRefresh }) {
       {/* Header panel */}
       <div
         className="rounded-[var(--radius-lg)] px-6 py-5 mb-5 text-white relative overflow-hidden"
-        style={{ background: '#0D2240' }}
+        style={{ background: '#1E3A8A' }}
       >
         <div className="absolute rounded-full pointer-events-none" style={{ top: -30, right: -30, width: 140, height: 140, background: 'rgba(255,255,255,.05)' }} />
         <div className="relative">

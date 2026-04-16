@@ -96,30 +96,15 @@ export default function GestionnaireDashboard() {
 
   return (
     <div>
-      {/* Hero greeting */}
-      <div
-        className="rounded-[14px] px-7 py-6 mb-7 text-white relative overflow-hidden"
-        style={{ background: '#0D2240' }}
-      >
-        <div className="absolute rounded-full pointer-events-none" style={{ top: -60, right: -60, width: 200, height: 200, background: 'rgba(201,168,76,.06)' }} />
-        <div className="absolute rounded-full pointer-events-none" style={{ bottom: -40, right: 80, width: 120, height: 120, background: 'rgba(201,168,76,.08)' }} />
-        <div className="text-[13px] mb-1" style={{ color: 'rgba(201,168,76,.6)' }}>
-          {new Date().toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+      {/* Page header */}
+      <div className="page-header" style={{ marginBottom: 24 }}>
+        <div>
+          <h1 className="page-title">Tableau de bord</h1>
+          <p className="page-subtitle">Bonjour, {user?.prenom} — {new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</p>
         </div>
-        <h1 className="font-extrabold text-[22px] tracking-[-0.03em] mb-[6px]" style={{ fontFamily: "'Lora', serif", color: '#F8FAFC' }}>
-          Bonjour, {user?.prenom}
-        </h1>
-        <p className="text-[14px] mb-[18px]" style={{ color: 'rgba(250,247,242,.65)' }}>
-          Vous avez {soumis > 0 ? `${soumis} budget${soumis > 1 ? 's' : ''} en attente de validation` : 'tous vos budgets à jour'}.
-        </p>
         <button
           onClick={() => navigate('/creer-budget')}
-          className="btn btn-sm text-white"
-          style={{
-            background: 'rgba(201,168,76,.18)',
-            border: '1.5px solid rgba(201,168,76,.35)',
-            backdropFilter: 'blur(8px)',
-          }}
+          className="btn btn-primary btn-sm"
         >
           <Plus size={14} strokeWidth={2.5} />
           Créer un budget

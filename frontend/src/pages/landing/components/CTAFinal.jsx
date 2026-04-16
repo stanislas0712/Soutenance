@@ -13,7 +13,7 @@ export default function CTAFinal() {
   return (
     <div
       className="py-20 px-6 relative overflow-hidden"
-      style={{ background: '#F4F6F9' }}
+      style={{ background: '#F8FAFC' }}
     >
       <div
         ref={ref}
@@ -29,7 +29,7 @@ export default function CTAFinal() {
               Prêt à commencer ?
             </p>
             <h2 style={{
-              fontSize: 'clamp(1.6rem, 2.8vw, 2.2rem)', fontWeight: 700, color: '#0D2240',
+              fontSize: 'clamp(1.6rem, 2.8vw, 2.2rem)', fontWeight: 700, color: '#1E3A8A',
               lineHeight: 1.2, letterSpacing: '-.02em', marginBottom: 16,
               fontFamily: "'IBM Plex Sans', system-ui, sans-serif",
             }}>
@@ -44,13 +44,13 @@ export default function CTAFinal() {
               href="/login"
               style={{
                 display: 'inline-flex', alignItems: 'center', gap: 9,
-                background: '#0D2240',
+                background: '#1E3A8A',
                 color: '#FFFFFF', fontWeight: 700, fontSize: 15,
                 padding: '0 32px', height: '44px', borderRadius: 8, textDecoration: 'none',
                 fontFamily: "'IBM Plex Sans', system-ui, sans-serif",
               }}
-              onMouseEnter={e => { e.currentTarget.style.background = '#0A1B33' }}
-              onMouseLeave={e => { e.currentTarget.style.background = '#0D2240' }}
+              onMouseEnter={e => { e.currentTarget.style.background = '#172872' }}
+              onMouseLeave={e => { e.currentTarget.style.background = '#1E3A8A' }}
             >
               Se connecter <ArrowRight size={16} strokeWidth={2.5} />
             </a>
@@ -67,7 +67,7 @@ export default function CTAFinal() {
                 }}>
                   <Icon size={18} strokeWidth={2} color="#C9910A" />
                 </div>
-                <span style={{ fontSize: 14, color: '#0D2240', fontWeight: 600 }}>{text}</span>
+                <span style={{ fontSize: 14, color: '#1E3A8A', fontWeight: 600 }}>{text}</span>
               </div>
             ))}
           </div>

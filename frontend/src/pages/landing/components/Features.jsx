@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Layers, CheckCircle, TrendingUp, Cpu, BarChart2, Shield } from 'lucide-react'
+import { Layers, CheckCircle, TrendingUp, BarChart2, Shield } from 'lucide-react'
 import { useScrollAnimation } from '../hooks/useScrollAnimation'
 
 const FEATURES = [
@@ -20,12 +20,6 @@ const FEATURES = [
     title: 'Suivi des dépenses en temps réel',
     description:
       "Visualisez l'avancement de vos dépenses par rapport au budget prévu. Recevez des alertes intelligentes avant tout dépassement.",
-  },
-  {
-    Icon: Cpu,
-    title: 'Analyse IA intégrée',
-    description:
-      'Notre moteur IA analyse vos patterns de dépenses, détecte les anomalies et vous propose des recommandations pour optimiser votre gestion financière.',
   },
   {
     Icon: BarChart2,

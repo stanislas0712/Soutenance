@@ -34,7 +34,7 @@ export default function Securite() {
   return (
     <section
       className="py-24 px-6 relative overflow-hidden"
-      style={{ background: '#0D2240' }}
+      style={{ background: '#1E3A8A' }}
       aria-labelledby="securite-title"
     >
       {/* Decorative circles */}

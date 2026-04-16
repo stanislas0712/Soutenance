@@ -53,7 +53,7 @@ function ForgotPasswordModal({ onClose }) {
       }}>
         {/* Header */}
         <div style={{
-          background: '#0D2240',
+          background: '#1E3A8A',
           padding: '16px 24px',
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         }}>
@@ -184,13 +184,13 @@ export default function LoginPage() {
   }
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', fontFamily: 'IBM Plex Sans, system-ui, sans-serif', background: '#F4F6F9' }}>
+    <div style={{ minHeight: '100vh', display: 'flex', fontFamily: 'IBM Plex Sans, system-ui, sans-serif', background: '#F8FAFC' }}>
       {showForgot && <ForgotPasswordModal onClose={() => setShowForgot(false)} />}
 
       {/* ── Panneau gauche — illustration ─────────────────────────────── */}
       <div className="login-left" style={{
         flex: 1,
-        background: '#0D2240',
+        background: '#1E3A8A',
         display: 'flex', flexDirection: 'column',
         justifyContent: 'center', padding: '56px 64px',
         position: 'relative', overflow: 'hidden',
@@ -351,13 +351,13 @@ export default function LoginPage() {
             {/* Se souvenir + mot de passe oublié */}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
               <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', userSelect: 'none' }}>
-                <input type="checkbox" style={{ width: 15, height: 15, borderRadius: 4, cursor: 'pointer', accentColor: '#1A3A6B' }} />
+                <input type="checkbox" style={{ width: 15, height: 15, borderRadius: 4, cursor: 'pointer', accentColor: '#1D4ED8' }} />
                 <span style={{ fontSize: 13, color: '#3D5166' }}>Se souvenir de moi</span>
               </label>
               <button
                 type="button"
                 onClick={() => setShowForgot(true)}
-                style={{ fontSize: 12, color: '#1A3A6B', fontWeight: 600, background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+                style={{ fontSize: 12, color: '#1D4ED8', fontWeight: 600, background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
               >
                 Mot de passe oublié ?
               </button>

@@ -25,7 +25,8 @@ import MesDepenses           from './pages/gestionnaire/MesDepenses'
 /* Comptable */
 import ComptableDashboard                              from './pages/comptable/ComptableDashboard'
 import { BudgetsAValiderList, BudgetValidationDetail } from './pages/comptable/BudgetsAValider'
-import ProfilPage from './pages/ProfilPage'
+import ProfilPage     from './pages/ProfilPage'
+import ParametresPage from './pages/ParametresPage'
 
 /* Rapports */
 import RapportsKPIPage from './pages/admin/RapportsKPIPage'
@@ -96,8 +97,9 @@ function AppRoutes() {
           <Route path="/rapports"        element={<RapportsKPIPage />} />
         </>}
 
-        {/* Profil — tous les rôles */}
-        <Route path="/profil" element={<ProfilPage />} />
+        {/* Profil & Paramètres — tous les rôles */}
+        <Route path="/profil"      element={<ProfilPage />} />
+        <Route path="/parametres"  element={<ParametresPage />} />
 
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
       </Routes>

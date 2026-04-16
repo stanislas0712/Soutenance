@@ -30,7 +30,7 @@ export default function Stats() {
   return (
     <section className="bg-slate-50 py-4 border-t border-b border-gray-200" aria-label="Chiffres clés BudgetFlow">
       <div className="max-w-7xl mx-auto px-6">
-        <div className="grid grid-cols-2 md:grid-cols-4 divide-x divide-gray-200">
+        <div className="grid grid-cols-1 md:grid-cols-3 divide-x divide-gray-200">
           <StatItem
             isStatic
             staticValue="+10M FCFA"
@@ -42,11 +42,6 @@ export default function Stats() {
             suffix=" Acteurs"
             label="Workflow optimisé"
             sublabel="Admin · Gestionnaire · Comptable"
-          />
-          <StatItem
-            end={32}
-            label="Fonctionnalités"
-            sublabel="Suite complète de gestion budgétaire"
           />
           <StatItem
             end={100}

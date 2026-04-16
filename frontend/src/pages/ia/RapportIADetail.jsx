@@ -66,7 +66,7 @@ function MarkdownBlock({ content }) {
     }
     if (line.startsWith('## ')) {
       nodes.push(
-        <h2 key={i} style={{ fontSize: '16px', fontWeight: 700, color: '#0D2240', margin: '28px 0 12px', paddingLeft: 14, borderLeft: '3px solid #C9910A' }}>
+        <h2 key={i} style={{ fontSize: '16px', fontWeight: 700, color: '#1E3A8A', margin: '28px 0 12px', paddingLeft: 14, borderLeft: '3px solid #C9910A' }}>
           <InlineMarkdown text={line.slice(3)} />
         </h2>
       )
@@ -209,7 +209,7 @@ export default function RapportIADetail() {
 
       {/* Card couverture */}
       <div style={{
-        background: '#0D2240',
+        background: '#1E3A8A',
         borderRadius: 14, padding: '24px 32px', marginBottom: 24,
         display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start',
         flexWrap: 'wrap', gap: 16,

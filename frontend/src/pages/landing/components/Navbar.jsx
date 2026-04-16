@@ -3,7 +3,6 @@ import { useEffect, useState } from 'react'
 const NAV_LINKS = [
   { label: 'Fonctionnalités', href: '#features' },
   { label: 'Comment ça marche', href: '#how-it-works' },
-  { label: 'FAQ', href: '#faq' },
 ]
 
 export default function Navbar() {
@@ -49,7 +48,7 @@ export default function Navbar() {
           {/* Logo */}
           <a href="/" className="flex items-center gap-2.5 flex-shrink-0 no-underline" aria-label="Gestion Budgétaire - Accueil">
             <img src="/budget.jpg" alt="Gestion Budgétaire" className="rounded-xl flex-shrink-0" style={{ width: 36, height: 36, objectFit: 'cover' }} />
-            <span className="text-lg font-bold tracking-tight" style={{ color: '#0D2240', fontFamily: "'IBM Plex Sans', system-ui, sans-serif" }}>
+            <span className="text-lg font-bold tracking-tight" style={{ color: '#1E3A8A', fontFamily: "'IBM Plex Sans', system-ui, sans-serif" }}>
               Gestion <span className="font-extrabold">Budgétaire</span>
             </span>
           </a>
@@ -76,7 +75,7 @@ export default function Navbar() {
             <a
               href="/login"
               className="text-white text-sm font-semibold px-5 rounded-lg no-underline whitespace-nowrap inline-flex items-center"
-              style={{ background: '#0D2240', height: '44px', letterSpacing: '-.1px' }}
+              style={{ background: '#1E3A8A', height: '44px', letterSpacing: '-.1px' }}
             >
               Accéder à la plateforme
             </a>
@@ -119,7 +118,7 @@ export default function Navbar() {
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-2.5">
             <img src="/budget.jpg" alt="Gestion Budgétaire" className="rounded-xl" style={{ width: 36, height: 36, objectFit: 'cover' }} />
-            <span className="text-lg font-bold tracking-tight" style={{ color: '#0D2240', fontFamily: "'IBM Plex Sans', system-ui, sans-serif" }}>
+            <span className="text-lg font-bold tracking-tight" style={{ color: '#1E3A8A', fontFamily: "'IBM Plex Sans', system-ui, sans-serif" }}>
               Gestion <span className="font-extrabold">Budgétaire</span>
             </span>
           </div>
@@ -153,7 +152,7 @@ export default function Navbar() {
           <a
             href="/login"
             className="text-white text-sm font-semibold px-4 rounded-xl no-underline text-center inline-flex items-center justify-center"
-            style={{ background: '#0D2240', height: '44px' }}
+            style={{ background: '#1E3A8A', height: '44px' }}
           >
             Accéder à la plateforme
           </a>

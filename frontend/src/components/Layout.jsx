@@ -6,7 +6,7 @@ import {
   LayoutDashboard, Wallet, CalendarDays, Building2, Users,
   ClipboardList, BarChart3, FileBarChart, CreditCard,
   CheckCircle2, ChevronRight, ChevronDown, LogOut, User,
-  Menu, Bell,
+  Menu, Bell, Settings,
 } from 'lucide-react'
 
 /* ── Rôles ───────────────────────────────────────────────────────────────── */
@@ -26,17 +26,20 @@ function navItems(role) {
     { to: '/audit',               icon: ClipboardList, label: "Journal d'audit"     },
     { to: '/rapports',            icon: BarChart3,    label: 'Statistiques'     },
     { to: '/rapports-detailles',  icon: FileBarChart, label: 'Rapports détaillés'  },
+    { to: '/parametres',          icon: Settings,     label: 'Paramètres'          },
   ]
   if (role === 'GESTIONNAIRE') return [
     { to: '/dashboard',    icon: LayoutDashboard, label: 'Tableau de bord' },
     { to: '/mes-budgets',  icon: Wallet,          label: 'Mes budgets' },
     { to: '/mes-depenses', icon: CreditCard,      label: 'Mes dépenses' },
+    { to: '/parametres',   icon: Settings,        label: 'Paramètres' },
   ]
   if (role === 'COMPTABLE') return [
     { to: '/dashboard',  icon: LayoutDashboard, label: 'Tableau de bord' },
     { to: '/validation', icon: CheckCircle2,    label: 'Budgets à valider' },
     { to: '/depenses',   icon: CreditCard,      label: 'Dépenses à valider' },
     { to: '/rapports',   icon: BarChart3,       label: 'Statistiques' },
+    { to: '/parametres', icon: Settings,        label: 'Paramètres' },
   ]
   return []
 }
@@ -47,21 +50,24 @@ function getSections(role, items) {
     return [
       { label: 'PRINCIPAL',      items: items.slice(0, 1) },
       { label: 'ADMINISTRATION', items: items.slice(1, 5) },
-      { label: 'RAPPORTS',       items: items.slice(5) },
+      { label: 'RAPPORTS',       items: items.slice(5, 7) },
+      { label: 'SYSTÈME',        items: items.slice(7) },
     ]
   }
   if (role === 'GESTIONNAIRE') {
     return [
       { label: null,       items: items.slice(0, 1) },
       { label: 'BUDGETS',  items: items.slice(1, 2) },
-      { label: 'DÉPENSES', items: items.slice(2) },
+      { label: 'DÉPENSES', items: items.slice(2, 3) },
+      { label: 'SYSTÈME',  items: items.slice(3) },
     ]
   }
   if (role === 'COMPTABLE') {
     return [
       { label: null,         items: items.slice(0, 1) },
       { label: 'VALIDATION', items: items.slice(1, 3) },
-      { label: 'RAPPORTS',   items: items.slice(3) },
+      { label: 'RAPPORTS',   items: items.slice(3, 4) },
+      { label: 'SYSTÈME',    items: items.slice(4) },
     ]
   }
   return [{ label: null, items }]

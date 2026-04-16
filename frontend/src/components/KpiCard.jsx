@@ -94,7 +94,7 @@ export default function KpiCard({
       <div style={{
         fontWeight: 800,
         fontFamily: "var(--font-mono, 'IBM Plex Mono', monospace)",
-        color: '#0D2240',
+        color: '#1E3A8A',
         lineHeight: 1.05,
         letterSpacing: '-.04em',
         fontSize: typeof value === 'string' && value.length > 12 ? '1.35rem'
