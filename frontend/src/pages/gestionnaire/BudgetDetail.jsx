@@ -190,7 +190,7 @@ export default function BudgetDetail({ basePath = '/mes-budgets' }) {
         </div>
 
         <div style={{
-          background: 'linear-gradient(160deg, #1E3A5F 0%, #152B4B 60%, #1E3A5F 100%)',
+          background: '#0D2240',
           borderRadius: 'var(--radius-lg)', padding: '24px 28px',
           color: '#fff', position: 'relative', overflow: 'hidden',
           boxShadow: '0 8px 28px rgba(15,34,64,.4)',

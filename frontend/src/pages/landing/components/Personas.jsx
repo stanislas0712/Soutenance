@@ -3,9 +3,9 @@ import { useScrollAnimation } from '../hooks/useScrollAnimation'
 const PERSONAS = [
   {
     role: 'Administrateur',
-    tagColor: '#B8973F',
-    tagBg: '#FEF9EC',
-    avatarBg: 'linear-gradient(135deg, #292524, #1E3A5F)',
+    tagColor: '#C9910A',
+    tagBg: '#FDF6E3',
+    avatarBg: '#1A3A6B',
     initials: 'AD',
     description: 'Responsable de la gouvernance budgétaire globale',
     features: [
@@ -131,7 +131,7 @@ export default function Personas() {
               visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'
             }`}
           >
-            <p className="text-sm font-semibold uppercase tracking-widest mb-4" style={{ color: '#B8973F' }}>
+            <p className="text-sm font-semibold uppercase tracking-widest mb-4" style={{ color: '#C9910A' }}>
               Acteurs du système
             </p>
             <h2 id="personas-title" className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-4 tracking-tight">

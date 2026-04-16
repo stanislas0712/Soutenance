@@ -505,7 +505,7 @@ function PredictionsTab({ predictions, onPredire, scanning }) {
         background: 'linear-gradient(135deg, #FEF9EC, #F3D07A)',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
       }}>
-        <TrendingUp size={30} strokeWidth={1.5} style={{ color: '#B8973F' }} />
+        <TrendingUp size={30} strokeWidth={1.5} style={{ color: '#C9910A' }} />
       </div>
       <p className="empty-title">Aucune prédiction active</p>
       <p className="empty-body">Lancez une analyse pour prédire les risques de dépassement sur vos budgets.</p>
@@ -714,7 +714,7 @@ function GenererRapportModal({ onClose }) {
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-panel" onClick={e => e.stopPropagation()} style={{ maxWidth: 440, padding: 0, overflow: 'hidden' }}>
-        <div style={{ background: 'linear-gradient(135deg, #1E3A5F, #1E3A5F)', borderBottom: '2px solid rgba(201,168,76,.3)', padding: '20px 24px', color: '#fff', display: 'flex', alignItems: 'center', gap: 12 }}>
+        <div style={{ background: '#0D2240', borderBottom: '2px solid rgba(201,168,76,.3)', padding: '20px 24px', color: '#fff', display: 'flex', alignItems: 'center', gap: 12 }}>
           <div style={{ width: 36, height: 36, borderRadius: 9, background: 'rgba(255,255,255,.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
             <Sparkles size={18} strokeWidth={2} />
           </div>

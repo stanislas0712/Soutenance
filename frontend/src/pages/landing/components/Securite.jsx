@@ -34,7 +34,7 @@ export default function Securite() {
   return (
     <section
       className="py-24 px-6 relative overflow-hidden"
-      style={{ background: 'linear-gradient(135deg, #1E3A5F 0%, #152B4B 55%, #1E3A5F 100%)' }}
+      style={{ background: '#0D2240' }}
       aria-labelledby="securite-title"
     >
       {/* Decorative circles */}
@@ -57,7 +57,7 @@ export default function Securite() {
             visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'
           }`}
         >
-          <p className="text-sm font-semibold uppercase tracking-widest mb-4" style={{ color: '#D4B355' }}>
+          <p className="text-sm font-semibold uppercase tracking-widest mb-4" style={{ color: '#C9910A' }}>
             Sécurité & Conformité
           </p>
           <h2 id="securite-title" className="text-3xl md:text-4xl font-extrabold text-white mb-4 tracking-tight">

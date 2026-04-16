@@ -1,23 +1,24 @@
 import { AlertTriangle, Trash2, CheckCircle2, LogOut, XCircle } from 'lucide-react'
 
+// Flat header colors per variant — no gradients (design system rule)
 const VARIANTS = {
   danger: {
-    gradient: 'linear-gradient(135deg, #7F1D1D 0%, #DC2626 100%)',
+    headerBg: '#C0392B',
     btnClass: 'btn btn-danger btn-md',
     Icon: Trash2,
   },
   warning: {
-    gradient: 'linear-gradient(135deg, #92400E 0%, #D97706 100%)',
+    headerBg: '#C9910A',
     btnClass: 'btn btn-warning btn-md',
     Icon: AlertTriangle,
   },
   success: {
-    gradient: 'linear-gradient(135deg, #065F46 0%, #059669 100%)',
+    headerBg: '#1B7C3E',
     btnClass: 'btn btn-success btn-md',
     Icon: CheckCircle2,
   },
   primary: {
-    gradient: 'linear-gradient(135deg, #0F2240 0%, #1E3A5F 100%)',
+    headerBg: '#0D2240',
     btnClass: 'btn btn-primary btn-md',
     Icon: LogOut,
   },
@@ -27,12 +28,12 @@ const VARIANTS = {
  * Modal de confirmation réutilisable — remplace window.confirm()
  *
  * Props :
- *   title      — titre affiché dans le header
- *   message    — texte de la question
+ *   title        — titre affiché dans le header
+ *   message      — texte de la question
  *   confirmLabel — libellé du bouton de confirmation (défaut : "Confirmer")
- *   variant    — 'danger' | 'warning' | 'success' | 'primary'  (défaut : 'danger')
- *   onConfirm  — callback si l'utilisateur confirme
- *   onClose    — callback si l'utilisateur annule / ferme
+ *   variant      — 'danger' | 'warning' | 'success' | 'primary'  (défaut : 'danger')
+ *   onConfirm    — callback si l'utilisateur confirme
+ *   onClose      — callback si l'utilisateur annule / ferme
  */
 export default function ConfirmModal({
   title        = 'Confirmation',
@@ -55,49 +56,40 @@ export default function ConfirmModal({
         onClick={e => e.stopPropagation()}
         style={{ maxWidth: 420, padding: 0, overflow: 'hidden' }}
       >
-        {/* Header coloré */}
+        {/* Header — flat solid color, no gradient */}
         <div style={{
-          background: v.gradient,
-          padding: '20px 24px',
+          background: v.headerBg,
+          padding: '18px 24px',
           color: '#fff',
           display: 'flex',
           alignItems: 'center',
           gap: 14,
-          position: 'relative',
-          overflow: 'hidden',
         }}>
-          {/* Cercle déco */}
           <div style={{
-            position: 'absolute', top: -24, right: -24,
-            width: 100, height: 100, borderRadius: '50%',
-            background: 'rgba(255,255,255,.08)', pointerEvents: 'none',
-          }} />
-
-          <div style={{
-            width: 38, height: 38, borderRadius: 10, flexShrink: 0,
-            background: 'rgba(255,255,255,.18)',
+            width: 36, height: 36, borderRadius: 8, flexShrink: 0,
+            background: 'rgba(255,255,255,.15)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
           }}>
-            <Icon size={18} strokeWidth={2} />
+            <Icon size={17} strokeWidth={2} />
           </div>
 
-          <div style={{ position: 'relative' }}>
-            <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '15px' }}>
+          <div>
+            <div style={{ fontWeight: 700, fontSize: '15px', letterSpacing: '-.1px' }}>
               {title}
             </div>
-            <div style={{ fontSize: '12px', opacity: 0.7, marginTop: 2 }}>
+            <div style={{ fontSize: '12px', opacity: 0.65, marginTop: 2 }}>
               Cette action nécessite votre confirmation
             </div>
           </div>
         </div>
 
         {/* Corps */}
-        <div style={{ padding: '22px 24px' }}>
+        <div style={{ padding: '20px 24px' }}>
           <p style={{
             margin: 0,
             fontSize: '14px',
             color: 'var(--color-gray-700)',
-            lineHeight: 1.6,
+            lineHeight: 1.65,
           }}>
             {message}
           </p>
@@ -106,7 +98,7 @@ export default function ConfirmModal({
         {/* Footer */}
         <div style={{
           display: 'flex', justifyContent: 'flex-end', gap: 10,
-          padding: '14px 24px',
+          padding: '12px 24px',
           borderTop: '1px solid var(--color-gray-100)',
           background: 'var(--color-gray-50)',
         }}>

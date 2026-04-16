@@ -12,9 +12,9 @@ import {
 
 /* ── Rôles ───────────────────────────────────────────────────────────────── */
 const ROLE_BADGE = {
-  ADMINISTRATEUR: { bg: 'rgba(201,168,76,.18)', color: '#D4B355', label: 'Admin' },
-  GESTIONNAIRE  : { bg: 'rgba(34,197,94,.15)',  color: '#86EFAC', label: 'Gestionnaire' },
-  COMPTABLE     : { bg: 'rgba(245,158,11,.15)', color: '#FCD34D', label: 'Comptable' },
+  ADMINISTRATEUR: { bg: 'rgba(201,145,10,.2)',  color: '#C9910A', label: 'Admin' },
+  GESTIONNAIRE  : { bg: 'rgba(27,124,62,.2)',   color: '#1B7C3E', label: 'Gestionnaire' },
+  COMPTABLE     : { bg: 'rgba(26,58,107,.25)',  color: '#8CB4E0', label: 'Comptable' },
 }
 
 /* ── Navigation par rôle ─────────────────────────────────────────────────── */
@@ -83,32 +83,29 @@ function NavItem({ item, collapsed }) {
       title={collapsed ? item.label : undefined}
       style={({ isActive }) => ({
         display: 'flex', alignItems: 'center',
-        gap: 10, padding: collapsed ? '9px 0' : '8px 11px',
+        gap: 10, padding: collapsed ? '10px 0' : '9px 12px',
         justifyContent: collapsed ? 'center' : 'flex-start',
-        borderRadius: 9, marginBottom: 2,
-        color: isActive ? '#F8FAFC' : 'rgba(255,255,255,.48)',
-        background: isActive
-          ? 'linear-gradient(135deg, rgba(201,168,76,.28), rgba(201,168,76,.12))'
-          : 'transparent',
+        borderRadius: 8, marginBottom: 2,
+        color: isActive ? '#FFFFFF' : 'rgba(255,255,255,.55)',
+        background: isActive ? 'rgba(27,124,62,.2)' : 'transparent',
         fontWeight: isActive ? 600 : 400,
-        fontSize: '13.5px',
+        fontSize: '13px',
         transition: 'all .12s',
         textDecoration: 'none',
-        position: 'relative',
-        boxShadow: isActive ? 'inset 0 1px 0 rgba(201,168,76,.15)' : 'none',
-        border: isActive ? '1px solid rgba(201,168,76,.2)' : '1px solid transparent',
+        minHeight: 44,
+        border: isActive ? '1px solid rgba(27,124,62,.3)' : '1px solid transparent',
       })}
     >
       {({ isActive }) => (
         <>
           <IconComp
             size={16}
-            strokeWidth={isActive ? 2.2 : 1.8}
-            style={{ flexShrink: 0, color: isActive ? '#D4B355' : 'rgba(255,255,255,.42)' }}
+            strokeWidth={isActive ? 2 : 1.8}
+            style={{ flexShrink: 0, color: isActive ? '#6EE7B7' : 'rgba(255,255,255,.45)' }}
           />
-          {!collapsed && <span style={{ flex: 1, letterSpacing: '-.01em' }}>{item.label}</span>}
+          {!collapsed && <span style={{ flex: 1 }}>{item.label}</span>}
           {!collapsed && isActive && (
-            <div style={{ width: 5, height: 5, borderRadius: '50%', background: '#C9A84C', flexShrink: 0 }} />
+            <div style={{ width: 5, height: 5, borderRadius: '50%', background: '#6EE7B7', flexShrink: 0 }} />
           )}
         </>
       )}
@@ -150,7 +147,7 @@ export default function Layout({ children }) {
     || items.find(i => i.to === location.pathname)
 
   return (
-    <div className="flex h-full" style={{ background: '#EEF2F8' }}>
+    <div className="flex h-full" style={{ background: '#F4F6F9' }}>
 
       {/* ── Mobile overlay ────────────────────────────────────────────── */}
       {isMobile && mobileSidebarOpen && (
@@ -176,8 +173,8 @@ export default function Layout({ children }) {
           minWidth: isMobile ? 'var(--sidebar-w)' : (collapsed ? 60 : 'var(--sidebar-w)'),
           transform: isMobile ? (mobileSidebarOpen ? 'translateX(0)' : 'translateX(-100%)') : 'none',
           transition: 'width .22s cubic-bezier(.4,0,.2,1), min-width .22s, transform .25s cubic-bezier(.4,0,.2,1)',
-          background: 'linear-gradient(175deg, #0D1E35 0%, #152B4B 55%, #1E3A5F 100%)',
-          boxShadow: '6px 0 32px rgba(8,15,28,.45), 2px 0 8px rgba(15,34,64,.3)',
+          background: '#0D2240',
+          boxShadow: '1px 0 0 0 #D1D8E0',
         }}
       >
 
@@ -198,11 +195,11 @@ export default function Layout({ children }) {
           />
           {!collapsed && (
             <div>
-              <div style={{ fontWeight: 700, fontSize: '14.5px', color: '#F8FAFC', letterSpacing: '-.2px', lineHeight: 1.2, fontFamily: 'Lora, Georgia, serif' }}>
+              <div style={{ fontWeight: 600, fontSize: '14px', color: '#F0F5FF', lineHeight: 1.2, fontFamily: 'IBM Plex Sans, sans-serif' }}>
                 Gestion Budgétaire
               </div>
-              <div style={{ fontSize: '9.5px', color: 'rgba(201,168,76,.6)', letterSpacing: '.8px', marginTop: 1 }}>
-                PLATEFORME BUDGÉTAIRE
+              <div style={{ fontSize: '9px', color: 'rgba(255,255,255,.3)', letterSpacing: '.08em', marginTop: 2, textTransform: 'uppercase' }}>
+                Plateforme budgétaire
               </div>
             </div>
           )}
@@ -240,9 +237,9 @@ export default function Layout({ children }) {
           className="shrink-0 flex items-center px-5 gap-[12px] z-50"
           style={{
             height: 'var(--topbar-h)',
-            background: '#0C1B32',
-            borderBottom: '1px solid rgba(201,168,76,.15)',
-            boxShadow: '0 4px 16px rgba(8,15,28,.45), 0 1px 4px rgba(0,0,0,.2)',
+            background: '#0D2240',
+            borderBottom: '1px solid rgba(255,255,255,.07)',
+            boxShadow: '0 1px 4px rgba(13,34,64,.25)',
           }}
         >
           {/* Toggle sidebar */}
@@ -280,7 +277,7 @@ export default function Layout({ children }) {
         </header>
 
         {/* Page content */}
-        <main className="flex-1 overflow-y-auto" style={{ padding: isMobile ? '16px 14px' : '32px 36px', background: '#EEF2F8' }}>
+        <main className="flex-1 overflow-y-auto" style={{ padding: isMobile ? '16px 14px' : '28px 32px', background: '#F4F6F9' }}>
           <div className="page-content">
             {children}
           </div>
@@ -302,7 +299,7 @@ const NOTIF_META = {
   DEPENSE_SAISIE:   { icon: '💸', color: '#0F766E', bg: '#F0FDFA', border: '#99F6E4', label: 'Dépense enregistrée' },
   DEPENSE_VALIDEE:  { icon: '💳', color: '#0891B2', bg: '#ECFEFF', border: '#A5F3FC', label: 'Dépense validée'   },
   DEPENSE_REJETEE:  { icon: '🚫', color: '#EA580C', bg: '#FFF7ED', border: '#FED7AA', label: 'Dépense rejetée'   },
-  DEFAULT:          { icon: '🔔', color: '#C9A84C', bg: '#FEF9EC', border: '#F3D07A', label: 'Info'              },
+  DEFAULT:          { icon: '🔔', color: '#C9910A', bg: '#FDF6E3', border: '#E8C84A', label: 'Info'              },
 }
 const notifMeta = (type) => NOTIF_META[type] || NOTIF_META.DEFAULT
 
@@ -412,7 +409,7 @@ function NotificationBell({ navigate }) {
           <span style={{
             position: 'absolute', top: -4, right: -4,
             minWidth: 17, height: 17, borderRadius: 9999,
-            background: '#EF4444', border: '2px solid #0C1B32',
+            background: '#C0392B', border: '2px solid #0D2240',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             fontSize: '9px', fontWeight: 800, color: '#fff', padding: '0 3px',
           }}>
@@ -445,7 +442,7 @@ function NotificationBell({ navigate }) {
           {/* ── Header ── */}
           <div style={{
             padding: '16px 18px 14px',
-            background: 'linear-gradient(135deg, #1E3A5F 0%, #0D1E35 100%)',
+            background: '#0D2240',
             flexShrink: 0,
           }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -559,7 +556,7 @@ function NotificationBell({ navigate }) {
                       {!n.lu && (
                         <span style={{
                           width: 7, height: 7, borderRadius: '50%',
-                          background: '#C9A84C', flexShrink: 0,
+                          background: '#C9910A', flexShrink: 0,
                         }} />
                       )}
                     </div>
@@ -576,7 +573,7 @@ function NotificationBell({ navigate }) {
                       <span>🕐</span>
                       {fmtDate(n.date)}
                       {n.lien && (
-                        <span style={{ marginLeft: 6, color: '#B8973F', fontWeight: 600 }}>
+                        <span style={{ marginLeft: 6, color: '#C9910A', fontWeight: 600 }}>
                           Voir →
                         </span>
                       )}
@@ -638,7 +635,7 @@ function AvatarMenu({ user, roleInfo, onLogout, navigate }) {
       >
         <div
           className="w-[30px] h-[30px] rounded-full shrink-0 flex items-center justify-center text-white font-bold text-[11px]"
-          style={{ background: 'linear-gradient(135deg, #C9A84C, #8A6B1E)' }}
+          style={{ background: '#1A3A6B' }}
         >
           {initials}
         </div>

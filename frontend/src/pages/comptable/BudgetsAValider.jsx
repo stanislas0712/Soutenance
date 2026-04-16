@@ -316,7 +316,7 @@ export function BudgetValidationDetail() {
       {/* Hero header */}
       <div
         className="rounded-[var(--radius-lg)] px-[30px] py-[26px] mb-6 text-white relative overflow-hidden"
-        style={{ background: 'linear-gradient(160deg, #1E3A5F 0%, #152B4B 60%, #1E3A5F 100%)' }}
+        style={{ background: '#0D2240' }}
       >
         <div className="absolute rounded-full pointer-events-none" style={{ top: -50, right: -50, width: 200, height: 200, background: 'rgba(201,168,76,.06)' }} />
         <div className="relative flex items-start gap-4">
@@ -485,7 +485,7 @@ export function BudgetValidationDetail() {
       {(budget.statut === 'SOUMIS' || budget.statut === 'APPROUVE') && (
         <div
           className="mt-6 rounded-[var(--radius-lg)] px-7 py-[22px] flex justify-between items-center flex-wrap gap-4"
-          style={{ background: 'linear-gradient(135deg, #1E3A5F, #152B4B)' }}
+          style={{ background: '#0D2240' }}
         >
           <div>
             <div className="font-display font-bold text-white mb-1 text-[15px]">

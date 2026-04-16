@@ -10,7 +10,7 @@ export default function ExerciceBudgetaire({ budgetAnnuel, detailTrimestres }) {
       {/* Exercice budgétaire */}
       {budgetAnnuel && (
         <div>
-          <h2 style={{ fontSize: '15px', fontWeight: 700, color: '#1E3A5F', marginBottom: 14 }}>
+          <h2 style={{ fontSize: '15px', fontWeight: 700, color: '#0D2240', marginBottom: 14 }}>
             Exercice budgétaire {budgetAnnuel.annee}
           </h2>
           <div style={{
@@ -89,7 +89,7 @@ export default function ExerciceBudgetaire({ budgetAnnuel, detailTrimestres }) {
       {/* Détail par trimestre */}
       {detailTrimestres?.length > 0 && (
         <div>
-          <h2 style={{ fontSize: '15px', fontWeight: 700, color: '#1E3A5F', marginBottom: 14 }}>
+          <h2 style={{ fontSize: '15px', fontWeight: 700, color: '#0D2240', marginBottom: 14 }}>
             Évolution trimestrielle
           </h2>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
@@ -97,7 +97,7 @@ export default function ExerciceBudgetaire({ budgetAnnuel, detailTrimestres }) {
               <div key={t.trimestre} style={{
                 background: '#fff', borderRadius: 10, padding: '14px 16px',
                 boxShadow: '0 1px 4px rgba(0,0,0,.06)',
-                borderTop: '3px solid #C9A84C',
+                borderTop: '3px solid #C9910A',
               }}>
                 <div style={{ fontSize: '10px', fontWeight: 700, color: '#9CA3AF', letterSpacing: '.5px', textTransform: 'uppercase' }}>
                   T{t.trimestre}

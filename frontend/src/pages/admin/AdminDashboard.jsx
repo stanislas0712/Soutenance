@@ -120,10 +120,9 @@ export default function AdminDashboard() {
 
       {/* ── Hero header ───────────────────────────────────────────────────── */}
       <div style={{
-        background: 'linear-gradient(135deg, #1E3A5F 0%, #152B4B 55%, #1E3A5F 100%)',
-        borderRadius: 18, padding: '28px 32px', marginBottom: 24,
+        background: '#0D2240',
+        borderRadius: 12, padding: '28px 32px', marginBottom: 24,
         position: 'relative', overflow: 'hidden',
-        boxShadow: '0 8px 32px rgba(10,8,6,.35)',
       }}>
         {/* Decoration circles */}
         <div style={{ position:'absolute', top:-60, right:-40, width:220, height:220, borderRadius:'50%', background:'rgba(201,168,76,.07)', pointerEvents:'none' }} />
@@ -134,7 +133,7 @@ export default function AdminDashboard() {
             <div style={{ fontSize:12, fontWeight:700, color:'rgba(201,168,76,.6)', letterSpacing:'.8px', textTransform:'uppercase', marginBottom:6 }}>
               TABLEAU DE BORD ADMINISTRATEUR
             </div>
-            <h1 style={{ fontWeight:700, fontSize:'1.6rem', color:'#F8FAFC', letterSpacing:'-.02em', marginBottom:6, fontFamily:'Lora, Georgia, serif' }}>
+            <h1 style={{ fontWeight:700, fontSize:'1.6rem', color:'#F8FAFC', letterSpacing:'-.02em', marginBottom:6, fontFamily:"'IBM Plex Sans', system-ui, sans-serif" }}>
               Gestion Budgétaire — Exercice {ba?.annee ?? new Date().getFullYear()}
             </h1>
             <p style={{ fontSize:13, color:'rgba(255,255,255,.45)', marginBottom:0 }}>{now}</p>
@@ -190,7 +189,7 @@ export default function AdminDashboard() {
           label="Budget Total Alloué"
           value={enveloppeGlobale >= 1e6 ? `${(enveloppeGlobale/1e6).toFixed(1)}M` : `${fmt(enveloppeGlobale)} F`}
           trendText={`${fmt(enveloppeAllouee)} F alloués depts`}
-          color="#C9A84C" bgColor="#FEF9EC"
+          color="#C9910A" bgColor="#FEF9EC"
           sparklineData={evolutionData.map(d => d.montant)}
         />
         <KpiCard

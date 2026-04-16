@@ -47,15 +47,15 @@ function FeatureCard({ feature, index, visible }) {
 
   return (
     <div
-      className={`bg-white border rounded-2xl p-8 cursor-default transition-all duration-200 ${
-        hovered ? 'shadow-lg -translate-y-1' : 'border-gray-100 shadow-sm'
+      className={`bg-white border rounded-xl p-8 cursor-default transition-all duration-200 ${
+        hovered ? 'shadow-md -translate-y-0.5' : 'shadow-sm'
       } ${visible ? 'opacity-100' : 'opacity-0'}`}
-      style={visible ? { animation: `featFadeUp 0.6s ease ${index * 0.1}s both`, ...(hovered ? { borderColor: '#F3D07A' } : {}) } : {}}
+      style={visible ? { animation: `featFadeUp 0.6s ease ${index * 0.1}s both`, borderColor: hovered ? '#C9910A' : '#E5EAF0' } : {}}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
-      <div className="w-12 h-12 rounded-xl flex items-center justify-center mb-5 transition-colors duration-200" style={{ background: hovered ? '#F3D07A30' : '#FEF9EC', border: '1px solid #F3D07A' }}>
-        <Icon className="w-6 h-6" style={{ color: '#B8973F' }} aria-hidden="true" />
+      <div className="w-12 h-12 rounded-lg flex items-center justify-center mb-5 transition-colors duration-200" style={{ background: hovered ? 'rgba(201,145,10,.12)' : '#FDF6E3', border: '1px solid #E8C84A' }}>
+        <Icon className="w-6 h-6" style={{ color: '#C9910A' }} aria-hidden="true" />
       </div>
       <h3 className="text-base font-bold text-gray-900 mb-3 leading-snug">{title}</h3>
       <p className="text-sm text-gray-500 leading-relaxed m-0">{description}</p>
@@ -84,7 +84,7 @@ export default function Features() {
               visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'
             }`}
           >
-            <p className="text-sm font-semibold uppercase tracking-widest mb-4" style={{ color: '#B8973F' }}>
+            <p className="text-sm font-semibold uppercase tracking-widest mb-4" style={{ color: '#C9910A' }}>
               Fonctionnalités
             </p>
             <h2 id="features-title" className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-4 text-center tracking-tight">

@@ -3,7 +3,7 @@ import { TrendingUp, TrendingDown, Wallet, CreditCard, AlertTriangle, CheckCircl
 const fmt = (n) => new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 0 }).format(parseFloat(n || 0))
 const fmtPct = (n) => `${parseFloat(n || 0).toFixed(1)} %`
 
-function KpiCard({ icon: Icon, label, value, sub, color = '#1E3A5F', bg = '#EEF2F8' }) {
+function KpiCard({ icon: Icon, label, value, sub, color = '#0D2240', bg = '#F4F6F9' }) {
   return (
     <div style={{
       background: '#fff',
@@ -40,21 +40,21 @@ export default function ResumeExecutif({ resume, totalDepenses, nbDepenses, comp
 
   return (
     <div>
-      <h2 style={{ fontSize: '15px', fontWeight: 700, color: '#1E3A5F', marginBottom: 14 }}>Résumé exécutif</h2>
+      <h2 style={{ fontSize: '15px', fontWeight: 700, color: '#0D2240', marginBottom: 14 }}>Résumé exécutif</h2>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(190px, 1fr))', gap: 12, marginBottom: 16 }}>
         <KpiCard
           icon={Wallet}
           label="Budgets actifs"
           value={resume.nb_budgets}
-          color="#1E3A5F"
-          bg="#EEF2F8"
+          color="#0D2240"
+          bg="#F4F6F9"
         />
         <KpiCard
           icon={CreditCard}
           label="Montant global"
           value={fmt(resume.montant_global) + ' FCFA'}
           sub={`Consommé : ${fmt(resume.montant_consomme)} FCFA`}
-          color="#C9A84C"
+          color="#C9910A"
           bg="#FEF9EC"
         />
         <KpiCard

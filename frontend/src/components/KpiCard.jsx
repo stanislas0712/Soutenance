@@ -9,8 +9,8 @@ export default function KpiCard({
   label,
   value,
   sub,
-  color      = '#B8973F',
-  bgColor    = '#FEF9EC',
+  color      = '#C9910A',
+  bgColor    = '#FDF6E3',
   trend,          // number → auto "↑ +X%" label
   trendText,      // string → custom trend label e.g. "2 nouveaux"
   trendPositive,  // bool override for color when trendText is provided
@@ -93,8 +93,8 @@ export default function KpiCard({
       {/* ── Value ── */}
       <div style={{
         fontWeight: 800,
-        fontFamily: "'Syne', system-ui, sans-serif",
-        color: '#1E3A5F',
+        fontFamily: "var(--font-mono, 'IBM Plex Mono', monospace)",
+        color: '#0D2240',
         lineHeight: 1.05,
         letterSpacing: '-.04em',
         fontSize: typeof value === 'string' && value.length > 12 ? '1.35rem'

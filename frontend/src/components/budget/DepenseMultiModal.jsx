@@ -358,7 +358,7 @@ export default function DepenseMultiModal({ budgetId, onClose, onSuccess }) {
                   {/* ── Total ── */}
                   <div style={{
                     padding: '10px 14px', borderRadius: 8, marginBottom: 14,
-                    background: 'linear-gradient(135deg, var(--color-primary-50), var(--color-primary-100))',
+                    background: 'var(--color-primary-50)',
                     border: '1px solid var(--color-primary-200)',
                     display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                   }}>

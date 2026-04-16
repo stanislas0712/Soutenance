@@ -79,7 +79,7 @@ export default function ComptableDashboard() {
       {/* Hero banner */}
       <div
         className="rounded-[var(--radius-lg)] px-8 py-7 mb-7 text-white relative overflow-hidden"
-        style={{ background: 'linear-gradient(135deg, #1E3A5F 0%, #152B4B 55%, #1E3A5F 100%)' }}
+        style={{ background: '#0D2240' }}
       >
         <div className="absolute rounded-full pointer-events-none" style={{ top: -50, right: -50, width: 200, height: 200, background: 'rgba(201,168,76,.06)' }} />
         <div className="absolute rounded-full pointer-events-none" style={{ bottom: -30, right: 80, width: 120, height: 120, background: 'rgba(201,168,76,.08)' }} />
@@ -142,7 +142,7 @@ export default function ComptableDashboard() {
           icon={<LayoutList size={22} strokeWidth={1.8} />}
           label="Total Budgets"
           value={tous.length}
-          color="#C9A84C"
+          color="#C9910A"
           bgColor="#FEF9EC"
           trendText={`${tous.length} budget${tous.length!==1?'s':''} au total`}
           sparklineData={sparkMois}

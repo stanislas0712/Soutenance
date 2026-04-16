@@ -14,7 +14,7 @@ export function DepensesParDepartement({ data, totalPeriode }) {
 
   return (
     <div>
-      <h2 style={{ fontSize: '15px', fontWeight: 700, color: '#1E3A5F', marginBottom: 14 }}>
+      <h2 style={{ fontSize: '15px', fontWeight: 700, color: '#0D2240', marginBottom: 14 }}>
         Dépenses par département
       </h2>
       <div className="card p-0 overflow-hidden">
@@ -66,7 +66,7 @@ export function TopDepenses({ data }) {
 
   return (
     <div>
-      <h2 style={{ fontSize: '15px', fontWeight: 700, color: '#1E3A5F', marginBottom: 14 }}>
+      <h2 style={{ fontSize: '15px', fontWeight: 700, color: '#0D2240', marginBottom: 14 }}>
         Top lignes budgétaires consommatrices
       </h2>
       <div className="card p-0 overflow-hidden">
@@ -110,7 +110,7 @@ export function RepartitionBudgets({ data }) {
 
   return (
     <div>
-      <h2 style={{ fontSize: '15px', fontWeight: 700, color: '#1E3A5F', marginBottom: 14 }}>
+      <h2 style={{ fontSize: '15px', fontWeight: 700, color: '#0D2240', marginBottom: 14 }}>
         Répartition par budget
       </h2>
       <div className="card p-0 overflow-hidden">

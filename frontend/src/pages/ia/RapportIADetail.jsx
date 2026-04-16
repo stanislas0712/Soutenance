@@ -66,7 +66,7 @@ function MarkdownBlock({ content }) {
     }
     if (line.startsWith('## ')) {
       nodes.push(
-        <h2 key={i} style={{ fontSize: '16px', fontWeight: 700, color: '#1E3A5F', margin: '28px 0 12px', paddingLeft: 14, borderLeft: '3px solid #C9A84C' }}>
+        <h2 key={i} style={{ fontSize: '16px', fontWeight: 700, color: '#0D2240', margin: '28px 0 12px', paddingLeft: 14, borderLeft: '3px solid #C9910A' }}>
           <InlineMarkdown text={line.slice(3)} />
         </h2>
       )
@@ -74,7 +74,7 @@ function MarkdownBlock({ content }) {
     }
     if (line.startsWith('# ')) {
       nodes.push(
-        <h1 key={i} style={{ fontSize: '20px', fontWeight: 800, color: '#0D1E35', margin: '32px 0 14px', paddingBottom: 10, borderBottom: '2px solid #C9A84C' }}>
+        <h1 key={i} style={{ fontSize: '20px', fontWeight: 800, color: '#0D1E35', margin: '32px 0 14px', paddingBottom: 10, borderBottom: '2px solid #C9910A' }}>
           <InlineMarkdown text={line.slice(2)} />
         </h1>
       )
@@ -209,7 +209,7 @@ export default function RapportIADetail() {
 
       {/* Card couverture */}
       <div style={{
-        background: 'linear-gradient(135deg, #0D1E35 0%, #1E3A5F 100%)',
+        background: '#0D2240',
         borderRadius: 14, padding: '24px 32px', marginBottom: 24,
         display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start',
         flexWrap: 'wrap', gap: 16,
@@ -217,7 +217,7 @@ export default function RapportIADetail() {
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
             <div style={{ width: 36, height: 36, borderRadius: 9, background: 'rgba(255,255,255,.12)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <Sparkles size={18} strokeWidth={2} style={{ color: '#C9A84C' }} />
+              <Sparkles size={18} strokeWidth={2} style={{ color: '#C9910A' }} />
             </div>
             {typeMeta && (
               <span style={{

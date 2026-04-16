@@ -281,7 +281,7 @@ function DepenseGroupDetail({ group, onClose }) {
       <div className="modal-panel" onClick={e => e.stopPropagation()} style={{ maxWidth: 700, padding: 0, overflow: 'hidden' }}>
 
         {/* En-tête gradient */}
-        <div style={{ background: 'linear-gradient(135deg, #1E3A5F, #2D5986)', padding: '24px 28px 20px', color: '#fff', position: 'relative', overflow: 'hidden' }}>
+        <div style={{ background: '#0D2240', padding: '24px 28px 20px', color: '#fff', position: 'relative', overflow: 'hidden' }}>
           <div style={{ position: 'absolute', top: -30, right: -30, width: 130, height: 130, borderRadius: '50%', background: 'rgba(255,255,255,.06)', pointerEvents: 'none' }} />
           <div style={{ position: 'absolute', bottom: -20, right: 80, width: 80, height: 80, borderRadius: '50%', background: 'rgba(255,255,255,.04)', pointerEvents: 'none' }} />
           <button onClick={onClose} style={{ position: 'absolute', top: 16, right: 16, background: 'rgba(255,255,255,.15)', border: 'none', borderRadius: 7, padding: '5px 8px', cursor: 'pointer', color: '#fff', display: 'flex', alignItems: 'center' }}>

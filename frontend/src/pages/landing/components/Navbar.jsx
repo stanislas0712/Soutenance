@@ -49,7 +49,7 @@ export default function Navbar() {
           {/* Logo */}
           <a href="/" className="flex items-center gap-2.5 flex-shrink-0 no-underline" aria-label="Gestion Budgétaire - Accueil">
             <img src="/budget.jpg" alt="Gestion Budgétaire" className="rounded-xl flex-shrink-0" style={{ width: 36, height: 36, objectFit: 'cover' }} />
-            <span className="text-lg font-bold tracking-tight" style={{ color: '#1E3A5F', fontFamily: 'Lora, Georgia, serif' }}>
+            <span className="text-lg font-bold tracking-tight" style={{ color: '#0D2240', fontFamily: "'IBM Plex Sans', system-ui, sans-serif" }}>
               Gestion <span className="font-extrabold">Budgétaire</span>
             </span>
           </a>
@@ -60,7 +60,10 @@ export default function Navbar() {
               <a
                 key={link.href}
                 href={link.href}
-                className="text-sm font-medium text-gray-600 hover:text-[#B8973F] hover:bg-[#FEF9EC] px-3.5 py-2 rounded-lg transition-colors no-underline"
+                className="text-sm font-medium px-3.5 py-2 rounded-lg transition-colors no-underline"
+                style={{ color: '#57616E', minHeight: '44px', display: 'inline-flex', alignItems: 'center' }}
+                onMouseEnter={e => { e.currentTarget.style.color = '#C9910A'; e.currentTarget.style.background = '#FDF6E3' }}
+                onMouseLeave={e => { e.currentTarget.style.color = '#57616E'; e.currentTarget.style.background = '' }}
                 onClick={(e) => handleNavClick(e, link.href)}
               >
                 {link.label}
@@ -68,11 +71,12 @@ export default function Navbar() {
             ))}
           </nav>
 
-          {/* Desktop action buttons */}
+          {/* Desktop action button */}
           <div className="hidden md:flex items-center gap-2 flex-shrink-0">
             <a
               href="/login"
-              className="text-white text-sm font-semibold px-5 py-2 rounded-lg transition-all no-underline whitespace-nowrap" style={{ background: 'linear-gradient(135deg, #292524, #1E3A5F)' }}
+              className="text-white text-sm font-semibold px-5 rounded-lg no-underline whitespace-nowrap inline-flex items-center"
+              style={{ background: '#0D2240', height: '44px', letterSpacing: '-.1px' }}
             >
               Accéder à la plateforme
             </a>
@@ -84,10 +88,11 @@ export default function Navbar() {
             onClick={() => setDrawerOpen(true)}
             aria-label="Ouvrir le menu"
             aria-expanded={drawerOpen}
+            style={{ minWidth: 44, minHeight: 44 }}
           >
-            <span className="w-5.5 h-0.5 bg-gray-600 rounded-full block" style={{ width: '22px', height: '2px' }} />
-            <span className="w-5.5 h-0.5 bg-gray-600 rounded-full block" style={{ width: '22px', height: '2px' }} />
-            <span className="w-5.5 h-0.5 bg-gray-600 rounded-full block" style={{ width: '22px', height: '2px' }} />
+            <span style={{ width: '22px', height: '2px', background: '#4B5563', borderRadius: '2px', display: 'block' }} />
+            <span style={{ width: '22px', height: '2px', background: '#4B5563', borderRadius: '2px', display: 'block' }} />
+            <span style={{ width: '22px', height: '2px', background: '#4B5563', borderRadius: '2px', display: 'block' }} />
           </button>
         </div>
       </nav>
@@ -114,14 +119,15 @@ export default function Navbar() {
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-2.5">
             <img src="/budget.jpg" alt="Gestion Budgétaire" className="rounded-xl" style={{ width: 36, height: 36, objectFit: 'cover' }} />
-            <span className="text-lg font-bold text-blue-600 tracking-tight">
+            <span className="text-lg font-bold tracking-tight" style={{ color: '#0D2240', fontFamily: "'IBM Plex Sans', system-ui, sans-serif" }}>
               Gestion <span className="font-extrabold">Budgétaire</span>
             </span>
           </div>
           <button
-            className="text-gray-400 hover:text-gray-600 text-2xl leading-none p-1 rounded-lg hover:bg-gray-100 transition-colors"
+            className="text-gray-400 hover:text-gray-600 p-1 rounded-lg hover:bg-gray-100 transition-colors"
             onClick={() => setDrawerOpen(false)}
             aria-label="Fermer le menu"
+            style={{ minWidth: 44, minHeight: 44, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}
           >
             ✕
           </button>
@@ -133,7 +139,8 @@ export default function Navbar() {
             <a
               key={link.href}
               href={link.href}
-              className="text-base font-medium text-gray-700 hover:text-[#B8973F] hover:bg-[#FEF9EC] px-4 py-3.5 rounded-xl transition-colors no-underline border-b border-gray-50 last:border-b-0"
+              className="text-base font-medium px-4 rounded-xl no-underline border-b border-gray-50 last:border-b-0"
+              style={{ color: '#374151', minHeight: '44px', display: 'flex', alignItems: 'center' }}
               onClick={(e) => handleNavClick(e, link.href)}
             >
               {link.label}
@@ -141,11 +148,12 @@ export default function Navbar() {
           ))}
         </div>
 
-        {/* Drawer action buttons */}
+        {/* Drawer action button */}
         <div className="flex flex-col gap-3 mt-6">
           <a
             href="/login"
-            className="text-white text-sm font-semibold px-4 py-3 rounded-xl transition-all no-underline text-center" style={{ background: 'linear-gradient(135deg, #292524, #1E3A5F)' }}
+            className="text-white text-sm font-semibold px-4 rounded-xl no-underline text-center inline-flex items-center justify-center"
+            style={{ background: '#0D2240', height: '44px' }}
           >
             Accéder à la plateforme
           </a>

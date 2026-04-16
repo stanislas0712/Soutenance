@@ -65,7 +65,7 @@ export default function ProfilPage() {
       <div
         className="rounded-[var(--radius-lg)] px-8 py-7 mb-6 flex items-center gap-[22px] text-white relative overflow-hidden"
         style={{
-          background: 'linear-gradient(160deg, #1E3A5F 0%, #152B4B 60%, #1E3A5F 100%)',
+          background: '#0D2240',
           boxShadow: '0 8px 28px rgba(15,34,64,.4)',
         }}
       >
@@ -104,7 +104,7 @@ export default function ProfilPage() {
       <div className="card mb-5">
         <h2 className="card-section-title font-bold text-[14px] text-[#1F2937]">
           <div className="w-7 h-7 rounded-[7px] flex items-center justify-center" style={{ background: '#FEF9EC' }}>
-            <User size={14} strokeWidth={2} style={{ color: '#B8973F' }} />
+            <User size={14} strokeWidth={2} style={{ color: '#C9910A' }} />
           </div>
           Informations personnelles
         </h2>
@@ -228,7 +228,7 @@ function PasswordStrength({ pwd }) {
   const levels = [
     { label: 'Très faible', color: '#DC2626', w: '25%'  },
     { label: 'Faible',      color: '#F59E0B', w: '50%'  },
-    { label: 'Moyen',       color: '#C9A84C', w: '75%'  },
+    { label: 'Moyen',       color: '#C9910A', w: '75%'  },
     { label: 'Fort',        color: '#16A34A', w: '100%' },
   ]
   const lvl = levels[score - 1] || levels[0]

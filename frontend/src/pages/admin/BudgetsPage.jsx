@@ -143,14 +143,14 @@ export default function BudgetsPage() {
       {/* Bandeau département actif */}
       {deptId && (
         <div className="flex items-center gap-[10px] px-4 py-[10px] rounded-[10px] mb-[14px]" style={{ background: '#FEF9EC', border: '1px solid #F3D07A' }}>
-          <Building2 size={14} strokeWidth={2} className="shrink-0" style={{ color: '#B8973F' }} />
+          <Building2 size={14} strokeWidth={2} className="shrink-0" style={{ color: '#C9910A' }} />
           <span className="text-[13px] flex-1" style={{ color: '#78350F' }}>
             Filtre actif : <strong>{deptNom}</strong>
           </span>
           <button
             onClick={() => setSearchParams({})}
             className="flex items-center gap-1 text-[12px] font-semibold cursor-pointer"
-            style={{ color: '#B8973F' }}
+            style={{ color: '#C9910A' }}
           >
             <X size={13} strokeWidth={2.5} /> Effacer le filtre
           </button>

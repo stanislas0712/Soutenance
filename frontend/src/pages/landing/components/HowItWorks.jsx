@@ -4,7 +4,7 @@ const STEPS = [
   {
     number: '01',
     tag: 'ALLOCATION',
-    color: '#C9A84C',
+    color: '#C9910A',
     colorLight: '#FEF9EC',
     title: "L'administrateur alloue les enveloppes",
     description:
@@ -118,7 +118,7 @@ export default function HowItWorks() {
             headerVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'
           }`}
         >
-          <p className="text-sm font-semibold uppercase tracking-widest mb-4" style={{ color: '#B8973F' }}>
+          <p className="text-sm font-semibold uppercase tracking-widest mb-4" style={{ color: '#C9910A' }}>
             Comment ça marche
           </p>
           <h2 id="how-it-works-title" className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-4 tracking-tight">

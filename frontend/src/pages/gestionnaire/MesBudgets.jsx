@@ -307,7 +307,7 @@ export default function MesBudgets() {
                   <button
                     title="Voir le détail"
                     onClick={() => navigate(`/mes-budgets/${b.id}`)}
-                    style={btnStyle('#C9A84C')}
+                    style={btnStyle('#C9910A')}
                   >
                     <Eye size={13} strokeWidth={2} />
                   </button>

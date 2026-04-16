@@ -143,8 +143,8 @@ export default function ChatbotDrawer() {
         aria-label="Ouvrir l'assistant IA"
         className="fixed bottom-6 right-6 z-[1000] w-[52px] h-[52px] rounded-full border-none cursor-pointer flex items-center justify-center transition-[transform_.2s,box-shadow_.2s] hover:scale-110"
         style={{
-          background: 'linear-gradient(135deg, #1E3A5F, #1E3A5F)',
-          boxShadow: '0 4px 16px rgba(201,168,76,.35)',
+          background: '#0D2240',
+          boxShadow: '0 4px 16px rgba(13,34,64,.35)',
         }}
       >
         <Brain size={21} strokeWidth={1.8} style={{ color: '#fff' }} />
@@ -160,7 +160,7 @@ export default function ChatbotDrawer() {
           {/* Header */}
           <div
             className="px-4 py-3 flex items-center justify-between shrink-0"
-            style={{ background: 'linear-gradient(135deg, #1E3A5F, #1E3A5F)', borderBottom: '2px solid rgba(201,168,76,.3)' }}
+            style={{ background: '#0D2240', borderBottom: '2px solid rgba(201,168,76,.3)' }}
           >
             <div className="flex items-center gap-[10px]">
               <div style={{
@@ -251,13 +251,13 @@ export default function ChatbotDrawer() {
               onChange={e => setInput(e.target.value)}
               placeholder={convId ? 'Votre question…' : 'Initialisation…'}
               disabled={sending || !convId}
-              className="flex-1 border border-[#E5E7EB] rounded-[8px] px-3 py-2 text-[.8rem] outline-none bg-[#F9FAFB] transition-colors focus:border-[#C9A84C]"
+              className="flex-1 border border-[#E5E7EB] rounded-[8px] px-3 py-2 text-[.8rem] outline-none bg-[#F9FAFB] transition-colors focus:border-[#C9910A]"
             />
             <button
               type="submit"
               disabled={!input.trim() || sending || !convId}
               className="border-none rounded-[8px] px-[14px] py-2 text-[.85rem] cursor-pointer transition-opacity"
-              style={{ background: '#1E3A5F', color: '#C9A84C', border: '1px solid rgba(201,168,76,.4)', opacity: (!input.trim() || sending || !convId) ? 0.45 : 1 }}
+              style={{ background: '#0D2240', color: '#C9910A', border: '1px solid rgba(201,145,10,.4)', opacity: (!input.trim() || sending || !convId) ? 0.45 : 1 }}
             >
               ➤
             </button>
@@ -310,7 +310,7 @@ function MessageBubble({ msg }) {
       <div
         className="max-w-[82%] px-3 py-[9px] text-[.78rem] leading-[1.6] break-words"
         style={{
-          background: isUser ? 'linear-gradient(135deg, #1E3A5F, #1E3A5F)' : '#F3F4F6',
+          background: isUser ? '#0D2240' : '#F3F4F6',
           color: isUser ? '#fff' : '#1F2937',
           borderRadius: isUser ? '12px 12px 0 12px' : '0 12px 12px 12px',
         }}
