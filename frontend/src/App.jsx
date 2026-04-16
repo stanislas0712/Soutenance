@@ -27,10 +27,6 @@ import ComptableDashboard                              from './pages/comptable/C
 import { BudgetsAValiderList, BudgetValidationDetail } from './pages/comptable/BudgetsAValider'
 import ProfilPage from './pages/ProfilPage'
 
-/* IA */
-import IADashboard    from './pages/ia/IADashboard'
-import RapportIADetail from './pages/ia/RapportIADetail'
-
 /* Rapports */
 import RapportsKPIPage from './pages/admin/RapportsKPIPage'
 import RapportPage     from './pages/admin/RapportPage'
@@ -99,11 +95,6 @@ function AppRoutes() {
           <Route path="/depenses"        element={<DepensesPage />} />
           <Route path="/rapports"        element={<RapportsKPIPage />} />
         </>}
-
-        {/* IA — tous les rôles */}
-        <Route path="/ia"                element={<IADashboard />} />
-        <Route path="/ia-rapport/:id"    element={<RapportIADetail />} />
-        <Route path="/ia/rapports/:id"   element={<RapportIADetail />} />
 
         {/* Profil — tous les rôles */}
         <Route path="/profil" element={<ProfilPage />} />

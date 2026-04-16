@@ -1,11 +1,10 @@
 import { useState, useRef, useEffect } from 'react'
 import { NavLink, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
-import ChatbotDrawer from './ia/ChatbotDrawer'
 import { getNotifications, marquerLue, marquerToutesLues } from '../api/notifications'
 import {
   LayoutDashboard, Wallet, CalendarDays, Building2, Users,
-  ClipboardList, BarChart3, FileBarChart, CreditCard, Sparkles,
+  ClipboardList, BarChart3, FileBarChart, CreditCard,
   CheckCircle2, ChevronRight, ChevronDown, LogOut, User,
   Menu, Bell,
 } from 'lucide-react'
@@ -27,20 +26,17 @@ function navItems(role) {
     { to: '/audit',               icon: ClipboardList, label: "Journal d'audit"     },
     { to: '/rapports',            icon: BarChart3,    label: 'Statistiques'     },
     { to: '/rapports-detailles',  icon: FileBarChart, label: 'Rapports détaillés'  },
-    { to: '/ia',                  icon: Sparkles,     label: 'Veille & Analyse'    },
   ]
   if (role === 'GESTIONNAIRE') return [
     { to: '/dashboard',    icon: LayoutDashboard, label: 'Tableau de bord' },
     { to: '/mes-budgets',  icon: Wallet,          label: 'Mes budgets' },
     { to: '/mes-depenses', icon: CreditCard,      label: 'Mes dépenses' },
-    { to: '/ia',           icon: Sparkles,        label: 'Veille & Analyse' },
   ]
   if (role === 'COMPTABLE') return [
     { to: '/dashboard',  icon: LayoutDashboard, label: 'Tableau de bord' },
     { to: '/validation', icon: CheckCircle2,    label: 'Budgets à valider' },
     { to: '/depenses',   icon: CreditCard,      label: 'Dépenses à valider' },
     { to: '/rapports',   icon: BarChart3,       label: 'Statistiques' },
-    { to: '/ia',         icon: Sparkles,        label: 'Veille & Analyse' },
   ]
   return []
 }
@@ -51,16 +47,14 @@ function getSections(role, items) {
     return [
       { label: 'PRINCIPAL',      items: items.slice(0, 1) },
       { label: 'ADMINISTRATION', items: items.slice(1, 5) },
-      { label: 'RAPPORTS',       items: items.slice(5, 7) },
-      { label: 'IA',             items: items.slice(7) },
+      { label: 'RAPPORTS',       items: items.slice(5) },
     ]
   }
   if (role === 'GESTIONNAIRE') {
     return [
       { label: null,       items: items.slice(0, 1) },
       { label: 'BUDGETS',  items: items.slice(1, 2) },
-      { label: 'DÉPENSES', items: items.slice(2, 3) },
-      { label: 'IA',       items: items.slice(3) },
+      { label: 'DÉPENSES', items: items.slice(2) },
     ]
   }
   if (role === 'COMPTABLE') {
@@ -147,7 +141,7 @@ export default function Layout({ children }) {
     || items.find(i => i.to === location.pathname)
 
   return (
-    <div className="flex h-full" style={{ background: '#F4F6F9' }}>
+    <div className="flex h-full" style={{ background: '#F8FAFC' }}>
 
       {/* ── Mobile overlay ────────────────────────────────────────────── */}
       {isMobile && mobileSidebarOpen && (
@@ -173,7 +167,7 @@ export default function Layout({ children }) {
           minWidth: isMobile ? 'var(--sidebar-w)' : (collapsed ? 60 : 'var(--sidebar-w)'),
           transform: isMobile ? (mobileSidebarOpen ? 'translateX(0)' : 'translateX(-100%)') : 'none',
           transition: 'width .22s cubic-bezier(.4,0,.2,1), min-width .22s, transform .25s cubic-bezier(.4,0,.2,1)',
-          background: '#0D2240',
+          background: '#1E3A8A',
           boxShadow: '1px 0 0 0 #D1D8E0',
         }}
       >
@@ -237,7 +231,7 @@ export default function Layout({ children }) {
           className="shrink-0 flex items-center px-5 gap-[12px] z-50"
           style={{
             height: 'var(--topbar-h)',
-            background: '#0D2240',
+            background: '#1E3A8A',
             borderBottom: '1px solid rgba(255,255,255,.07)',
             boxShadow: '0 1px 4px rgba(13,34,64,.25)',
           }}
@@ -277,15 +271,13 @@ export default function Layout({ children }) {
         </header>
 
         {/* Page content */}
-        <main className="flex-1 overflow-y-auto" style={{ padding: isMobile ? '16px 14px' : '28px 32px', background: '#F4F6F9' }}>
+        <main className="flex-1 overflow-y-auto" style={{ padding: isMobile ? '16px 14px' : '28px 32px', background: '#F8FAFC' }}>
           <div className="page-content">
             {children}
           </div>
         </main>
       </div>
 
-      {/* Chatbot IA flottant */}
-      <ChatbotDrawer />
     </div>
   )
 }
@@ -409,7 +401,7 @@ function NotificationBell({ navigate }) {
           <span style={{
             position: 'absolute', top: -4, right: -4,
             minWidth: 17, height: 17, borderRadius: 9999,
-            background: '#C0392B', border: '2px solid #0D2240',
+            background: '#C0392B', border: '2px solid #1E3A8A',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             fontSize: '9px', fontWeight: 800, color: '#fff', padding: '0 3px',
           }}>
@@ -442,7 +434,7 @@ function NotificationBell({ navigate }) {
           {/* ── Header ── */}
           <div style={{
             padding: '16px 18px 14px',
-            background: '#0D2240',
+            background: '#1E3A8A',
             flexShrink: 0,
           }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -635,7 +627,7 @@ function AvatarMenu({ user, roleInfo, onLogout, navigate }) {
       >
         <div
           className="w-[30px] h-[30px] rounded-full shrink-0 flex items-center justify-center text-white font-bold text-[11px]"
-          style={{ background: '#1A3A6B' }}
+          style={{ background: '#1D4ED8' }}
         >
           {initials}
         </div>
