@@ -193,7 +193,7 @@ export default function UtilisateursPage() {
       </div>
 
       {/* Barre de recherche + filtres */}
-      <div className="flex flex-wrap gap-3 mb-5 items-center">
+      <div className="flex gap-3 mb-5 items-center" style={{ flexWrap: 'nowrap' }}>
         {/* Search */}
         <div className="relative flex-1 min-w-[200px] max-w-[340px]">
           <Search size={15} strokeWidth={2} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />

@@ -247,69 +247,75 @@ LogAudit
 
 ## 6. API REST
 
-Base URL : `http://localhost:8000/api/v1/`
+Base URL (local) : `http://localhost:8000/api/`
+Base URL (production) : `https://soutenance-production.up.railway.app/api/`
+
+Frontend (SPA) :
+- Local : `http://localhost:5173`
+- Production : `https://soutenance-production.up.railway.app`
+- Page utilisateurs (admin) : `https://soutenance-production.up.railway.app/utilisateurs`
 
 ### Authentification
 
 | Méthode | Endpoint | Description |
 |---|---|---|
-| POST | `/auth/login/` | Connexion — retourne access + refresh |
-| POST | `/auth/token/refresh/` | Renouvellement du token access |
-| POST | `/auth/reset-password/request/` | Demande de réinitialisation par email |
-| POST | `/auth/reset-password/confirm/` | Confirmation avec token |
+| POST | `/accounts/login/` | Connexion — retourne access + refresh |
+| POST | `/accounts/token/refresh/` | Renouvellement du token access |
+| GET | `/accounts/me/` | Profil utilisateur connecté |
+| POST | `/accounts/forgot-password/` | Demande de réinitialisation par email |
+| POST | `/accounts/reset-password/` | Confirmation avec token |
 
 ### Comptes
 
 | Méthode | Endpoint | Description |
 |---|---|---|
-| GET / POST | `/departements/` | Lister / créer |
-| GET / PATCH / DELETE | `/departements/{id}/` | Détail / modifier / supprimer |
-| GET / POST | `/utilisateurs/` | Lister / créer |
-| GET / PATCH / DELETE | `/utilisateurs/{id}/` | Détail / modifier / supprimer |
-| GET / PATCH | `/auth/me/` | Profil de l'utilisateur connecté |
+| GET / POST | `/accounts/departements/` | Lister / créer |
+| GET / PATCH / DELETE | `/accounts/departements/{id}/` | Détail / modifier / supprimer |
+| GET / POST | `/accounts/utilisateurs/` | Lister / créer |
+| GET / PATCH / DELETE | `/accounts/utilisateurs/{id}/` | Détail / modifier / supprimer |
 
 ### Budgets
 
 | Méthode | Endpoint | Description |
 |---|---|---|
-| GET / POST | `/budgets-annuels/` | Budgets annuels |
-| GET / POST | `/budgets-annuels/{id}/allocations/` | Allocations d'un exercice |
-| GET / POST | `/budgets/` | Budgets départementaux |
-| GET / PATCH | `/budgets/{id}/` | Détail |
-| POST | `/budgets/{id}/soumettre/` | Soumettre pour validation |
-| POST | `/budgets/{id}/approuver/` | Approuver |
-| POST | `/budgets/{id}/rejeter/` | Rejeter |
-| POST | `/budgets/{id}/cloturer/` | Clôturer |
-| GET / POST | `/budgets/{id}/lignes/` | Lignes budgétaires |
-| POST | `/budgets/{id}/depense-multi/` | Saisie dépense multi-lignes |
+| GET / POST | `/budget/annuel/` | Budgets annuels |
+| GET / POST | `/budget/annuel/{id}/allocations/` | Allocations d'un exercice |
+| GET / POST | `/budget/` | Budgets départementaux |
+| GET / PATCH | `/budget/{id}/` | Détail |
+| POST | `/budget/{id}/soumettre/` | Soumettre pour validation |
+| POST | `/budget/{id}/approuver/` | Approuver |
+| POST | `/budget/{id}/rejeter/` | Rejeter |
+| POST | `/budget/{id}/cloturer/` | Clôturer |
+| GET / POST | `/budget/{id}/lignes/` | Lignes budgétaires |
+| POST | `/budget/{id}/depense-multi/` | Saisie dépense multi-lignes |
 
 ### Dépenses
 
 | Méthode | Endpoint | Description |
 |---|---|---|
-| GET | `/depenses/` | Lister (filtrable par statut, budget) |
-| GET | `/depenses/{id}/` | Détail |
-| POST | `/depenses/{id}/valider/` | Valider |
-| POST | `/depenses/{id}/rejeter/` | Rejeter avec motif |
+| GET | `/v1/depenses/` | Lister (filtrable par statut, budget) |
+| GET | `/v1/depenses/{id}/` | Détail |
+| POST | `/v1/depenses/{id}/valider/` | Valider |
+| POST | `/v1/depenses/{id}/rejeter/` | Rejeter avec motif |
 
 ### Intelligence artificielle
 
 | Méthode | Endpoint | Description |
 |---|---|---|
-| POST | `/ia/analyser/{budget_id}/` | Analyse complète d'un budget |
-| POST | `/ia/anomalies/{budget_id}/` | Détection d'anomalies |
-| POST | `/ia/suggestions/{budget_id}/` | Suggestions de réallocation |
-| GET / POST | `/ia/conversations/` | Conversations chatbot |
-| POST | `/ia/conversations/{id}/messages/` | Envoyer un message |
+| POST | `/v1/ia/analyser-budget/{budget_id}/` | Analyse complète d'un budget |
+| POST | `/v1/ia/detecter-anomalies/{budget_id}/` | Détection d'anomalies |
+| GET / POST | `/v1/ia/conversations/` | Conversations chatbot |
+| POST | `/v1/ia/conversations/{id}/messages/` | Envoyer un message |
+| POST | `/v1/ia/predire-depassement/{budget_id}/` | Prédiction de dépassement |
 
 ### Rapports & Journal d'audit
 
 | Méthode | Endpoint | Description |
 |---|---|---|
-| GET | `/rapports/kpis/` | Indicateurs clés globaux |
-| GET | `/rapports/evolution/` | Évolution mensuelle |
-| GET | `/rapports/departements/` | Consommation par département |
-| GET | `/audit/logs/` | Journal d'audit (filtrable) |
+| GET | `/v1/rapports/kpis/` | Indicateurs clés globaux |
+| GET | `/v1/rapports/evolution-mensuelle/` | Évolution mensuelle |
+| GET | `/v1/rapports/par-departement/` | Consommation par département |
+| GET | `/audit/` | Journal d'audit (filtrable) |
 
 ---
 
@@ -404,7 +410,7 @@ Copiez `.env.example` en `.env` et adaptez les valeurs. **Ne commitez jamais `.e
 | Variable | Description | Défaut |
 |---|---|---|
 | `SECRET_KEY` | Clé secrète Django (≥ 50 caractères) | *obligatoire* |
-| `DEBUG` | Mode debug Django | `True` |
+| `DEBUG` | Mode debug Django | `False` |
 | `ALLOWED_HOSTS` | Hôtes autorisés (virgule) | `localhost,127.0.0.1` |
 | `DB_NAME` | Nom de la base PostgreSQL | `budgetflow` |
 | `DB_USER` | Utilisateur PostgreSQL | `budgetflow` |
@@ -419,7 +425,7 @@ Copiez `.env.example` en `.env` et adaptez les valeurs. **Ne commitez jamais `.e
 | `EMAIL_PORT` | Port SMTP | `587` |
 | `EMAIL_HOST_USER` | Email d'envoi | *configurable* |
 | `EMAIL_HOST_PASSWORD` | Mot de passe SMTP | *configurable* |
-| `FRONTEND_URL` | URL du frontend (liens email) | `http://localhost:8000` |
+| `FRONTEND_URL` | URL du frontend (liens email) | `http://localhost:5173` |
 
 ---
 

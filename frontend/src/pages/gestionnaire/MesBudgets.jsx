@@ -1,12 +1,11 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { getBudgets, deleteBudget, soumettreBudget } from '../../api/budget'
+import { getBudgets, soumettreBudget } from '../../api/budget'
 import { StatutBadge } from '../../components/StatusBadge'
 import {
-  Search, Plus, Wallet, Trash2, Eye, Send, Edit2, Receipt,
-  ChevronRight, Download, Printer,
+  Search, Plus, Wallet, Eye, Send, Edit2, Receipt,
+  ChevronRight,
 } from 'lucide-react'
-import { exportCSV, printPDF } from '../../utils/export'
 import { notifRefresh } from '../../utils/notifRefresh'
 import { ConfirmModal } from '../../components/ui'
 
@@ -48,21 +47,6 @@ export default function MesBudgets() {
     return matchTab && matchSearch
   })
 
-  const handleDelete = (id, nom, e) => {
-    e.stopPropagation()
-    setConfirmModal({
-      title: 'Supprimer le budget',
-      message: `Supprimer définitivement le budget "${nom}" ? Cette action est irréversible.`,
-      confirmLabel: 'Supprimer',
-      onConfirm: async () => {
-        setBusy(id)
-        await deleteBudget(id).catch(err => alert(err.response?.data?.detail || 'Erreur'))
-        setBusy(null)
-        load()
-      },
-    })
-  }
-
   const handleSoumettre = (id, nom, e) => {
     e.stopPropagation()
     setConfirmModal({
@@ -90,38 +74,6 @@ export default function MesBudgets() {
           <p className="page-subtitle">{budgets.length} budget{budgets.length !== 1 ? 's' : ''} au total</p>
         </div>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-          <button
-            onClick={() => {
-              const rows = visible.map(b => [
-                b.code, b.nom, b.departement_nom || '—', b.statut,
-                fmt(b.montant_global), `${parseFloat(b.taux_consommation || 0).toFixed(1)}%`,
-                b.date_debut, b.date_fin,
-              ])
-              exportCSV(`mes-budgets-${new Date().toISOString().slice(0,10)}`,
-                ['Code','Nom','Département','Statut','Montant (FCFA)','Taux %','Début','Fin'], rows)
-            }}
-            className="btn btn-secondary btn-sm"
-            style={{ gap: 6 }}
-          >
-            <Download size={13} strokeWidth={2} /> CSV
-          </button>
-          <button
-            onClick={() => {
-              const rows = visible.map(b => [
-                b.code, b.nom, b.statut,
-                fmt(b.montant_global) + ' FCFA',
-                `${parseFloat(b.taux_consommation || 0).toFixed(1)}%`,
-              ])
-              printPDF('Mes budgets', ['Code','Nom','Statut','Montant','Taux'], rows, {
-                subtitle: `Onglet : ${TABS.find(t => t.key === tab)?.label}`,
-                stats: TABS.map(t => ({ value: budgets.filter(b => b.statut === t.key).length, label: t.label })),
-              })
-            }}
-            className="btn btn-secondary btn-sm"
-            style={{ gap: 6 }}
-          >
-            <Printer size={13} strokeWidth={2} /> PDF
-          </button>
           <button
             onClick={() => navigate('/creer-budget')}
             className="btn btn-primary btn-md"
@@ -201,16 +153,6 @@ export default function MesBudgets() {
                 ? 'Créez votre premier budget pour commencer.'
                 : `Aucun budget en statut « ${TABS.find(t => t.key === tab)?.label} ».`}
           </p>
-          {!search && tab === 'BROUILLON' && (
-            <button
-              onClick={() => navigate('/creer-budget')}
-              className="btn btn-primary btn-md"
-              style={{ marginTop: 16, gap: 7 }}
-            >
-              <Plus size={16} strokeWidth={2.5} />
-              Créer un budget
-            </button>
-          )}
         </div>
       ) : (
         <div className="card p-0 overflow-hidden" style={{ overflowX: 'auto' }}>
@@ -343,18 +285,6 @@ export default function MesBudgets() {
                       style={btnStyle('#059669')}
                     >
                       <Receipt size={13} strokeWidth={2} />
-                    </button>
-                  )}
-
-                  {/* Supprimer (BROUILLON + REJETE) */}
-                  {['BROUILLON', 'REJETE'].includes(b.statut) && (
-                    <button
-                      title="Supprimer"
-                      onClick={e => handleDelete(b.id, b.nom, e)}
-                      disabled={isBusy}
-                      style={btnStyle('#EF4444')}
-                    >
-                      <Trash2 size={13} strokeWidth={2} />
                     </button>
                   )}
 

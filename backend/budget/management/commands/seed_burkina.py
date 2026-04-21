@@ -164,7 +164,7 @@ class Command(BaseCommand):
                 montant_alloue=montant,
             )
             allocs[code] = a
-            self.stdout.write(f"  + Allocation : {code} → {montant:,.0f} FCFA")
+            self.stdout.write(f"  + Allocation : {code} -> {montant:,.0f} FCFA")
         return ba, allocs
 
     # ── Budgets ───────────────────────────────────────────────────────────────
@@ -314,13 +314,12 @@ class Command(BaseCommand):
             ),
         ]
 
-        for (code, nom, description, gestionnaire, dept_code, statut,
+        for (code, nom, _desc, gestionnaire, dept_code, statut,
              date_debut, date_fin, comptable, motif_rejet, lignes_data) in specs:
 
             b = Budget(
                 code=code,
                 nom=nom,
-                description=description,
                 gestionnaire=gestionnaire,
                 departement=depts[dept_code],
                 allocation=allocs[dept_code],

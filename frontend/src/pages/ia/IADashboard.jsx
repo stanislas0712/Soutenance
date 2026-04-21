@@ -1,14 +1,13 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
-  getAnomalies, getPredictions, getRapports, genererRapport,
+  getAnomalies, getPredictions,
   traiterAnomalie, detecterAnomalies, predireDepassement,
 } from '../../api/ia'
 import { getBudgets } from '../../api/budget'
-import { printRapportIA, printPDF } from '../../utils/export'
+import { printPDF } from '../../utils/export'
 import {
-  Sparkles, AlertTriangle, TrendingUp, FileText, Plus,
+  AlertTriangle, TrendingUp,
   CheckCircle2, XCircle, Brain, Zap, Shield,
   ScanSearch, Download, Activity,
 } from 'lucide-react'
@@ -22,7 +21,6 @@ const NIVEAU_CFG = {
 
 export default function IADashboard() {
   const [onglet,      setOnglet]      = useState('anomalies')
-  const [genOpen,     setGenOpen]     = useState(false)
   const [scanning,    setScanning]    = useState(false)
   const [scanMsg,     setScanMsg]     = useState('')
   const [scanResult,  setScanResult]  = useState(null)
@@ -30,11 +28,9 @@ export default function IADashboard() {
 
   const { data: anomaliesData }   = useQuery({ queryKey: ['ia-anomalies'],   queryFn: () => getAnomalies({ statut: 'DETECTEE' }).then(r => r.data),   retry: false, staleTime: 0 })
   const { data: predictionsData } = useQuery({ queryKey: ['ia-predictions'], queryFn: () => getPredictions().then(r => r.data.data),                    retry: false })
-  const { data: rapportsData }    = useQuery({ queryKey: ['ia-rapports'],    queryFn: () => getRapports().then(r => r.data.data),                       retry: false })
 
   const anomalies   = Array.isArray(anomaliesData?.data) ? anomaliesData.data : (anomaliesData?.data?.results || [])
   const predictions = Array.isArray(predictionsData) ? predictionsData : []
-  const rapports    = Array.isArray(rapportsData) ? rapportsData : (rapportsData?.results || [])
 
   const critiques     = anomalies.filter(a => ['ELEVE', 'CRITIQUE'].includes(a.niveau))
   const risquesEleves = predictions.filter(p => p.probabilite_depassement >= 0.5)
@@ -169,16 +165,15 @@ export default function IADashboard() {
   }
 
   const ONGLETS = [
-    { key: 'anomalies',   label: 'Anomalies',         icon: <AlertTriangle size={14} strokeWidth={2} />, count: anomalies.length   },
-    { key: 'predictions', label: 'Prédictions',        icon: <TrendingUp    size={14} strokeWidth={2} />, count: predictions.length },
-    { key: 'rapports',    label: 'Rapports narratifs', icon: <FileText      size={14} strokeWidth={2} />, count: rapports.length    },
+    { key: 'anomalies',   label: 'Anomalies',    icon: <AlertTriangle size={14} strokeWidth={2} />, count: anomalies.length   },
+    { key: 'predictions', label: 'Prédictions',  icon: <TrendingUp    size={14} strokeWidth={2} />, count: predictions.length },
   ]
 
   const KPI_DATA = [
-    { label: 'ANOMALIES CRITIQUES',  value: critiques.length,     icon: <Shield   size={18} strokeWidth={1.8} />, accent: 'var(--color-danger-600)',  iconBg: 'var(--color-danger-50)',   iconColor: 'var(--color-danger-600)'  },
-    { label: 'PRÉDICTIONS À RISQUE', value: risquesEleves.length, icon: <Zap      size={18} strokeWidth={1.8} />, accent: '#C2410C',                  iconBg: '#fff7ed',                  iconColor: '#C2410C'                  },
-    { label: 'RAPPORTS GÉNÉRÉS',     value: rapports.length,      icon: <FileText size={18} strokeWidth={1.8} />, accent: 'var(--color-primary-600)', iconBg: 'var(--color-primary-50)',  iconColor: 'var(--color-primary-600)' },
-    { label: 'TOTAL ANOMALIES',      value: anomalies.length,     icon: <Brain    size={18} strokeWidth={1.8} />, accent: 'var(--color-info-600)',    iconBg: 'var(--color-info-50)',     iconColor: 'var(--color-info-600)'    },
+    { label: 'ANOMALIES CRITIQUES',  value: critiques.length,     icon: <Shield size={18} strokeWidth={1.8} />, accent: 'var(--color-danger-600)',  iconBg: 'var(--color-danger-50)',  iconColor: 'var(--color-danger-600)'  },
+    { label: 'PRÉDICTIONS À RISQUE', value: risquesEleves.length, icon: <Zap    size={18} strokeWidth={1.8} />, accent: '#C2410C',                  iconBg: '#fff7ed',                 iconColor: '#C2410C'                  },
+    { label: 'TOTAL ANOMALIES',      value: anomalies.length,     icon: <Brain  size={18} strokeWidth={1.8} />, accent: 'var(--color-info-600)',    iconBg: 'var(--color-info-50)',    iconColor: 'var(--color-info-600)'    },
+    { label: 'TOTAL PRÉDICTIONS',    value: predictions.length,   icon: <TrendingUp size={18} strokeWidth={1.8} />, accent: 'var(--color-success-600)', iconBg: 'var(--color-success-50)', iconColor: 'var(--color-success-600)' },
   ]
 
   return (
@@ -251,17 +246,6 @@ export default function IADashboard() {
           >
             <Activity size={15} strokeWidth={2} />
             Prédire dépassements
-          </button>
-          <button
-            onClick={() => setGenOpen(true)}
-            className="btn btn-md"
-            style={{
-              gap: 7, background: '#F5F3FF', color: '#5B21B6',
-              border: '1px solid #DDD6FE',
-            }}
-          >
-            <Sparkles size={15} strokeWidth={2} />
-            Générer rapport IA
           </button>
           <button
             onClick={handleExportPDF}
@@ -339,10 +323,7 @@ export default function IADashboard() {
       <div style={{ animation: 'fadeIn .2s ease' }}>
         {onglet === 'anomalies'   && <AnomaliesTab   anomalies={anomalies} onScan={handleScanAnomalies} scanning={scanning} scanResult={scanResult} />}
         {onglet === 'predictions' && <PredictionsTab predictions={predictions} onPredire={handlePredireTous} scanning={scanning} scanResult={scanResult} />}
-        {onglet === 'rapports'    && <RapportsTab    rapports={rapports} onGenerer={() => setGenOpen(true)} />}
       </div>
-
-      {genOpen && <GenererRapportModal onClose={() => setGenOpen(false)} />}
     </div>
   )
 }
@@ -617,138 +598,3 @@ function PredictionsTab({ predictions, onPredire, scanning }) {
   )
 }
 
-/* ── Onglet Rapports ───────────────────────────────────────────────────────── */
-function RapportsTab({ rapports, onGenerer }) {
-  const navigate   = useNavigate()
-  const TYPE_COLOR = {
-    MENSUEL:     { bg: '#FEF9EC', color: '#78350F' },
-    TRIMESTRIEL: { bg: '#F0FDF4', color: '#15803D' },
-    ANNUEL:      { bg: '#F5F3FF', color: '#5B21B6' },
-    AD_HOC:      { bg: '#FFF7ED', color: '#C2410C' },
-  }
-
-  return (
-    <div>
-      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 14, gap: 8 }}>
-        <button onClick={onGenerer} className="btn btn-primary btn-md" style={{ gap: 7 }}>
-          <Plus size={16} strokeWidth={2.5} /> Générer un rapport
-        </button>
-      </div>
-      {!rapports.length ? (
-        <div className="empty-state">
-          <div style={{
-            width: 64, height: 64, borderRadius: '50%', marginBottom: 16,
-            background: 'linear-gradient(135deg, #f3f4f6, #e5e7eb)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-          }}>
-            <FileText size={30} strokeWidth={1.5} style={{ color: '#9CA3AF' }} />
-          </div>
-          <p className="empty-title">Aucun rapport généré</p>
-          <p className="empty-body">Cliquez sur "Générer un rapport" pour commencer.</p>
-        </div>
-      ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-          {rapports.map(r => {
-            const tc = TYPE_COLOR[r.type_rapport] || { bg: '#F3F4F6', color: '#374151' }
-            return (
-              <div key={r.id} className="card" style={{
-                padding: '16px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                transition: 'transform .15s, box-shadow .15s',
-              }}
-                onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,0,0,.08)' }}
-                onMouseLeave={e => { e.currentTarget.style.transform = ''; e.currentTarget.style.boxShadow = '' }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-                  <div style={{
-                    width: 40, height: 40, borderRadius: 10, flexShrink: 0,
-                    background: tc.bg, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    border: `1px solid ${tc.color}20`,
-                  }}>
-                    <FileText size={18} strokeWidth={1.8} style={{ color: tc.color }} />
-                  </div>
-                  <div>
-                    <div style={{ fontWeight: 700, fontSize: '13.5px', color: '#111827', marginBottom: 4 }}>{r.titre}</div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '11.5px', color: '#9CA3AF' }}>
-                      <span style={{ background: tc.bg, color: tc.color, padding: '1px 8px', borderRadius: 9999, fontWeight: 700, fontSize: '10px' }}>
-                        {r.type_rapport}
-                      </span>
-                      {new Date(r.created_at).toLocaleDateString('fr-FR')}
-                      {r.tokens_utilises && <span>· {r.tokens_utilises.toLocaleString()} tokens</span>}
-                    </div>
-                  </div>
-                </div>
-                <div style={{ display: 'flex', gap: 8 }}>
-                  <button
-                    onClick={() => printRapportIA(r)}
-                    className="btn btn-secondary btn-sm"
-                    style={{ gap: 5 }}
-                  >
-                    <Download size={12} strokeWidth={2} /> PDF
-                  </button>
-                  <button
-                    onClick={() => navigate(`/ia-rapport/${r.id}`)}
-                    className="btn btn-secondary btn-sm"
-                    style={{ gap: 6 }}
-                  >
-                    Voir le rapport
-                  </button>
-                </div>
-              </div>
-            )
-          })}
-        </div>
-      )}
-    </div>
-  )
-}
-
-/* ── Modal génération rapport ──────────────────────────────────────────────── */
-function GenererRapportModal({ onClose }) {
-  const [type, setType] = useState('MENSUEL')
-  const qc = useQueryClient()
-  const { mutate, isPending } = useMutation({
-    mutationFn: () => genererRapport({ type_rapport: type }),
-    onSuccess: () => { qc.invalidateQueries(['ia-rapports']); onClose() },
-  })
-
-  return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-panel" onClick={e => e.stopPropagation()} style={{ maxWidth: 440, padding: 0, overflow: 'hidden' }}>
-        <div style={{ background: '#1E3A8A', borderBottom: '2px solid rgba(201,168,76,.3)', padding: '20px 24px', color: '#fff', display: 'flex', alignItems: 'center', gap: 12 }}>
-          <div style={{ width: 36, height: 36, borderRadius: 9, background: 'rgba(255,255,255,.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-            <Sparkles size={18} strokeWidth={2} />
-          </div>
-          <div>
-            <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '15px' }}>Générer un rapport d'analyse</div>
-            <div style={{ fontSize: '12px', opacity: .75 }}>Synthèse narrative complète du budget</div>
-          </div>
-        </div>
-        <div style={{ padding: '22px 24px' }}>
-          <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: 'var(--color-gray-600)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '.4px' }}>
-            Type de rapport
-          </label>
-          <select className="form-select" value={type} onChange={e => setType(e.target.value)}>
-            <option value="MENSUEL">Rapport mensuel</option>
-            <option value="TRIMESTRIEL">Rapport trimestriel</option>
-            <option value="ANNUEL">Rapport annuel</option>
-            <option value="AD_HOC">Rapport ad-hoc</option>
-          </select>
-          <p style={{ marginTop: 12, fontSize: '12px', color: '#6B7280', lineHeight: 1.6 }}>
-            Le rapport sera généré en analysant l'ensemble de vos données budgétaires.
-          </p>
-        </div>
-        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, padding: '14px 24px', borderTop: '1px solid var(--color-gray-100)', background: 'var(--color-gray-50)' }}>
-          <button onClick={onClose} className="btn btn-secondary btn-md">Annuler</button>
-          <button
-            onClick={() => mutate()}
-            disabled={isPending}
-            className="btn btn-primary btn-md"
-            style={{ gap: 7, opacity: isPending ? .7 : 1 }}
-          >
-            {isPending ? <><span className="spinner-sm" /> Génération…</> : <><Sparkles size={14} strokeWidth={2} /> Générer</>}
-          </button>
-        </div>
-      </div>
-    </div>
-  )
-}

@@ -72,44 +72,7 @@ export function BudgetsAValiderList() {
           <h1 className="page-title">Budgets à valider</h1>
           <p className="page-subtitle">{visible.length} budget{visible.length !== 1 ? 's' : ''}</p>
         </div>
-        <div style={{ display: 'flex', gap: 8 }}>
-          <button
-            onClick={() => {
-              const headers = ['Code','Nom','Département','Gestionnaire','Statut','Montant (FCFA)','Date soumission']
-              const rows = visible.map(b => [
-                b.code, b.nom, b.departement_nom || '—', b.gestionnaire_nom || '—', b.statut,
-                fmt(b.montant_global),
-                b.date_soumission ? new Date(b.date_soumission).toLocaleDateString('fr-FR') : '—',
-              ])
-              exportCSV(`budgets-validation-${new Date().toISOString().slice(0,10)}`, headers, rows)
-            }}
-            className="btn btn-secondary btn-sm"
-            style={{ gap: 6 }}
-          >
-            <Download size={13} strokeWidth={2} /> CSV
-          </button>
-          <button
-            onClick={() => {
-              const headers = ['Code','Nom','Gestionnaire','Statut','Montant']
-              const rows = visible.map(b => [
-                b.code, b.nom, b.gestionnaire_nom || '—', b.statut,
-                fmt(b.montant_global) + ' FCFA',
-              ])
-              printPDF('Budgets à valider', headers, rows, {
-                subtitle: `Filtre : ${FILTRES.find(f => f.key === filtre)?.label || 'Tous'}`,
-                stats: [
-                  { value: countFor('SOUMIS'),   label: 'En attente' },
-                  { value: countFor('APPROUVE'), label: 'Approuvés'  },
-                  { value: countFor('REJETE'),   label: 'Rejetés'    },
-                ],
-              })
-            }}
-            className="btn btn-secondary btn-sm"
-            style={{ gap: 6 }}
-          >
-            <Printer size={13} strokeWidth={2} /> PDF
-          </button>
-        </div>
+        <div />
       </div>
 
       {/* KPI cards */}
@@ -129,8 +92,8 @@ export function BudgetsAValiderList() {
       </div>
 
       {/* Barre recherche + filtres */}
-      <div className="filter-bar mb-5">
-        <div className="search-wrapper flex-[1_1_240px] max-w-[360px]">
+      <div className="filter-bar mb-5" style={{ flexWrap: 'nowrap' }}>
+        <div className="search-wrapper flex-1 min-w-[200px]">
           <Search size={14} strokeWidth={2} className="search-icon" />
           <input
             className="search-input"
@@ -140,7 +103,7 @@ export function BudgetsAValiderList() {
             onChange={e => setSearch(e.target.value)}
           />
         </div>
-        <div className="flex gap-[6px] flex-wrap">
+        <div className="flex gap-[6px]" style={{ flexShrink: 0 }}>
           {FILTRES.map(f => {
             const cnt = countFor(f.countKey)
             return (
@@ -309,6 +272,36 @@ export function BudgetValidationDetail() {
   const ecartGlobal = totalBudget - totalReel
   const tauxGlobal  = totalBudget > 0 ? Math.round(totalReel / totalBudget * 100) : 0
 
+  const handleExportCSV = () => {
+    const headers = ['Code', 'Libellé', 'Section', 'Budget alloué (FCFA)', 'Réel (FCFA)', 'Écart (FCFA)', 'Taux (%)']
+    const rows = lignes.map(l => {
+      const a = parseFloat(l.montant_alloue || 0)
+      const c = parseFloat(l.montant_consomme || 0)
+      return [l.code || '', l.libelle, l.section, a, c, a - c, a > 0 ? Math.round(c / a * 100) + '%' : '0%']
+    })
+    exportCSV(`Budget_${budget.code}`, headers, rows)
+  }
+
+  const handleExportPDF = () => {
+    const headers = ['Code', 'Libellé', 'Section', 'Budget (FCFA)', 'Réel (FCFA)', 'Écart (FCFA)', 'Taux']
+    const rows = lignes.map(l => {
+      const a = parseFloat(l.montant_alloue || 0)
+      const c = parseFloat(l.montant_consomme || 0)
+      const e = a - c
+      const t = a > 0 ? Math.round(c / a * 100) : 0
+      return [l.code || '—', l.libelle, l.section, fmt(a), fmt(c), (e >= 0 ? '+' : '') + fmt(e), t + '%']
+    })
+    printPDF(budget.nom, headers, rows, {
+      subtitle: `${budget.code} · ${budget.departement_nom} · ${budget.gestionnaire_nom || '—'}`,
+      filters: `Statut : ${budget.statut}`,
+      stats: [
+        { value: fmt(totalBudget) + ' FCFA', label: 'Budget global' },
+        { value: fmt(totalReel) + ' FCFA', label: 'Montant réel' },
+        { value: tauxGlobal + '%', label: 'Taux consommation' },
+      ],
+    })
+  }
+
   const tauColor = (t) => t >= 95 ? 'var(--color-danger-600)' : t >= 80 ? 'var(--color-warning-600)' : t >= 50 ? 'var(--color-success-600)' : 'var(--color-primary-600)'
 
   return (
@@ -391,6 +384,38 @@ export function BudgetValidationDetail() {
             )}
           </div>
         </div>
+      </div>
+
+      {/* Export toolbar */}
+      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginBottom: 16 }}>
+        <button
+          onClick={handleExportCSV}
+          style={{
+            display: 'inline-flex', alignItems: 'center', gap: 6,
+            padding: '7px 16px', borderRadius: 8, cursor: 'pointer',
+            background: '#EFF6FF', border: '1px solid #BFDBFE',
+            color: '#1E3A8A', fontSize: '12px', fontWeight: 600,
+            transition: 'background .15s',
+          }}
+          onMouseEnter={e => e.currentTarget.style.background = '#DBEAFE'}
+          onMouseLeave={e => e.currentTarget.style.background = '#EFF6FF'}
+        >
+          <Download size={13} strokeWidth={2.2} /> Exporter CSV
+        </button>
+        <button
+          onClick={handleExportPDF}
+          style={{
+            display: 'inline-flex', alignItems: 'center', gap: 6,
+            padding: '7px 16px', borderRadius: 8, cursor: 'pointer',
+            background: '#1E3A8A', border: '1px solid #1E3A8A',
+            color: '#fff', fontSize: '12px', fontWeight: 600,
+            transition: 'background .15s',
+          }}
+          onMouseEnter={e => e.currentTarget.style.background = '#1e40af'}
+          onMouseLeave={e => e.currentTarget.style.background = '#1E3A8A'}
+        >
+          <Printer size={13} strokeWidth={2.2} /> Exporter PDF
+        </button>
       </div>
 
       {/* 4 KPI cards */}

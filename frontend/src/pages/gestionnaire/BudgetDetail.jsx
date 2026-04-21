@@ -2,20 +2,20 @@ import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import {
-  getBudget, deleteBudget, updateBudget, soumettreBudget,
+  getBudget, updateBudget, soumettreBudget,
+  exportBudgetExcel, exportBudgetPdf, exportDepensesExcel, exportDepensesPdf,
 } from '../../api/budget'
 import { getDepenses } from '../../api/depenses'
 import { StatutBadge, AlerteBadge } from '../../components/StatusBadge'
 import LignesBudgetaires from '../../components/budget/LignesBudgetaires'
 import DepenseMultiModal from '../../components/budget/DepenseMultiModal'
-import { exportCSV, printPDF } from '../../utils/export'
 import { notifRefresh } from '../../utils/notifRefresh'
 import { ConfirmModal } from '../../components/ui'
 import {
-  ArrowLeft, Trash2, Pencil, Send, DollarSign,
+  ArrowLeft, Pencil, Send, DollarSign,
   CheckCircle2, AlertTriangle, Info,
-  FileText, Receipt, ExternalLink,
-  Download, Printer,
+  FileText, Receipt,
+  Download, Printer, Paperclip,
 } from 'lucide-react'
 
 const fmt = (n) => new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 0 }).format(parseFloat(n || 0))
@@ -51,6 +51,8 @@ export default function BudgetDetail({ basePath = '/mes-budgets' }) {
 
   const [confirmModal, setConfirmModal] = useState(null)
 
+  const [exporting, setExporting] = useState('')
+
   const load = () => {
     getBudget(id)
       .then(b => setBudget(b.data))
@@ -63,18 +65,6 @@ export default function BudgetDetail({ basePath = '/mes-budgets' }) {
       .then(r => setDepenses(r.data?.data ?? []))
       .catch(() => {})
       .finally(() => setDepensesLoaded(true))
-  }
-
-  const handleDelete = () => {
-    setConfirmModal({
-      title: 'Supprimer le budget',
-      message: `Supprimer définitivement ce budget "${budget?.nom || ''}" ? Toutes les lignes budgétaires seront effacées.`,
-      confirmLabel: 'Supprimer',
-      onConfirm: async () => {
-        try { await deleteBudget(id); navigate(basePath) }
-        catch (err) { alert(err.response?.data?.detail || 'Erreur') }
-      },
-    })
   }
 
   const openEdit = () => {
@@ -105,7 +95,6 @@ export default function BudgetDetail({ basePath = '/mes-budgets' }) {
   const closeDepense = () => setShowDepenseModal(false)
   const onDepenseSuccess = () => { setShowDepenseModal(false); load(); loadDepenses() }
 
-  // Charger les dépenses dès que le budget est approuvé
   useEffect(() => {
     if (budget?.statut === 'APPROUVE' && !depensesLoaded) loadDepenses()
   }, [budget?.statut])
@@ -116,48 +105,12 @@ export default function BudgetDetail({ basePath = '/mes-budgets' }) {
   const brouillon = budget.statut === 'BROUILLON'
   const approuve  = budget.statut === 'APPROUVE'
 
-  const handleExportCSV = () => {
-    const lignes = budget.lignes ?? []
-    const headers = ['Code', 'Désignation', 'Unité', 'Quantité', 'Prix Unitaire', 'Alloué (FCFA)', 'Consommé (FCFA)', 'Disponible (FCFA)']
-    const rows = lignes.map(l => [
-      l.code || '—',
-      l.libelle,
-      l.unite,
-      l.quantite,
-      l.prix_unitaire,
-      l.montant_alloue,
-      l.montant_consomme,
-      l.montant_disponible,
-    ])
-    if (approuve && depenses.length) {
-      rows.push([])
-      rows.push(['=== DÉPENSES ===', '', '', '', '', '', '', ''])
-      depenses.forEach(d => rows.push([
-        d.reference || '—', d.ligne_designation || '—', '—', '—', '—',
-        d.montant, d.statut, d.date_creation?.slice(0, 10) || '—',
-      ]))
-    }
-    exportCSV(`Budget_${budget.code}`, headers, rows)
-  }
-
-  const handleExportPDF = () => {
-    const lignes = budget.lignes ?? []
-    const headers = ['Code', 'Désignation', 'Unité', 'Qté', 'P.U.', 'Alloué', 'Consommé', 'Disponible']
-    const rows = lignes.map(l => [
-      l.code || '—', l.libelle, l.unite,
-      fmt(l.quantite), `${fmt(l.prix_unitaire)} F`,
-      `${fmt(l.montant_alloue)} F`, `${fmt(l.montant_consomme)} F`, `${fmt(l.montant_disponible)} F`,
-    ])
-    printPDF(`Budget ${budget.code}`, headers, rows, {
-      subtitle: budget.nom,
-      filters: `${budget.departement_nom} · Statut : ${budget.statut_display || budget.statut}`,
-      stats: [
-        { label: 'Budget global', value: `${fmt(budget.montant_global)} FCFA` },
-        { label: 'Consommé',      value: `${fmt(budget.montant_consomme)} FCFA` },
-        { label: 'Disponible',    value: `${fmt(budget.montant_disponible)} FCFA` },
-        { label: 'Taux',          value: `${Math.round(budget.taux_consommation || 0)} %` },
-      ],
-    })
+  const handleExport = async (fn, key) => {
+    if (exporting) return
+    setExporting(key)
+    try { await fn(id, budget.code) }
+    catch (e) { alert(e?.response?.data?.detail || 'Erreur lors de l\'export') }
+    finally { setExporting('') }
   }
 
   const alloc           = budget.allocation_detail
@@ -166,209 +119,200 @@ export default function BudgetDetail({ basePath = '/mes-budgets' }) {
   const allocDisponible = parseFloat(alloc?.montant_disponible || 0)
   const allocTaux       = allocAlloue > 0 ? Math.min(Math.round(allocConsomme / allocAlloue * 100), 100) : 0
 
+  const montantGlobal     = parseFloat(budget.montant_global    || 0)
+  const montantConsomme   = parseFloat(budget.montant_consomme  || 0)
+  const montantDisponible = parseFloat(budget.montant_disponible || 0)
+  const taux              = parseFloat(budget.taux_consommation  || 0)
+
   return (
     <div>
 
-      {/* ── Header ───────────────────────────────────────────────────────────── */}
-      <div style={{ marginBottom: 24 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-          <button
-            onClick={() => navigate(basePath)}
-            className="btn btn-secondary btn-sm"
-            style={{ gap: 6 }}
-          >
-            <ArrowLeft size={14} strokeWidth={2} /> Retour
-          </button>
-          <div style={{ display: 'flex', gap: 8 }}>
-            <button onClick={handleExportCSV} className="btn btn-secondary btn-sm" style={{ gap: 6 }}>
-              <Download size={13} strokeWidth={2} /> CSV
-            </button>
-            <button onClick={handleExportPDF} className="btn btn-secondary btn-sm" style={{ gap: 6 }}>
-              <Printer size={13} strokeWidth={2} /> PDF
-            </button>
-          </div>
-        </div>
-
-        <div style={{
-          background: '#1E3A8A',
-          borderRadius: 'var(--radius-lg)', padding: '24px 28px',
-          color: '#fff', position: 'relative', overflow: 'hidden',
-          boxShadow: '0 8px 28px rgba(15,34,64,.4)',
-        }}>
-          <div style={{ position: 'absolute', top: -50, right: -50, width: 200, height: 200, borderRadius: '50%', background: 'rgba(255,255,255,.05)' }} />
-          <div style={{ position: 'absolute', bottom: -30, right: 80, width: 120, height: 120, borderRadius: '50%', background: 'rgba(255,255,255,.04)' }} />
-
-          <div style={{ position: 'relative' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10, flexWrap: 'wrap' }}>
-              <span className="code-tag" style={{ background: 'rgba(255,255,255,.15)', color: '#fff', border: '1px solid rgba(255,255,255,.25)', fontFamily: 'var(--font-mono)' }}>
-                {budget.code}
-              </span>
-              <StatutBadge statut={budget.statut} />
-              <AlerteBadge niveau={budget.niveau_alerte} />
-            </div>
-            <h1 style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '1.35rem', letterSpacing: '-.4px', marginBottom: 6 }}>
-              {budget.nom}
-            </h1>
-            <p style={{ opacity: .75, fontSize: '13px' }}>
-              {budget.departement_nom}
-              {budget.date_debut && ` · ${budget.date_debut} → ${budget.date_fin}`}
-              {budget.annee && ` · Exercice ${budget.annee}`}
-            </p>
-            <div style={{ display: 'flex', gap: 16, marginTop: 8, flexWrap: 'wrap' }}>
-              {budget.gestionnaire_detail && (
-                <span style={{ fontSize: '12px', opacity: .8, display: 'flex', alignItems: 'center', gap: 5 }}>
-                  <span style={{ opacity: .6 }}>Gestionnaire :</span>
-                  <strong>{budget.gestionnaire_detail.prenom} {budget.gestionnaire_detail.nom}</strong>
-                </span>
-              )}
-              {budget.comptable_detail && (
-                <span style={{ fontSize: '12px', opacity: .8, display: 'flex', alignItems: 'center', gap: 5 }}>
-                  <span style={{ opacity: .6 }}>{budget.statut === 'APPROUVE' ? 'Approuvé par :' : budget.statut === 'REJETE' ? 'Rejeté par :' : 'Traité par :'}</span>
-                  <strong>{budget.comptable_detail.prenom} {budget.comptable_detail.nom}</strong>
-                </span>
-              )}
-            </div>
-          </div>
-        </div>
+      {/* ── Barre top : retour ───────────────────────────────────────────────── */}
+      <div style={{ marginBottom: 16 }}>
+        <button onClick={() => navigate(basePath)} className="btn btn-secondary btn-sm" style={{ gap: 6 }}>
+          <ArrowLeft size={14} strokeWidth={2} /> Retour
+        </button>
       </div>
 
-      {/* ── Enveloppe du département ─────────────────────────────────────────── */}
-      {alloc && (
-        <div className="card" style={{
-          marginBottom: 16,
-          borderLeft: `4px solid ${allocDisponible <= 0 ? 'var(--color-danger-500)' : 'var(--color-primary-500)'}`,
+      {/* ── Carte principale (même style que DepenseGroupDetail) ─────────────── */}
+      <div className="card" style={{ padding: 0, overflow: 'hidden', marginBottom: 20 }}>
+
+        {/* Header navy — identique à DepenseGroupDetail */}
+        <div style={{
+          background: '#1E3A8A', padding: '24px 28px 20px',
+          color: '#fff', position: 'relative', overflow: 'hidden',
         }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-            <span style={{ fontWeight: 700, fontSize: '13px', color: 'var(--color-gray-700)' }}>
+          <div style={{ position: 'absolute', top: -30, right: -30, width: 130, height: 130, borderRadius: '50%', background: 'rgba(255,255,255,.06)', pointerEvents: 'none' }} />
+          <div style={{ position: 'absolute', bottom: -20, right: 80, width: 80, height: 80, borderRadius: '50%', background: 'rgba(255,255,255,.04)', pointerEvents: 'none' }} />
+
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16, paddingRight: 8 }}>
+            <div style={{ minWidth: 0 }}>
+              {/* Tags */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8, flexWrap: 'wrap' }}>
+                <div style={{
+                  background: 'rgba(255,255,255,.18)', borderRadius: 7,
+                  padding: '4px 10px', fontSize: '12px', fontWeight: 700,
+                  fontFamily: 'var(--font-mono)', letterSpacing: '.5px',
+                }}>
+                  {budget.code}
+                </div>
+                <StatutBadge statut={budget.statut} />
+                <AlerteBadge niveau={budget.niveau_alerte} />
+              </div>
+
+              {/* Nom */}
+              <div style={{ fontWeight: 800, fontSize: '1.15rem', marginBottom: 8, lineHeight: 1.25 }}>
+                {budget.nom}
+              </div>
+
+              {/* Méta */}
+              <div style={{ display: 'flex', gap: 16, fontSize: '12px', opacity: .85, flexWrap: 'wrap' }}>
+                <span>📁 {budget.departement_nom}</span>
+                {budget.date_debut && (
+                  <span>📅 {budget.date_debut} → {budget.date_fin}</span>
+                )}
+                {budget.annee && <span>Exercice {budget.annee}</span>}
+                {budget.gestionnaire_detail && (
+                  <span>👤 {budget.gestionnaire_detail.prenom} {budget.gestionnaire_detail.nom}</span>
+                )}
+                {budget.comptable_detail && (
+                  <span>
+                    {budget.statut === 'APPROUVE' ? '✅ Approuvé par' : budget.statut === 'REJETE' ? '❌ Rejeté par' : '🔍 Traité par'} {budget.comptable_detail.prenom} {budget.comptable_detail.nom}
+                  </span>
+                )}
+              </div>
+            </div>
+
+            {/* Montant global — droite */}
+            <div style={{ textAlign: 'right', flexShrink: 0 }}>
+              <div style={{ fontSize: '10px', opacity: .6, textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: 4 }}>
+                Budget global
+              </div>
+              <div style={{ fontFamily: 'var(--font-mono)', fontWeight: 900, fontSize: '1.6rem', lineHeight: 1 }}>
+                {fmt(montantGlobal)}
+              </div>
+              <div style={{ fontSize: '11px', opacity: .65, marginTop: 3 }}>FCFA</div>
+            </div>
+          </div>
+        </div>
+
+        {/* Mini KPI — identique à DepenseGroupDetail */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', borderBottom: '1px solid var(--color-gray-100)' }}>
+          {[
+            { label: 'Budget global',  val: fmt(montantGlobal) + ' FCFA',     color: 'var(--color-primary-700)', bg: 'var(--color-primary-50)' },
+            { label: 'Consommé',       val: fmt(montantConsomme) + ' FCFA',   color: '#6a2fa0',                  bg: '#f5f0fd' },
+            { label: 'Disponible',     val: fmt(montantDisponible) + ' FCFA', color: montantDisponible <= 0 ? 'var(--color-danger-700)' : 'var(--color-success-700)', bg: montantDisponible <= 0 ? 'var(--color-danger-50)' : 'var(--color-success-50)' },
+            { label: "Taux d'exéc.",   val: taux.toFixed(1) + '%',            color: jaugeColor(taux),           bg: taux > 75 ? 'var(--color-danger-50)' : taux > 50 ? 'var(--color-warning-50)' : 'var(--color-success-50)' },
+          ].map((k, idx, arr) => (
+            <div key={k.label} style={{
+              padding: '12px 20px', background: k.bg,
+              borderRight: idx < arr.length - 1 ? '1px solid var(--color-gray-100)' : 'none',
+              textAlign: 'center',
+            }}>
+              <div style={{ fontSize: '10px', fontWeight: 700, color: k.color, textTransform: 'uppercase', letterSpacing: '.4px', marginBottom: 4 }}>
+                {k.label}
+              </div>
+              <div style={{ fontFamily: 'var(--font-mono)', fontWeight: 800, fontSize: '13px', color: k.color }}>
+                {k.val}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Enveloppe département — même style que la bande "pièces justificatives" */}
+        {alloc && (
+          <div style={{
+            padding: '12px 24px', borderBottom: '1px solid var(--color-gray-100)',
+            background: 'var(--color-gray-50)', display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap',
+          }}>
+            <div style={{ fontSize: '10px', fontWeight: 700, color: 'var(--color-gray-500)', textTransform: 'uppercase', letterSpacing: '.4px', flexShrink: 0 }}>
               Enveloppe {budget.departement_nom} – Exercice {budget.annee}
-            </span>
+            </div>
+            <div style={{ flex: 1, minWidth: 180 }}>
+              <div className="exec-bar" style={{ marginBottom: 4 }}>
+                <div className="exec-bar-fill" style={{
+                  width: `${allocTaux}%`,
+                  background: `linear-gradient(90deg, ${jaugeColor(Math.max(0, allocTaux - 20))}, ${jaugeColor(allocTaux)})`,
+                }} />
+              </div>
+              <div style={{ display: 'flex', gap: 16, fontSize: '11px', color: 'var(--color-gray-500)', fontFamily: 'var(--font-mono)' }}>
+                <span>Alloué : <strong style={{ color: 'var(--color-gray-700)' }}>{fmt(allocAlloue)} F</strong></span>
+                <span>Consommé : <strong style={{ color: 'var(--color-gray-700)' }}>{fmt(allocConsomme)} F</strong></span>
+                <span style={{ color: allocDisponible <= 0 ? 'var(--color-danger-600)' : 'var(--color-success-700)', fontWeight: 700 }}>
+                  Dispo : {fmt(allocDisponible)} F
+                </span>
+              </div>
+            </div>
             <span style={{
               fontSize: '11px', fontWeight: 700, padding: '3px 10px', borderRadius: 20,
               background: allocTaux >= 100 ? 'var(--color-danger-50)' : allocTaux >= 90 ? 'var(--color-warning-50)' : 'var(--color-success-50)',
               color:      allocTaux >= 100 ? 'var(--color-danger-700)' : allocTaux >= 90 ? 'var(--color-warning-700)' : 'var(--color-success-700)',
+              flexShrink: 0,
             }}>
               {allocTaux}% utilisé
             </span>
           </div>
-          <div className="exec-bar" style={{ marginBottom: 10 }}>
-            <div className="exec-bar-fill" style={{
-              width: `${allocTaux}%`,
-              background: `linear-gradient(90deg, ${jaugeColor(Math.max(0, allocTaux - 20))}, ${jaugeColor(allocTaux)})`,
-            }} />
-          </div>
-          <div style={{ display: 'flex', gap: 24, fontSize: '12px', color: 'var(--color-gray-500)', fontFamily: 'var(--font-mono)' }}>
-            <span>Alloué : <strong style={{ color: 'var(--color-gray-700)' }}>{fmt(allocAlloue)} FCFA</strong></span>
-            <span>Consommé : <strong style={{ color: 'var(--color-gray-700)' }}>{fmt(allocConsomme)} FCFA</strong></span>
-            <span style={{ color: allocDisponible <= 0 ? 'var(--color-danger-600)' : 'var(--color-success-700)', fontWeight: 700 }}>
-              Disponible : {fmt(allocDisponible)} FCFA
-            </span>
-          </div>
-        </div>
-      )}
+        )}
 
-      {/* ── Bandeaux de statut ───────────────────────────────────────────────── */}
-      {!isAdmin && brouillon && !hasLignes && (
-        <StatusBanner type="info" icon={<FileText size={15} strokeWidth={2} />}>
-          Budget en brouillon — ajoutez au moins une ligne budgétaire pour pouvoir le soumettre.
-        </StatusBanner>
-      )}
-      {!isAdmin && brouillon && hasLignes && (
-        <StatusBanner type="primary" icon={<Info size={15} strokeWidth={2} />}>
-          Budget prêt — cliquez sur <strong>Soumettre</strong> pour l'envoyer en validation.
-        </StatusBanner>
-      )}
-      {budget.statut === 'SOUMIS' && (
-        <StatusBanner type="primary" icon={<Info size={15} strokeWidth={2} />}>
-          Budget soumis — en attente de validation par le comptable.
-        </StatusBanner>
-      )}
-      {!isAdmin && approuve && (
-        <StatusBanner type="success" icon={<CheckCircle2 size={15} strokeWidth={2} />}>
-          Budget approuvé — enregistrez les dépenses réelles avec leurs pièces justificatives.
-        </StatusBanner>
-      )}
-      {budget.statut === 'REJETE' && (
-        <>
-          <StatusBanner type="danger" icon={<AlertTriangle size={15} strokeWidth={2} />}>
-            Budget rejeté — corrigez les lignes puis soumettez à nouveau.
-          </StatusBanner>
-          {budget.motif_rejet && (
-            <div style={{
-              marginBottom: 12, padding: '12px 16px',
-              background: 'var(--color-danger-50)', border: '1px solid var(--color-danger-200)',
-              borderRadius: 'var(--radius-md)', borderLeft: '4px solid var(--color-danger-500)',
-            }}>
-              <div style={{ fontWeight: 700, fontSize: '12px', color: 'var(--color-danger-700)', marginBottom: 4 }}>
-                Motif de rejet
-              </div>
-              <div style={{ fontSize: '13px', color: 'var(--color-danger-800)', lineHeight: 1.55 }}>
-                {budget.motif_rejet}
-              </div>
-            </div>
+        {/* Bandeaux de statut */}
+        <div style={{ padding: '0 24px' }}>
+          {!isAdmin && brouillon && !hasLignes && (
+            <StatusBanner type="info" icon={<FileText size={15} strokeWidth={2} />}>
+              Budget en brouillon — ajoutez au moins une ligne budgétaire pour pouvoir le soumettre.
+            </StatusBanner>
           )}
-        </>
-      )}
+          {!isAdmin && brouillon && hasLignes && (
+            <StatusBanner type="primary" icon={<Info size={15} strokeWidth={2} />}>
+              Budget prêt — cliquez sur <strong>Soumettre</strong> pour l'envoyer en validation.
+            </StatusBanner>
+          )}
+          {budget.statut === 'SOUMIS' && (
+            <StatusBanner type="primary" icon={<Info size={15} strokeWidth={2} />}>
+              Budget soumis — en attente de validation par le comptable.
+            </StatusBanner>
+          )}
+          {!isAdmin && approuve && (
+            <StatusBanner type="success" icon={<CheckCircle2 size={15} strokeWidth={2} />}>
+              Budget approuvé — enregistrez les dépenses réelles avec leurs pièces justificatives.
+            </StatusBanner>
+          )}
+          {budget.statut === 'REJETE' && (
+            <>
+              <StatusBanner type="danger" icon={<AlertTriangle size={15} strokeWidth={2} />}>
+                Budget rejeté — corrigez les lignes puis soumettez à nouveau.
+              </StatusBanner>
+              {budget.motif_rejet && (
+                <div style={{
+                  marginBottom: 12, padding: '12px 16px',
+                  background: 'var(--color-danger-50)', border: '1px solid var(--color-danger-200)',
+                  borderRadius: 'var(--radius-md)', borderLeft: '4px solid var(--color-danger-500)',
+                }}>
+                  <div style={{ fontWeight: 700, fontSize: '12px', color: 'var(--color-danger-700)', marginBottom: 4 }}>
+                    Motif de rejet
+                  </div>
+                  <div style={{ fontSize: '13px', color: 'var(--color-danger-800)', lineHeight: 1.55 }}>
+                    {budget.motif_rejet}
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+        </div>
 
-      {/* ── Contenu principal ────────────────────────────────────────────────── */}
-      <div style={{ display: 'flex', gap: 20, alignItems: 'flex-start' }}>
-
-        <CVPanel
-          montantGlobal={parseFloat(budget.montant_global || 0)}
-          montantConsomme={parseFloat(budget.montant_consomme || 0)}
-          montantDisponible={parseFloat(budget.montant_disponible || 0)}
-          taux={parseFloat(budget.taux_consommation || 0)}
-        />
-
-        <div style={{ flex: 1, minWidth: 0 }}>
+        {/* Lignes budgétaires */}
+        <div style={{ padding: '0 24px 24px' }}>
           <LignesBudgetaires
             budgetId={budget.id}
             readOnly={isAdmin || !editable}
             onTotalChange={(total) => setHasLignes(total > 0)}
           />
         </div>
-      </div>
 
-      {/* ── Barre d'actions ──────────────────────────────────────────────────── */}
-      {!isAdmin && (editable || approuve) && (
-        <div style={{
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          marginTop: 20, padding: '14px 18px',
-          background: '#fff', border: '1px solid var(--color-gray-200)',
-          borderRadius: 'var(--radius-lg)', boxShadow: '0 -2px 8px rgba(0,0,0,.04)',
-        }}>
-          <div>
-            {editable && (
-              <button onClick={handleDelete} className="btn btn-danger btn-sm" style={{ gap: 6 }}>
-                <Trash2 size={13} strokeWidth={2} /> Supprimer
-              </button>
-            )}
-          </div>
-          <div style={{ display: 'flex', gap: 8 }}>
-            {editable && (
-              <button onClick={openEdit} className="btn btn-secondary btn-md" style={{ gap: 6 }}>
-                <Pencil size={14} strokeWidth={2} /> Modifier
-              </button>
-            )}
-            {brouillon && hasLignes && (
-              <button onClick={openSoumission} className="btn btn-primary btn-md" style={{ gap: 6 }}>
-                <Send size={14} strokeWidth={2} /> Soumettre
-              </button>
-            )}
-            {approuve && (
-              <button onClick={openDepense} className="btn btn-success btn-md" style={{ gap: 6 }}>
-                <DollarSign size={14} strokeWidth={2} /> Enregistrer une dépense
-              </button>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* ── Dépenses enregistrées (budget approuvé) ──────────────────────────── */}
-      {approuve && (
-        <div style={{ marginTop: 20 }}>
-          <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+        {/* Dépenses enregistrées (budget approuvé) */}
+        {approuve && (
+          <div style={{ borderTop: '1px solid var(--color-gray-100)' }}>
             <div style={{
-              padding: '14px 20px', background: '#F8FAFF',
+              padding: '14px 24px', background: '#F8FAFF',
               borderBottom: '1px solid var(--color-gray-100)',
               display: 'flex', justifyContent: 'space-between', alignItems: 'center',
             }}>
@@ -394,72 +338,127 @@ export default function BudgetDetail({ basePath = '/mes-budgets' }) {
                 <p style={{ fontSize: '12px', color: 'var(--color-gray-400)' }}>Chargement…</p>
               </div>
             ) : depenses.length === 0 ? (
-              <div style={{ padding: '28px 20px', textAlign: 'center', color: 'var(--color-gray-400)', fontSize: '13px' }}>
+              <div style={{ padding: '28px 24px', textAlign: 'center', color: 'var(--color-gray-400)', fontSize: '13px' }}>
                 Aucune dépense enregistrée sur ce budget.
               </div>
             ) : (
-              <table className="data-table">
-                <thead>
-                  <tr>
-                    {['Référence', 'Ligne budgétaire', 'Montant', 'Date', 'Statut', 'Note', 'Justificatif'].map(h => (
-                      <th key={h}>{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {depenses.map(d => {
-                    const STATUT_STYLE = {
-                      SAISIE:  { bg: 'var(--color-warning-50)',  color: 'var(--color-warning-700)', label: 'En attente' },
-                      VALIDEE: { bg: 'var(--color-success-50)',  color: 'var(--color-success-700)', label: 'Validée'    },
-                      REJETEE: { bg: 'var(--color-danger-50)',   color: 'var(--color-danger-700)',  label: 'Rejetée'    },
-                    }
-                    const s = STATUT_STYLE[d.statut] || { bg: '#f3f4f6', color: '#374151', label: d.statut }
-                    return (
-                      <tr key={d.id}>
-                        <td><span className="code-tag">{d.reference}</span></td>
-                        <td style={{ fontSize: '12px', color: 'var(--color-gray-600)', maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                          {d.ligne_designation}
-                        </td>
-                        <td style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, whiteSpace: 'nowrap' }}>
-                          {fmt(d.montant)} <span style={{ fontSize: '10px', color: 'var(--color-gray-400)', fontWeight: 400 }}>FCFA</span>
-                        </td>
-                        <td style={{ fontSize: '12px', color: 'var(--color-gray-400)', fontFamily: 'var(--font-mono)', whiteSpace: 'nowrap' }}>
-                          {d.date_depense ? new Date(d.date_depense).toLocaleDateString('fr-FR') : '—'}
-                        </td>
-                        <td>
-                          <span style={{ padding: '3px 10px', borderRadius: 20, fontSize: '11px', fontWeight: 700, background: s.bg, color: s.color, whiteSpace: 'nowrap' }}>
+              <div>
+                {depenses.map((d, i) => {
+                  const STATUT_STYLE = {
+                    SAISIE:  { bg: 'var(--color-warning-50)',  color: 'var(--color-warning-700)', label: 'En attente' },
+                    VALIDEE: { bg: 'var(--color-success-50)',  color: 'var(--color-success-700)', label: 'Validée'    },
+                    REJETEE: { bg: 'var(--color-danger-50)',   color: 'var(--color-danger-700)',  label: 'Rejetée'    },
+                  }
+                  const s = STATUT_STYLE[d.statut] || { bg: '#f3f4f6', color: '#374151', label: d.statut }
+                  return (
+                    <div key={d.id} style={{
+                      padding: '14px 24px',
+                      borderBottom: i < depenses.length - 1 ? '1px solid var(--color-gray-100)' : 'none',
+                      display: 'grid', gridTemplateColumns: '1fr 130px',
+                      alignItems: 'center', gap: 16,
+                    }}>
+                      <div style={{ minWidth: 0 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4, flexWrap: 'wrap' }}>
+                          <span style={{ fontFamily: 'var(--font-mono)', fontSize: '10px', background: 'var(--color-gray-100)', color: 'var(--color-gray-700)', padding: '2px 7px', borderRadius: 5, fontWeight: 700 }}>
+                            {d.reference}
+                          </span>
+                          <span style={{ padding: '2px 9px', borderRadius: 20, fontSize: '10px', fontWeight: 700, background: s.bg, color: s.color }}>
                             {s.label}
                           </span>
-                        </td>
-                        <td style={{ fontSize: '12px', color: d.statut === 'REJETEE' ? 'var(--color-danger-600)' : 'var(--color-gray-500)', fontStyle: d.statut === 'REJETEE' ? 'italic' : 'normal' }}>
-                          {d.statut === 'REJETEE' && d.motif_rejet ? d.motif_rejet : (d.note || '—')}
-                        </td>
-                        <td>
-                          {d.piece_justificative_url ? (
-                            <a
-                              href={d.piece_justificative_url}
-                              target="_blank"
-                              rel="noreferrer"
-                              style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: '12px', color: 'var(--color-primary-600)', fontWeight: 600 }}
-                              onClick={e => e.stopPropagation()}
-                            >
-                              <ExternalLink size={12} strokeWidth={2} /> Voir
-                            </a>
-                          ) : (
-                            <span style={{ fontSize: '12px', color: 'var(--color-gray-300)' }}>—</span>
+                        </div>
+                        <div style={{ fontWeight: 600, fontSize: '13px', color: 'var(--color-gray-800)', marginBottom: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {d.ligne_designation || '—'}
+                        </div>
+                        <div style={{ fontSize: '11px', color: 'var(--color-gray-400)', display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                          <span>{d.date_depense ? new Date(d.date_depense).toLocaleDateString('fr-FR') : '—'}</span>
+                          {d.statut === 'REJETEE' && d.motif_rejet && (
+                            <span style={{ color: 'var(--color-danger-600)', fontStyle: 'italic' }}>
+                              Motif : {d.motif_rejet}
+                            </span>
                           )}
-                        </td>
-                      </tr>
-                    )
-                  })}
-                </tbody>
-              </table>
+                          {d.note && d.statut !== 'REJETEE' && (
+                            <span style={{ fontStyle: 'italic' }}>{d.note}</span>
+                          )}
+                          {d.piece_justificative_url && (
+                            <a href={d.piece_justificative_url} target="_blank" rel="noreferrer"
+                              style={{ display: 'inline-flex', alignItems: 'center', gap: 4, color: 'var(--color-primary-600)', fontWeight: 600, textDecoration: 'none' }}
+                              onClick={e => e.stopPropagation()}>
+                              <Paperclip size={11} strokeWidth={2} /> Justificatif
+                            </a>
+                          )}
+                        </div>
+                      </div>
+                      <div style={{ textAlign: 'right' }}>
+                        <div style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, fontSize: '14px', color: 'var(--color-gray-900)' }}>{fmt(d.montant)}</div>
+                        <div style={{ fontSize: '10px', color: 'var(--color-gray-400)' }}>FCFA</div>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
             )}
           </div>
-        </div>
-      )}
+        )}
 
-      {/* ── Modal dépense multi-lignes ──────────────────────────────────────── */}
+        {/* ── Barre téléchargement ──────────────────────────────────────────── */}
+        <div style={{
+          padding: '10px 24px', borderTop: '1px solid var(--color-gray-100)',
+          background: '#FAFAFA', display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap',
+        }}>
+          <span style={{
+            fontSize: '9px', fontWeight: 700, color: 'var(--color-gray-400)',
+            textTransform: 'uppercase', letterSpacing: '.4px', marginRight: 4,
+          }}>Télécharger</span>
+          <button onClick={() => handleExport(exportBudgetExcel, 'bxls')} disabled={!!exporting} className="btn btn-secondary btn-sm" style={{ gap: 6 }}>
+            {exporting === 'bxls' ? <span className="spinner-sm" /> : <Download size={13} strokeWidth={2} />} Budget.xlsx
+          </button>
+          <button onClick={() => handleExport(exportBudgetPdf, 'bpdf')} disabled={!!exporting} className="btn btn-secondary btn-sm" style={{ gap: 6 }}>
+            {exporting === 'bpdf' ? <span className="spinner-sm" /> : <Printer size={13} strokeWidth={2} />} Budget.pdf
+          </button>
+          {approuve && (
+            <>
+              <div style={{ width: 1, height: 16, background: 'var(--color-gray-200)', margin: '0 4px' }} />
+              <button onClick={() => handleExport(exportDepensesExcel, 'dxls')} disabled={!!exporting} className="btn btn-secondary btn-sm" style={{ gap: 6 }}>
+                {exporting === 'dxls' ? <span className="spinner-sm" /> : <Download size={13} strokeWidth={2} />} Dépenses.xlsx
+              </button>
+              <button onClick={() => handleExport(exportDepensesPdf, 'dpdf')} disabled={!!exporting} className="btn btn-secondary btn-sm" style={{ gap: 6 }}>
+                {exporting === 'dpdf' ? <span className="spinner-sm" /> : <Printer size={13} strokeWidth={2} />} Dépenses.pdf
+              </button>
+            </>
+          )}
+        </div>
+
+        {/* Footer / barre d'actions */}
+        {!isAdmin && (editable || approuve) && (
+          <div style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            padding: '14px 24px',
+            borderTop: '1px solid var(--color-gray-100)',
+            background: 'var(--color-gray-50)',
+          }}>
+            <div />
+            <div style={{ display: 'flex', gap: 8 }}>
+              {editable && (
+                <button onClick={openEdit} className="btn btn-secondary btn-md" style={{ gap: 6 }}>
+                  <Pencil size={14} strokeWidth={2} /> Modifier
+                </button>
+              )}
+              {brouillon && hasLignes && (
+                <button onClick={openSoumission} className="btn btn-primary btn-md" style={{ gap: 6 }}>
+                  <Send size={14} strokeWidth={2} /> Soumettre
+                </button>
+              )}
+              {approuve && (
+                <button onClick={openDepense} className="btn btn-success btn-md" style={{ gap: 6 }}>
+                  <DollarSign size={14} strokeWidth={2} /> Enregistrer une dépense
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* ── Modal dépense ─────────────────────────────────────────────────────── */}
       {showDepenseModal && (
         <DepenseMultiModal
           budgetId={budget.id}
@@ -562,12 +561,13 @@ export default function BudgetDetail({ basePath = '/mes-budgets' }) {
           </div>
         </div>
       )}
+
       {confirmModal && <ConfirmModal {...confirmModal} onClose={() => setConfirmModal(null)} />}
     </div>
   )
 }
 
-/* ── StatusBanner helper ───────────────────────────────────────────────────── */
+/* ── StatusBanner ─────────────────────────────────────────────────────────── */
 function StatusBanner({ type, icon, children }) {
   const cfg = {
     info:    { bg: 'var(--color-gray-50)',    border: 'var(--color-gray-200)',    color: 'var(--color-gray-700)'    },
@@ -578,73 +578,12 @@ function StatusBanner({ type, icon, children }) {
   return (
     <div style={{
       display: 'flex', gap: 10, alignItems: 'flex-start',
-      padding: '10px 16px', borderRadius: 10, marginBottom: 14,
+      padding: '10px 16px', borderRadius: 10, marginTop: 14, marginBottom: 0,
       background: cfg.bg, border: `1px solid ${cfg.border}`, color: cfg.color,
       fontSize: '13px',
     }}>
       <span style={{ flexShrink: 0, marginTop: 1 }}>{icon}</span>
       <span>{children}</span>
-    </div>
-  )
-}
-
-/* ── CVPanel — Synthèse budgétaire ────────────────────────────────────────── */
-function Row({ label, value, color, bold }) {
-  return (
-    <div style={{
-      padding: '9px 14px', borderBottom: '1px solid var(--color-gray-100)',
-      display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-    }}>
-      <span style={{ fontSize: '12px', color: 'var(--color-gray-600)', fontWeight: bold ? 600 : 400 }}>{label}</span>
-      <span style={{
-        fontWeight: bold ? 800 : 700, fontSize: '12px',
-        color: color || 'var(--color-gray-800)',
-        whiteSpace: 'nowrap', marginLeft: 8,
-        fontFamily: 'var(--font-mono)',
-      }}>
-        {new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 0 }).format(parseFloat(value || 0))} FCFA
-      </span>
-    </div>
-  )
-}
-
-function CVPanel({ montantGlobal, montantConsomme, montantDisponible, taux }) {
-  const tauxColor = jaugeColor(taux)
-  return (
-    <div style={{ width: 260, flexShrink: 0 }}>
-      <div style={{
-        fontSize: '10px', fontWeight: 700, color: 'var(--color-gray-500)',
-        letterSpacing: '.5px', textTransform: 'uppercase', marginBottom: 8,
-      }}>
-        Synthèse budgétaire
-      </div>
-      <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
-        <Row label="Budget global"  value={montantGlobal}     color="var(--color-primary-700)" />
-        <Row label="Consommé"       value={montantConsomme}   color="#6a2fa0" />
-        <Row
-          label="Disponible"
-          value={montantDisponible}
-          color={montantDisponible <= 0 ? 'var(--color-danger-600)' : 'var(--color-success-700)'}
-          bold
-        />
-
-        <div style={{ padding: '12px 14px', background: 'var(--color-gray-50)', borderTop: '1px solid var(--color-gray-100)' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 7 }}>
-            <span style={{ fontSize: '10px', fontWeight: 700, color: 'var(--color-gray-500)', textTransform: 'uppercase', letterSpacing: '.3px' }}>
-              Taux de consommation
-            </span>
-            <span style={{ fontWeight: 800, fontSize: '13px', color: tauxColor, fontFamily: 'var(--font-mono)' }}>
-              {taux.toFixed(1)}%
-            </span>
-          </div>
-          <div className="exec-bar">
-            <div className="exec-bar-fill" style={{
-              width: `${Math.min(taux, 100)}%`,
-              background: `linear-gradient(90deg, ${jaugeColor(Math.max(0, taux - 20))}, ${tauxColor})`,
-            }} />
-          </div>
-        </div>
-      </div>
     </div>
   )
 }

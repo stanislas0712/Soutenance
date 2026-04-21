@@ -73,3 +73,28 @@ export const deleteSousCategorie   = (id)          => api.delete(`/budget/sous-c
 export const createLigneHierarchie = (scId, data)  => api.post(`/budget/sous-categories/${scId}/lignes/`, data)
 export const updateLigneHierarchie = (id, data)    => api.patch(`/budget/lignes/${id}/`, data)
 export const deleteLigneHierarchie = (id)          => api.delete(`/budget/lignes/${id}/`)
+
+/* ── Exports Excel & PDF ─────────────────────────────────────────────────── */
+const _download = (data, filename) => {
+  const url = URL.createObjectURL(new Blob([data]))
+  const a   = document.createElement('a')
+  a.href = url; a.download = filename; a.click()
+  setTimeout(() => URL.revokeObjectURL(url), 1000)
+}
+
+export const exportBudgetExcel   = async (id, code) => {
+  const r = await api.get(`/budget/${id}/export/budget-excel/`,   { responseType: 'blob' })
+  _download(r.data, `Budget_${code || id}.xlsx`)
+}
+export const exportBudgetPdf     = async (id, code) => {
+  const r = await api.get(`/budget/${id}/export/budget-pdf/`,     { responseType: 'blob' })
+  _download(r.data, `Budget_${code || id}.pdf`)
+}
+export const exportDepensesExcel = async (id, code) => {
+  const r = await api.get(`/budget/${id}/export/depenses-excel/`, { responseType: 'blob' })
+  _download(r.data, `Depenses_${code || id}.xlsx`)
+}
+export const exportDepensesPdf   = async (id, code) => {
+  const r = await api.get(`/budget/${id}/export/depenses-pdf/`,   { responseType: 'blob' })
+  _download(r.data, `Depenses_${code || id}.pdf`)
+}

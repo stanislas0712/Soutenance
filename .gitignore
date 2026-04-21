@@ -1,5 +1,10 @@
 .env
+**/.env
+**/.env.*
+!.env.example
+!**/.env.example
 venv/
+backend/.venv/
 __pycache__/
 **/__pycache__/
 *.pyc
@@ -20,3 +25,5 @@ frontend/node_modules/
 # OS
 .DS_Store
 Thumbs.db
+.aidesigner/*
+!.aidesigner/.gitkeep

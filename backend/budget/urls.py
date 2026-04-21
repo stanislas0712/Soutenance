@@ -1,5 +1,5 @@
 from django.urls import path
-from . import views
+from . import views, views_export
 
 urlpatterns = [
     # Budget annuel (admin)
@@ -45,4 +45,10 @@ urlpatterns = [
     path('sous-categories/<uuid:pk>/',             views.SousCategorieDetailView.as_view(),    name='sous-categorie-detail'),
     path('sous-categories/<uuid:pk>/lignes/',      views.LigneParSousCategorieView.as_view(), name='ligne-par-sous-cat'),
     path('lignes/<uuid:pk>/',                      views.LigneHierarchieDetailView.as_view(), name='ligne-hierarchie-detail'),
+
+    # Exports Excel & PDF
+    path('<uuid:pk>/export/budget-excel/',    views_export.ExportBudgetExcelView.as_view(),   name='export-budget-excel'),
+    path('<uuid:pk>/export/budget-pdf/',      views_export.ExportBudgetPdfView.as_view(),     name='export-budget-pdf'),
+    path('<uuid:pk>/export/depenses-excel/',  views_export.ExportDepensesExcelView.as_view(), name='export-depenses-excel'),
+    path('<uuid:pk>/export/depenses-pdf/',    views_export.ExportDepensesPdfView.as_view(),   name='export-depenses-pdf'),
 ]

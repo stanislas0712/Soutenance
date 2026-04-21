@@ -1,79 +1,71 @@
+import { Link } from 'react-router-dom'
 import { useScrollAnimation } from '../hooks/useScrollAnimation'
-import { ArrowRight, CheckCircle2, Shield, TrendingUp } from 'lucide-react'
-
-const POINTS = [
-  { Icon: CheckCircle2, text: 'Workflow de validation multi-niveaux'   },
-  { Icon: Shield,       text: 'Traçabilité complète via journal d\'audit' },
-  { Icon: TrendingUp,   text: 'Tableaux de bord et rapports IA intégrés' },
-]
 
 export default function CTAFinal() {
   const [ref, visible] = useScrollAnimation(0.1)
 
   return (
-    <div
-      className="py-20 px-6 relative overflow-hidden"
-      style={{ background: '#F8FAFC' }}
-    >
-      <div
-        ref={ref}
-        className={`max-w-5xl mx-auto relative z-10 transition-all duration-700 ${
-          visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
-        }`}
-      >
-        <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 56 }}>
+    <section style={{ padding:'96px 24px', background:'linear-gradient(180deg, #EFF6FF 0%, #DBEAFE 100%)', position:'relative', overflow:'hidden' }} aria-label="Appel à l'action final">
 
-          {/* Texte gauche */}
-          <div style={{ flex: '1 1 380px' }}>
-            <p style={{ fontSize: 12, fontWeight: 700, color: '#C9910A', textTransform: 'uppercase', letterSpacing: '.8px', marginBottom: 14 }}>
-              Prêt à commencer ?
-            </p>
-            <h2 style={{
-              fontSize: 'clamp(1.6rem, 2.8vw, 2.2rem)', fontWeight: 700, color: '#1E3A8A',
-              lineHeight: 1.2, letterSpacing: '-.02em', marginBottom: 16,
-              fontFamily: "'IBM Plex Sans', system-ui, sans-serif",
-            }}>
-              Accédez à votre espace<br />de gestion budgétaire
-            </h2>
-            <p style={{ fontSize: 15, color: '#57616E', lineHeight: 1.7, marginBottom: 28 }}>
-              Gestion Budgétaire centralise l'ensemble de vos processus financiers —
-              de l'allocation des budgets au suivi des dépenses en passant
-              par la validation et les analyses IA.
-            </p>
-            <a
-              href="/login"
-              style={{
-                display: 'inline-flex', alignItems: 'center', gap: 9,
-                background: '#1E3A8A',
-                color: '#FFFFFF', fontWeight: 700, fontSize: 15,
-                padding: '0 32px', height: '44px', borderRadius: 8, textDecoration: 'none',
-                fontFamily: "'IBM Plex Sans', system-ui, sans-serif",
-              }}
-              onMouseEnter={e => { e.currentTarget.style.background = '#172872' }}
-              onMouseLeave={e => { e.currentTarget.style.background = '#1E3A8A' }}
-            >
-              Se connecter <ArrowRight size={16} strokeWidth={2.5} />
-            </a>
-          </div>
+      {/* Decorative circles */}
+      <div aria-hidden="true" style={{ position:'absolute', top:'-20%', right:'-5%', width:400, height:400, borderRadius:'50%', background:'rgba(37,99,235,0.06)', pointerEvents:'none' }} />
+      <div aria-hidden="true" style={{ position:'absolute', bottom:'-20%', left:'-5%', width:300, height:300, borderRadius:'50%', background:'rgba(37,99,235,0.05)', pointerEvents:'none' }} />
 
-          {/* Points droite */}
-          <div style={{ flex: '1 1 280px', display: 'flex', flexDirection: 'column', gap: 20 }}>
-            {POINTS.map(({ Icon, text }) => (
-              <div key={text} style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-                <div style={{
-                  width: 44, height: 44, borderRadius: 8, flexShrink: 0,
-                  background: '#FFFFFF', border: '1.5px solid #D1D8E0',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                }}>
-                  <Icon size={18} strokeWidth={2} color="#C9910A" />
-                </div>
-                <span style={{ fontSize: 14, color: '#1E3A8A', fontWeight: 600 }}>{text}</span>
-              </div>
-            ))}
-          </div>
+      <div ref={ref} style={{
+        maxWidth:780, margin:'0 auto', textAlign:'center',
+        padding:'64px 48px',
+        background:'#FFFFFF',
+        border:'1px solid rgba(37,99,235,0.15)',
+        borderRadius:24,
+        boxShadow:'0 8px 40px rgba(37,99,235,0.12), 0 1px 0 rgba(255,255,255,0.9) inset',
+        position:'relative', zIndex:1,
+        opacity:visible?1:0, transform:visible?'translateY(0)':'translateY(28px)',
+        transition:'all .8s cubic-bezier(.16,1,.3,1)',
+      }}>
+        {/* Top accent line */}
+        <div aria-hidden="true" style={{ position:'absolute', top:0, left:'15%', right:'15%', height:3, borderRadius:'0 0 3px 3px', background:'linear-gradient(90deg, #2563EB, #60A5FA)', }} />
 
+        <div style={{
+          display:'inline-flex', alignItems:'center', gap:8,
+          padding:'4px 14px', borderRadius:999,
+          background:'rgba(37,99,235,0.08)', border:'1px solid rgba(37,99,235,0.2)',
+          fontSize:11, fontWeight:700, color:'#2563EB', letterSpacing:'.08em',
+          textTransform:'uppercase', marginBottom:24,
+        }}>
+          Prêt à commencer ?
         </div>
+
+        <h2 style={{ fontSize:'clamp(2rem,4vw,3.2rem)', fontWeight:800, letterSpacing:'-0.04em', color:'#0F172A', lineHeight:1.1, marginBottom:20 }}>
+          Prêt à moderniser votre<br />gestion budgétaire ?
+        </h2>
+
+        <div style={{ display:'flex', flexWrap:'wrap', gap:12, justifyContent:'center', marginBottom:36 }}>
+          <a href="/login" style={{
+            display:'inline-flex', alignItems:'center', gap:8,
+            padding:'14px 32px', borderRadius:10,
+            background:'#2563EB', color:'#FFFFFF',
+            fontWeight:700, fontSize:15, textDecoration:'none',
+            boxShadow:'0 4px 16px rgba(37,99,235,0.3)',
+            transition:'background .15s, transform .15s',
+          }}
+            onMouseEnter={e => { e.currentTarget.style.background='#1D4ED8'; e.currentTarget.style.transform='translateY(-1px)' }}
+            onMouseLeave={e => { e.currentTarget.style.background='#2563EB'; e.currentTarget.style.transform='' }}
+          >Démarrer gratuitement</a>
+
+          <Link to="/contact" style={{
+            display:'inline-flex', alignItems:'center', gap:8,
+            padding:'14px 28px', borderRadius:10,
+            background:'transparent', color:'#2563EB',
+            fontWeight:600, fontSize:15, textDecoration:'none',
+            border:'1px solid rgba(37,99,235,0.3)',
+            transition:'all .15s',
+          }}
+            onMouseEnter={e => { e.currentTarget.style.background='rgba(37,99,235,0.06)'; e.currentTarget.style.borderColor='#2563EB' }}
+            onMouseLeave={e => { e.currentTarget.style.background='transparent'; e.currentTarget.style.borderColor='rgba(37,99,235,0.3)' }}
+          >Contacter l'équipe</Link>
+        </div>
+
       </div>
-    </div>
+    </section>
   )
 }

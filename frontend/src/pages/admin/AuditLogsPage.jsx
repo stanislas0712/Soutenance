@@ -72,7 +72,7 @@ export default function AuditLogsPage({ embedded = false }) {
       )}
 
       {/* Filtres */}
-      <div className="filter-bar mb-[20px]">
+      <div className="filter-bar mb-[20px]" style={{ flexWrap: 'nowrap' }}>
         <select
           className="form-select min-w-[180px] h-[38px]"
           value={filter.action}

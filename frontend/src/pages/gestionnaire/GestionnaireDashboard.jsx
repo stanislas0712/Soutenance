@@ -102,13 +102,6 @@ export default function GestionnaireDashboard() {
           <h1 className="page-title">Tableau de bord</h1>
           <p className="page-subtitle">Bonjour, {user?.prenom} — {new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</p>
         </div>
-        <button
-          onClick={() => navigate('/creer-budget')}
-          className="btn btn-primary btn-sm"
-        >
-          <Plus size={14} strokeWidth={2.5} />
-          Créer un budget
-        </button>
       </div>
 
       {/* KPIs */}

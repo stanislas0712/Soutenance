@@ -3,8 +3,29 @@ from rest_framework import generics, permissions, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from django.core.exceptions import ValidationError
+from django.core.mail import send_mail
+from django.conf import settings
 
 logger = logging.getLogger('budget')
+
+APP_NAME = 'Gestion budgétaire'
+
+
+def _envoyer_email(destinataire, sujet, corps):
+    """Envoie un email de notification — silencieux en cas d'échec."""
+    if not getattr(destinataire, 'email', None):
+        return
+    try:
+        from_email = getattr(settings, 'DEFAULT_FROM_EMAIL', f'{APP_NAME} <noreply@gestion-budgetaire.bf>')
+        send_mail(
+            subject=f'{sujet} — {APP_NAME}',
+            message=corps,
+            from_email=from_email,
+            recipient_list=[destinataire.email],
+            fail_silently=True,
+        )
+    except Exception as exc:
+        logger.warning("Email non envoyé à %s : %s", destinataire.email, exc)
 from .models import (
     BudgetAnnuel, AllocationDepartementale,
     Budget, LigneBudgetaire, ConsommationLigne,
@@ -239,8 +260,6 @@ class BudgetDetailView(generics.RetrieveUpdateDestroyAPIView):
     def get_permissions(self):
         if self.request.method in ('PUT', 'PATCH'):
             return [IsGestionnaire()]
-        if self.request.method == 'DELETE':
-            return [IsGestionnaire()]
         return [permissions.IsAuthenticated()]
 
     def get_serializer_class(self):
@@ -285,21 +304,10 @@ class BudgetDetailView(generics.RetrieveUpdateDestroyAPIView):
             )
 
     def destroy(self, request, *args, **kwargs):
-        budget = self.get_object()
-        if budget.statut not in (StatutBudget.BROUILLON, StatutBudget.REJETE):
-            return Response(
-                {'detail': 'Seul un budget en brouillon ou rejeté peut être supprimé.'},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-        LogAudit.enregistrer(
-            utilisateur=request.user,
-            table='budget',
-            enregistrement_id=str(budget.id),
-            action=ActionAudit.DELETE,
-            valeur_avant=f"{budget.code} – {budget.nom}",
-            user_agent=request.META.get('HTTP_USER_AGENT', ''),
+        return Response(
+            {'detail': 'La suppression de budgets est réservée à l\'administrateur système (interface Django Admin).'},
+            status=status.HTTP_403_FORBIDDEN,
         )
-        return super().destroy(request, *args, **kwargs)
 
 
 class ApprouverBudgetView(APIView):
@@ -320,13 +328,23 @@ class ApprouverBudgetView(APIView):
             valeur_apres=f"{budget.code} approuvé",
             user_agent=request.META.get('HTTP_USER_AGENT', ''),
         )
-        # Notification au gestionnaire
+        # Notification + email au gestionnaire
         if budget.gestionnaire:
             creer_notification(
                 destinataire=budget.gestionnaire,
                 type_notif='BUDGET_APPROUVE',
                 message=f"Votre budget {budget.code} – {budget.nom} a été approuvé.",
                 lien=f"/mes-budgets/{budget.id}",
+            )
+            _envoyer_email(
+                budget.gestionnaire,
+                f"Budget approuvé : {budget.code}",
+                (
+                    f"Bonjour {budget.gestionnaire.prenom} {budget.gestionnaire.nom},\n\n"
+                    f"Votre budget {budget.code} – {budget.nom} a été approuvé par "
+                    f"{request.user.prenom} {request.user.nom}.\n\n"
+                    f"Vous pouvez maintenant enregistrer des dépenses sur ce budget."
+                ),
             )
             logger.info("[APPROUVE] %s | par %s | notif -> %s",
                         budget.code, request.user.email, budget.gestionnaire.email)
@@ -357,13 +375,24 @@ class RejeterBudgetView(APIView):
             valeur_apres=f"{budget.code} rejeté",
             user_agent=request.META.get('HTTP_USER_AGENT', ''),
         )
-        # Notification au gestionnaire
+        # Notification + email au gestionnaire
         if budget.gestionnaire:
             creer_notification(
                 destinataire=budget.gestionnaire,
                 type_notif='BUDGET_REJETE',
                 message=f"Votre budget {budget.code} – {budget.nom} a été rejeté. Motif : {motif[:100]}",
                 lien=f"/mes-budgets/{budget.id}",
+            )
+            _envoyer_email(
+                budget.gestionnaire,
+                f"Budget rejeté : {budget.code}",
+                (
+                    f"Bonjour {budget.gestionnaire.prenom} {budget.gestionnaire.nom},\n\n"
+                    f"Votre budget {budget.code} – {budget.nom} a été rejeté par "
+                    f"{request.user.prenom} {request.user.nom}.\n\n"
+                    f"Motif : {motif}\n\n"
+                    f"Veuillez le corriger et le re-soumettre."
+                ),
             )
             logger.info("[REJETE] %s | par %s | notif -> %s | motif: %s",
                         budget.code, request.user.email, budget.gestionnaire.email, motif[:60])
@@ -437,7 +466,7 @@ class SoumettreView(APIView):
             valeur_avant='BROUILLON', valeur_apres='SOUMIS',
             user_agent=request.META.get('HTTP_USER_AGENT', ''),
         )
-        # Notifications pour tous les comptables
+        # Notifications + emails pour tous les comptables
         from accounts.models import Utilisateur
         comptables = Utilisateur.objects.filter(role='COMPTABLE', actif=True)
         for comptable in comptables:
@@ -446,6 +475,16 @@ class SoumettreView(APIView):
                 type_notif='BUDGET_SOUMIS',
                 message=f"Le budget {budget.code} – {budget.nom} est en attente de validation.",
                 lien=f"/validation/{budget.id}",
+            )
+            _envoyer_email(
+                comptable,
+                f"Budget à valider : {budget.code}",
+                (
+                    f"Bonjour {comptable.prenom} {comptable.nom},\n\n"
+                    f"Le budget {budget.code} – {budget.nom} vient d'être soumis par "
+                    f"{request.user.prenom} {request.user.nom} et attend votre validation.\n\n"
+                    f"Connectez-vous pour le consulter."
+                ),
             )
         logger.info("[SOUMIS] %s | par %s | notif -> %d comptable(s)",
                     budget.code, request.user.email, comptables.count())
@@ -861,6 +900,9 @@ class VirementCreditsView(APIView):
 
         if not ligne_source_id or not ligne_dest_id or montant is None:
             return Response({'detail': 'ligne_source, ligne_destination et montant sont requis.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        if str(ligne_source_id) == str(ligne_dest_id):
+            return Response({'detail': 'La ligne source et la ligne destination doivent être différentes.'}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
             ligne_src  = LigneBudgetaire.objects.get(pk=ligne_source_id, budget=budget)

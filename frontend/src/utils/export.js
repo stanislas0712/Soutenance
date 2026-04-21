@@ -361,19 +361,19 @@ export function printPDF(title, headers, rows, meta = {}) {
   body { font-family: 'Segoe UI', Arial, sans-serif; font-size: 11px; color: #1F2937; background: #fff; padding: 24px 28px; }
   .toolbar { display: flex; gap: 8px; justify-content: flex-end; margin-bottom: 16px; }
   .toolbar button { padding: 7px 18px; border-radius: 6px; border: none; cursor: pointer; font-size: 12px; font-weight: 600; }
-  .btn-print { background: #1C1917; color: #C9A84C; border: 1px solid rgba(201,168,76,.4); }
+  .btn-print { background: #1E3A8A; color: #fff; border: 1px solid rgba(30,58,138,.4); }
   .btn-close { background: #F3F4F6; color: #374151; }
-  .header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 18px; padding-bottom: 14px; border-bottom: 2px solid #C9A84C; }
-  .header-left h1 { font-size: 16px; font-weight: 800; color: #1C1917; margin-bottom: 3px; }
+  .header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 18px; padding-bottom: 14px; border-bottom: 2px solid #2563EB; }
+  .header-left h1 { font-size: 16px; font-weight: 800; color: #1E3A8A; margin-bottom: 3px; }
   .header-left p  { font-size: 10px; color: #6B7280; }
   .header-right   { text-align: right; font-size: 10px; color: #6B7280; }
-  .logo { font-size: 18px; font-weight: 900; color: #1C1917; letter-spacing: -0.5px; }
+  .logo { font-size: 18px; font-weight: 900; color: #1E3A8A; letter-spacing: -0.5px; }
   .stats { display: flex; gap: 12px; margin-bottom: 14px; flex-wrap: wrap; }
-  .stat-box { background: #FEF9EC; border: 1px solid #F3D07A; border-radius: 6px; padding: 8px 14px; min-width: 100px; }
-  .stat-val { font-size: 15px; font-weight: 800; color: #1C1917; }
+  .stat-box { background: #EFF6FF; border: 1px solid #BFDBFE; border-radius: 6px; padding: 8px 14px; min-width: 100px; }
+  .stat-val { font-size: 15px; font-weight: 800; color: #1E3A8A; }
   .stat-lbl { font-size: 9px; color: #6B7280; text-transform: uppercase; letter-spacing: .4px; margin-top: 2px; }
   table { width: 100%; border-collapse: collapse; margin-top: 4px; }
-  thead tr { background: #1C1917; }
+  thead tr { background: #1E3A8A; }
   thead th { color: #fff; font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; padding: 7px 8px; text-align: left; white-space: nowrap; }
   tbody td { padding: 6px 8px; font-size: 10px; border-bottom: 1px solid #F3F4F6; vertical-align: top; }
   tr.alt td { background: #F9FAFB; }

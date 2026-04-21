@@ -1,11 +1,11 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { getDepenses, validerDepense, rejeterDepense } from '../../api/depenses'
 import {
   Search, CheckCircle2, XCircle, Receipt, Eye,
-  Paperclip, ChevronRight, Download, X,
+  Paperclip, ChevronRight, X,
 } from 'lucide-react'
-import { exportCSV } from '../../utils/export'
 import { notifRefresh } from '../../utils/notifRefresh'
 
 const fmt     = (n)   => new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 0 }).format(parseFloat(n || 0))
@@ -28,9 +28,9 @@ const TABS = [
    Page principale
 ══════════════════════════════════════════════════════════ */
 export default function DepensesPage() {
-  const [tab,         setTab]         = useState('SAISIE')
-  const [search,      setSearch]      = useState('')
-  const [detailGroup, setDetailGroup] = useState(null)
+  const navigate = useNavigate()
+  const [tab,    setTab]    = useState('SAISIE')
+  const [search, setSearch] = useState('')
   const qc = useQueryClient()
 
   const { data: allData, isLoading } = useQuery({
@@ -41,7 +41,24 @@ export default function DepensesPage() {
   const allDepenses = Array.isArray(allData?.data) ? allData.data
     : (allData?.data?.results || allData?.results || [])
 
-  const countFor = (key) => key ? allDepenses.filter(d => d.statut === key).length : allDepenses.length
+  // Grouper TOUS les items (non filtrés) pour les KPIs
+  const allGroups = Object.values(
+    allDepenses.reduce((acc, d) => {
+      const k = d.budget_reference || '—'
+      if (!acc[k]) acc[k] = { items: [] }
+      acc[k].items.push(d)
+      return acc
+    }, {})
+  )
+
+  // KPIs comptent les groupes (budgets), pas les items individuels
+  const countFor = (key) => {
+    if (!key) return allGroups.length
+    if (key === 'SAISIE')  return allGroups.filter(g => g.items.some(d => d.statut === 'SAISIE')).length
+    if (key === 'VALIDEE') return allGroups.filter(g => g.items.every(d => d.statut === 'VALIDEE')).length
+    if (key === 'REJETEE') return allGroups.filter(g => g.items.some(d => d.statut === 'REJETEE')).length
+    return 0
+  }
 
   const q = search.trim().toLowerCase()
   const filtered = allDepenses
@@ -60,6 +77,7 @@ export default function DepensesPage() {
       if (!acc[key]) acc[key] = {
         reference: key,
         nom: (d.budget_nom && d.budget_nom !== '—') ? d.budget_nom : key,
+        budget_id: d.budget_id || null,
         items: [],
       }
       acc[key].items.push(d)
@@ -67,14 +85,9 @@ export default function DepensesPage() {
     }, {})
   )
 
-  const refreshGroup = (ref) => {
+  const refreshGroup = () => {
     qc.invalidateQueries(['depenses-all'])
     notifRefresh()
-    // Mettre à jour le groupe ouvert si besoin
-    setDetailGroup(prev => {
-      if (!prev || prev.reference !== ref) return prev
-      return null // fermer et laisser la liste se rafraîchir
-    })
   }
 
   return (
@@ -85,30 +98,21 @@ export default function DepensesPage() {
           <h1 className="page-title">Suivi des dépenses</h1>
           <p className="page-subtitle">Examinez et validez les dépenses soumises par les gestionnaires</p>
         </div>
-        <div style={{ display: 'flex', gap: 8 }}>
-          <button
-            onClick={() => exportCSV(`depenses-${new Date().toISOString().slice(0,10)}`,
-              ['Référence', 'Budget', 'Ligne', 'Fournisseur', 'Montant (FCFA)', 'Saisi par', 'Date', 'Statut'],
-              filtered.map(d => [d.reference, d.budget_reference, d.ligne_designation, d.fournisseur || '—', fmt(d.montant), d.enregistre_par || '—', fmtDate(d.date_depense), d.statut])
-            )}
-            className="btn btn-secondary btn-sm" style={{ gap: 6 }}
-          >
-            <Download size={13} strokeWidth={2} /> CSV
-          </button>
-        </div>
+        <div />
       </div>
 
       {/* KPI */}
       <div className="kpi-grid">
         {[
-          { label: 'EN ATTENTE', val: countFor('SAISIE'),  color: 'var(--color-warning-600)', bg: 'var(--color-warning-50)'  },
-          { label: 'VALIDÉES',   val: countFor('VALIDEE'), color: 'var(--color-success-600)', bg: 'var(--color-success-50)'  },
-          { label: 'REJETÉES',   val: countFor('REJETEE'), color: 'var(--color-danger-600)',  bg: 'var(--color-danger-50)'   },
-          { label: 'TOTAL',      val: countFor(''),        color: 'var(--color-primary-600)', bg: 'var(--color-primary-50)'  },
+          { label: 'EN ATTENTE', val: countFor('SAISIE'),  sub: 'budget(s)', color: 'var(--color-warning-600)', bg: 'var(--color-warning-50)'  },
+          { label: 'VALIDÉES',   val: countFor('VALIDEE'), sub: 'budget(s)', color: 'var(--color-success-600)', bg: 'var(--color-success-50)'  },
+          { label: 'REJETÉES',   val: countFor('REJETEE'), sub: 'budget(s)', color: 'var(--color-danger-600)',  bg: 'var(--color-danger-50)'   },
+          { label: 'TOTAL',      val: countFor(''),        sub: 'budgets',   color: 'var(--color-primary-600)', bg: 'var(--color-primary-50)'  },
         ].map(k => (
           <div key={k.label} className="card" style={{ borderTop: `3px solid ${k.color}` }}>
             <div style={{ fontSize: '10px', fontWeight: 700, color: k.color, textTransform: 'uppercase', letterSpacing: '.4px', marginBottom: 8 }}>{k.label}</div>
             <div style={{ fontFamily: 'var(--font-mono)', fontWeight: 800, fontSize: '22px', color: 'var(--color-gray-900)' }}>{k.val}</div>
+            <div style={{ fontSize: '11px', color: 'var(--color-gray-400)', marginTop: 2 }}>{k.sub}</div>
           </div>
         ))}
       </div>
@@ -181,10 +185,9 @@ export default function DepensesPage() {
 
           {groups.map((g, i) => {
             const total     = g.items.reduce((s, d) => s + parseFloat(d.montant || 0), 0)
-            const validated = g.items.filter(d => d.statut === 'VALIDEE').length
-            const pending   = g.items.filter(d => d.statut === 'SAISIE').length
-            const rejected  = g.items.filter(d => d.statut === 'REJETEE').length
-            const tauxValid = g.items.length > 0 ? (validated / g.items.length) * 100 : 0
+            const tauxValid = g.items.length > 0
+              ? (g.items.filter(d => d.statut === 'VALIDEE').length / g.items.length) * 100
+              : 0
 
             return (
               <div key={g.reference} style={{
@@ -195,27 +198,17 @@ export default function DepensesPage() {
               }}
                 onMouseEnter={e => e.currentTarget.style.background = 'var(--color-gray-50)'}
                 onMouseLeave={e => e.currentTarget.style.background = ''}
-                onClick={() => setDetailGroup(g)}
+                onClick={() => navigate('/depenses/budget/' + g.budget_id)}
               >
                 <div style={{ minWidth: 0 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4, flexWrap: 'wrap' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
                     <span className="code-tag">{g.reference}</span>
-                    {pending > 0 && (
-                      <span style={{ background: 'var(--color-warning-50)', color: 'var(--color-warning-700)', fontSize: '10px', fontWeight: 700, padding: '1px 7px', borderRadius: 9 }}>
-                        {pending} à valider
-                      </span>
-                    )}
-                    {rejected > 0 && (
-                      <span style={{ background: 'var(--color-danger-50)', color: 'var(--color-danger-700)', fontSize: '10px', fontWeight: 700, padding: '1px 7px', borderRadius: 9 }}>
-                        {rejected} rejetée{rejected > 1 ? 's' : ''}
-                      </span>
-                    )}
                   </div>
                   <div style={{ fontWeight: 600, fontSize: '14px', color: 'var(--color-gray-900)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', marginBottom: 2 }}>
                     {g.nom}
                   </div>
                   <div style={{ fontSize: '11px', color: 'var(--color-gray-400)' }}>
-                    {g.items.length} dépense{g.items.length > 1 ? 's' : ''} · {validated} validée{validated !== 1 ? 's' : ''}
+                    {g.items.length} poste{g.items.length > 1 ? 's' : ''} de dépense
                   </div>
                 </div>
 
@@ -234,7 +227,7 @@ export default function DepensesPage() {
                 </div>
 
                 <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end', alignItems: 'center' }} onClick={e => e.stopPropagation()}>
-                  <button onClick={() => setDetailGroup(g)} className="btn btn-secondary btn-sm" style={{ gap: 5 }}>
+                  <button onClick={() => navigate('/depenses/budget/' + g.budget_id)} className="btn btn-secondary btn-sm" style={{ gap: 5 }}>
                     <Eye size={12} strokeWidth={2} /> Examiner
                   </button>
                   <ChevronRight size={14} strokeWidth={2} style={{ color: 'var(--color-gray-300)' }} />
@@ -245,13 +238,6 @@ export default function DepensesPage() {
         </div>
       )}
 
-      {detailGroup && (
-        <DepenseGroupDetail
-          group={detailGroup}
-          onClose={() => setDetailGroup(null)}
-          onRefresh={() => { qc.invalidateQueries(['depenses-all']); notifRefresh() }}
-        />
-      )}
     </div>
   )
 }
@@ -260,8 +246,9 @@ export default function DepensesPage() {
    Modal détail d'un groupe — version Comptable (avec actions)
 ══════════════════════════════════════════════════════════ */
 function DepenseGroupDetail({ group, onClose, onRefresh }) {
+  const navigate = useNavigate()
   const [items,      setItems]      = useState(group.items)
-  const [rejetModal, setRejetModal] = useState(null)  // id de la dépense à rejeter
+  const [rejetModal, setRejetModal] = useState(null)
   const [busy,       setBusy]       = useState(null)
 
   const total          = items.reduce((s, d) => s + parseFloat(d.montant || 0), 0)
@@ -305,33 +292,31 @@ function DepenseGroupDetail({ group, onClose, onRefresh }) {
       <div className="modal-overlay" onClick={e => { if (e.target === e.currentTarget) onClose() }}>
         <div className="modal-panel" onClick={e => e.stopPropagation()} style={{ maxWidth: 720, padding: 0, overflow: 'hidden' }}>
 
-          {/* En-tête gradient */}
-          <div style={{ background: 'linear-gradient(135deg, #0F4C2A, #166534)', padding: '24px 28px 20px', color: '#fff', position: 'relative', overflow: 'hidden' }}>
-            <div style={{ position: 'absolute', top: -30, right: -30, width: 130, height: 130, borderRadius: '50%', background: 'rgba(255,255,255,.06)', pointerEvents: 'none' }} />
-            <div style={{ position: 'absolute', bottom: -20, right: 80, width: 80, height: 80, borderRadius: '50%', background: 'rgba(255,255,255,.04)', pointerEvents: 'none' }} />
-            <button onClick={onClose} style={{ position: 'absolute', top: 16, right: 16, background: 'rgba(255,255,255,.15)', border: 'none', borderRadius: 7, padding: '5px 8px', cursor: 'pointer', color: '#fff', display: 'flex', alignItems: 'center' }}>
+          {/* ── Header navy — même couleur que BudgetDetail ── */}
+          <div style={{ background: '#1E3A8A', padding: '20px 24px 16px', color: '#fff', position: 'relative', overflow: 'hidden' }}>
+            <div style={{ position: 'absolute', top: -30, right: -30, width: 120, height: 120, borderRadius: '50%', background: 'rgba(255,255,255,.06)', pointerEvents: 'none' }} />
+            <button onClick={onClose} style={{ position: 'absolute', top: 14, right: 14, background: 'rgba(255,255,255,.15)', border: 'none', borderRadius: 7, padding: '5px 8px', cursor: 'pointer', color: '#fff', display: 'flex', alignItems: 'center' }}>
               <X size={15} strokeWidth={2} />
             </button>
-
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16, paddingRight: 40 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16, paddingRight: 36 }}>
               <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-                  <div style={{ background: 'rgba(255,255,255,.18)', borderRadius: 7, padding: '4px 10px', fontSize: '12px', fontWeight: 700, fontFamily: 'var(--font-mono)', letterSpacing: '.5px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+                  <div style={{ background: 'rgba(255,255,255,.18)', borderRadius: 7, padding: '3px 10px', fontSize: '12px', fontWeight: 700, fontFamily: 'var(--font-mono)', letterSpacing: '.5px' }}>
                     {group.reference}
                   </div>
-                  <span style={{ fontSize: '11px', opacity: .7 }}>{items.length} dépense{items.length > 1 ? 's' : ''}</span>
+                  <span style={{ fontSize: '11px', opacity: .75 }}>{items.length} poste{items.length > 1 ? 's' : ''} de dépense</span>
                 </div>
-                <div style={{ fontWeight: 800, fontSize: '1.1rem', marginBottom: 8 }}>{group.nom}</div>
-                <div style={{ display: 'flex', gap: 16, fontSize: '12px', opacity: .85 }}>
+                <div style={{ fontWeight: 800, fontSize: '1.05rem', marginBottom: 6, lineHeight: 1.3 }}>{group.nom}</div>
+                <div style={{ display: 'flex', gap: 14, fontSize: '12px', opacity: .85 }}>
                   <span>✓ {validated.length} validée{validated.length !== 1 ? 's' : ''}</span>
                   <span>⏳ {pending.length} en attente</span>
                   {rejected.length > 0 && <span>✕ {rejected.length} rejetée{rejected.length > 1 ? 's' : ''}</span>}
                 </div>
               </div>
               <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                <div style={{ fontSize: '10px', opacity: .6, textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: 4 }}>Total</div>
-                <div style={{ fontFamily: 'var(--font-mono)', fontWeight: 900, fontSize: '1.6rem', lineHeight: 1 }}>{fmt(total)}</div>
-                <div style={{ fontSize: '11px', opacity: .65, marginTop: 3 }}>FCFA</div>
+                <div style={{ fontSize: '10px', opacity: .6, textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: 3 }}>Total</div>
+                <div style={{ fontFamily: 'var(--font-mono)', fontWeight: 900, fontSize: '1.5rem', lineHeight: 1 }}>{fmt(total)}</div>
+                <div style={{ fontSize: '11px', opacity: .65, marginTop: 2 }}>FCFA</div>
               </div>
             </div>
           </div>
@@ -350,54 +335,32 @@ function DepenseGroupDetail({ group, onClose, onRefresh }) {
             ))}
           </div>
 
-          {/* Pièces justificatives — niveau dépense (une pour tout le groupe) */}
-          {(() => {
-            const urls   = [...new Set(items.map(d => d.piece_justificative_url).filter(Boolean))]
-            const extras = items.flatMap(d => d.pieces || [])
-            const note   = items.find(d => d.note)?.note
-            return (
-              <div style={{ padding: '12px 24px', borderBottom: '1px solid var(--color-gray-100)', background: 'var(--color-gray-50)', display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-                <div style={{ fontSize: '10px', fontWeight: 700, color: 'var(--color-gray-500)', textTransform: 'uppercase', letterSpacing: '.4px', flexShrink: 0 }}>
-                  Pièces justificatives
-                </div>
-                {urls.map((url, i) => (
-                  <a key={i} href={url} target="_blank" rel="noreferrer" style={{ textDecoration: 'none' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '5px 12px', borderRadius: 7, background: '#fff', border: '1px solid var(--color-primary-200)', fontSize: '12px', color: 'var(--color-primary-700)', fontWeight: 600, cursor: 'pointer' }}>
-                      <Paperclip size={12} strokeWidth={2} /> Justificatif {urls.length > 1 ? i + 1 : ''}
-                    </div>
-                  </a>
-                ))}
-                {extras.map((p, i) => (
-                  <a key={`extra-${i}`} href={p.url} target="_blank" rel="noreferrer" style={{ textDecoration: 'none' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '5px 12px', borderRadius: 7, background: '#fff', border: '1px solid var(--color-gray-200)', fontSize: '12px', color: 'var(--color-gray-600)', fontWeight: 600, cursor: 'pointer' }}>
-                      <Paperclip size={12} strokeWidth={2} /> {p.nom || `Pièce ${i + 2}`}
-                    </div>
-                  </a>
-                ))}
-                {note && (
-                  <span style={{ fontSize: '12px', color: 'var(--color-gray-500)', fontStyle: 'italic' }}>Note : {note}</span>
-                )}
-                {!urls.length && !extras.length && (
-                  <span style={{ fontSize: '12px', color: 'var(--color-gray-400)', fontStyle: 'italic' }}>Aucune pièce justificative jointe</span>
-                )}
-              </div>
-            )
-          })()}
+          {/* ── Hint clic ── */}
+          <div style={{ padding: '6px 24px', background: '#EFF6FF', borderBottom: '1px solid #DBEAFE' }}>
+            <span style={{ fontSize: '11px', color: '#1D4ED8' }}>
+              💡 Cliquez sur une dépense pour voir son détail complet avec les pièces justificatives.
+            </span>
+          </div>
 
           {/* Liste des lignes */}
-          <div style={{ maxHeight: '46vh', overflowY: 'auto' }}>
+          <div style={{ maxHeight: '50vh', overflowY: 'auto' }}>
             {items.map((d, i) => {
               const s = STATUT[d.statut] || { bg: 'var(--color-gray-100)', color: 'var(--color-gray-600)', label: d.statut }
               const isBusy = busy === d.id
               return (
-                <div key={d.id} style={{
-                  padding: '14px 24px',
-                  borderBottom: i < items.length - 1 ? '1px solid var(--color-gray-100)' : 'none',
-                  display: 'grid', gridTemplateColumns: '1fr 120px 120px',
-                  alignItems: 'center', gap: 16,
-                  background: d.statut === 'SAISIE' ? 'rgba(245,158,11,.03)' : 'transparent',
-                }}>
-                  {/* Info ligne */}
+                <div key={d.id}
+                  onClick={() => { onClose(); navigate(`/depenses/${d.id}`) }}
+                  style={{
+                    padding: '12px 24px',
+                    borderBottom: i < items.length - 1 ? '1px solid var(--color-gray-100)' : 'none',
+                    display: 'grid', gridTemplateColumns: '1fr 110px 140px',
+                    alignItems: 'center', gap: 16,
+                    cursor: 'pointer', transition: 'background .12s',
+                  }}
+                  onMouseEnter={e => e.currentTarget.style.background = '#EFF6FF'}
+                  onMouseLeave={e => e.currentTarget.style.background = d.statut === 'SAISIE' ? 'rgba(245,158,11,.03)' : 'transparent'}
+                >
+                  {/* Info */}
                   <div style={{ minWidth: 0 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4, flexWrap: 'wrap' }}>
                       <span style={{ fontFamily: 'var(--font-mono)', fontSize: '10px', background: 'var(--color-gray-100)', color: 'var(--color-gray-700)', padding: '2px 7px', borderRadius: 5, fontWeight: 700 }}>
@@ -406,6 +369,9 @@ function DepenseGroupDetail({ group, onClose, onRefresh }) {
                       <span style={{ padding: '2px 9px', borderRadius: 20, fontSize: '10px', fontWeight: 700, background: s.bg, color: s.color }}>
                         {s.label}
                       </span>
+                      {d.piece_justificative_url && (
+                        <Paperclip size={10} strokeWidth={2} style={{ color: 'var(--color-primary-400)' }} />
+                      )}
                     </div>
                     <div style={{ fontWeight: 600, fontSize: '13px', color: 'var(--color-gray-800)', marginBottom: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {d.ligne_designation || '—'}
@@ -416,7 +382,7 @@ function DepenseGroupDetail({ group, onClose, onRefresh }) {
                       {d.fournisseur && d.fournisseur !== '—' && ` · ${d.fournisseur}`}
                     </div>
                     {d.statut === 'REJETEE' && d.motif_rejet && (
-                      <div style={{ marginTop: 4, fontSize: '11px', color: 'var(--color-danger-600)', fontStyle: 'italic' }}>
+                      <div style={{ marginTop: 3, fontSize: '11px', color: 'var(--color-danger-600)', fontStyle: 'italic' }}>
                         Motif : {d.motif_rejet}
                       </div>
                     )}
@@ -428,8 +394,8 @@ function DepenseGroupDetail({ group, onClose, onRefresh }) {
                     <div style={{ fontSize: '10px', color: 'var(--color-gray-400)' }}>FCFA</div>
                   </div>
 
-                  {/* Actions */}
-                  <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end', alignItems: 'center' }}>
+                  {/* Actions — stopPropagation pour ne pas déclencher la navigation */}
+                  <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end', alignItems: 'center' }} onClick={e => e.stopPropagation()}>
                     {d.statut === 'SAISIE' && (
                       <>
                         <button
@@ -470,7 +436,7 @@ function DepenseGroupDetail({ group, onClose, onRefresh }) {
           {/* Footer */}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 24px', borderTop: '1px solid var(--color-gray-100)', background: 'var(--color-gray-50)' }}>
             <span style={{ fontSize: '12px', color: 'var(--color-gray-400)' }}>
-              {pending.length > 0 ? `${pending.length} dépense${pending.length > 1 ? 's' : ''} en attente de validation` : 'Toutes les dépenses ont été traitées'}
+              {pending.length > 0 ? `${pending.length} poste${pending.length > 1 ? 's' : ''} en attente de validation` : 'Tous les postes ont été traités'}
             </span>
             <button onClick={onClose} className="btn btn-primary btn-md">Fermer</button>
           </div>

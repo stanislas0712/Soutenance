@@ -6,6 +6,7 @@ import Layout from './components/Layout'
 import LoginPage         from './pages/LoginPage'
 import LandingPage       from './pages/landing/LandingPage'
 import ResetPasswordPage from './pages/ResetPasswordPage'
+import ContactPage       from './pages/ContactPage'
 
 /* Admin */
 import AdminDashboard   from './pages/admin/AdminDashboard'
@@ -21,6 +22,8 @@ import MesBudgets            from './pages/gestionnaire/MesBudgets'
 import CreerBudget           from './pages/gestionnaire/CreerBudget'
 import BudgetDetail          from './pages/gestionnaire/BudgetDetail'
 import MesDepenses           from './pages/gestionnaire/MesDepenses'
+import DepenseDetail         from './pages/gestionnaire/DepenseDetail'
+import DepensesParBudget     from './pages/gestionnaire/DepensesParBudget'
 
 /* Comptable */
 import ComptableDashboard                              from './pages/comptable/ComptableDashboard'
@@ -34,6 +37,10 @@ import RapportPage     from './pages/admin/RapportPage'
 
 /* Dépenses (comptable) */
 import DepensesPage from './pages/comptable/DepensesPage'
+
+/* IA */
+import IADashboard    from './pages/ia/IADashboard'
+import ChatbotDrawer  from './components/ia/ChatbotDrawer'
 
 /* ── Guards ──────────────────────────────────────────────────────────────── */
 function PrivateRoute({ children }) {
@@ -66,6 +73,7 @@ function AppRoutes() {
 
   return (
     <Layout>
+      <ChatbotDrawer />
       <Routes>
         <Route path="/dashboard" element={<DashboardPage />} />
 
@@ -79,23 +87,31 @@ function AppRoutes() {
           <Route path="/audit"         element={<AuditLogsPage />} />
           <Route path="/rapports"           element={<RapportsKPIPage />} />
           <Route path="/rapports-detailles" element={<RapportPage />} />
+          <Route path="/depenses/:id"  element={<DepenseDetail basePath="/depenses" />} />
         </>}
 
         {/* ── Gestionnaire ── */}
         {isGestionnaire && <>
-          <Route path="/mes-budgets"      element={<MesBudgets />} />
-          <Route path="/mes-budgets/:id"  element={<BudgetDetail basePath="/mes-budgets" />} />
-          <Route path="/creer-budget"     element={<CreerBudget />} />
-          <Route path="/mes-depenses"     element={<MesDepenses />} />
+          <Route path="/mes-budgets"                       element={<MesBudgets />} />
+          <Route path="/mes-budgets/:id"                   element={<BudgetDetail basePath="/mes-budgets" />} />
+          <Route path="/creer-budget"                      element={<CreerBudget />} />
+          <Route path="/mes-depenses"                      element={<MesDepenses />} />
+          <Route path="/mes-depenses/budget/:budgetId"     element={<DepensesParBudget basePath="/mes-depenses" depenseBasePath="/mes-depenses" />} />
+          <Route path="/mes-depenses/:id"                  element={<DepenseDetail basePath="/mes-depenses" />} />
         </>}
 
         {/* ── Comptable ── */}
         {isComptable && <>
-          <Route path="/validation"      element={<BudgetsAValiderList />} />
-          <Route path="/validation/:id"  element={<BudgetValidationDetail />} />
-          <Route path="/depenses"        element={<DepensesPage />} />
-          <Route path="/rapports"        element={<RapportsKPIPage />} />
+          <Route path="/validation"                    element={<BudgetsAValiderList />} />
+          <Route path="/validation/:id"                element={<BudgetValidationDetail />} />
+          <Route path="/depenses"                      element={<DepensesPage />} />
+          <Route path="/depenses/budget/:budgetId"     element={<DepensesParBudget basePath="/depenses" depenseBasePath="/depenses" />} />
+          <Route path="/depenses/:id"                  element={<DepenseDetail basePath="/depenses" />} />
+          <Route path="/rapports"                      element={<RapportsKPIPage />} />
         </>}
+
+        {/* IA — tous les rôles */}
+        <Route path="/ia" element={<IADashboard />} />
 
         {/* Profil & Paramètres — tous les rôles */}
         <Route path="/profil"      element={<ProfilPage />} />
@@ -115,6 +131,7 @@ export default function App() {
         <Routes>
           <Route path="/"               element={<LandingPage />} />
           <Route path="/login"          element={<PublicRoute><LoginPage /></PublicRoute>} />
+          <Route path="/contact"        element={<ContactPage />} />
           <Route path="/reset-password" element={<ResetPasswordPage />} />
           <Route path="/*"              element={<PrivateRoute><AppRoutes /></PrivateRoute>} />
         </Routes>

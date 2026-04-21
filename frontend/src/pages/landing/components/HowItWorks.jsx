@@ -2,141 +2,74 @@ import { useScrollAnimation } from '../hooks/useScrollAnimation'
 
 const STEPS = [
   {
-    number: '01',
-    tag: 'ALLOCATION',
-    color: '#C9910A',
-    colorLight: '#FEF9EC',
-    title: "L'administrateur alloue les enveloppes",
-    description:
-      "Définissez le budget global annuel puis répartissez-le par département (Informatique, RH, Comptabilité…). Chaque département reçoit son enveloppe budgétaire avec un montant alloué, un suivi de consommation et un taux d'utilisation en temps réel.",
-    icon: '🏛️',
+    number: '01', title: 'Créez un budget', active: true,
+    icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>,
+    description: 'Structurez vos enveloppes par département et par projet. Importez vos données via CSV ou saisissez manuellement avec pièces justificatives.',
   },
   {
-    number: '02',
-    tag: 'CRÉATION',
-    color: '#10B981',
-    colorLight: '#F0FDF4',
-    title: 'Les gestionnaires créent leurs budgets',
-    description:
-      "Chaque gestionnaire crée ses budgets opérationnels en structurant les dépenses par catégories et sous-lignes. L'interface intuitive permet d'importer des données, d'ajouter des pièces justificatives et de soumettre le budget en un clic.",
-    icon: '📋',
+    number: '02', title: 'Soumettez pour validation', active: false,
+    icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>,
+    description: 'D\'un clic, soumettez le budget au circuit d\'approbation. Le comptable examine, valide ou rejette avec motif. Notifications automatiques à chaque étape.',
   },
   {
-    number: '03',
-    tag: 'VALIDATION',
-    color: '#8B5CF6',
-    colorLight: '#F5F3FF',
-    title: 'Le comptable valide les demandes',
-    description:
-      "Examen des budgets soumis, vérification des pièces justificatives, contrôle de cohérence avec l'enveloppe disponible. Le comptable approuve ou rejette chaque demande avec un motif, déclenchant automatiquement une notification au gestionnaire.",
-    icon: '✅',
-  },
-  {
-    number: '04',
-    tag: 'EXÉCUTION',
-    color: '#F59E0B',
-    colorLight: '#FFFBEB',
-    title: 'Suivi en temps réel des dépenses',
-    description:
-      "Enregistrement des dépenses avec mise à jour automatique des soldes. Des alertes intelligentes sont déclenchées aux seuils critiques : 75% (orange), 90% (rouge vif) et 100% (dépassement). Chaque dépense est traçable avec sa pièce justificative.",
-    icon: '📊',
-  },
-  {
-    number: '05',
-    tag: 'CLÔTURE',
-    color: '#EC4899',
-    colorLight: '#FDF2F8',
-    title: 'Génération automatique des rapports',
-    description:
-      "En fin d'exercice, la plateforme génère automatiquement les rapports d'exécution budgétaire (PDF, Excel), les tableaux de synthèse KPIs, l'analyse des écarts prévu/réalisé et le journal d'audit complet pour les besoins de conformité.",
-    icon: '📄',
+    number: '03', title: 'Suivez les dépenses', active: false,
+    icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>,
+    description: 'Enregistrez les transactions et suivez la consommation en temps réel. Des alertes intelligentes préviennent avant tout dépassement de seuil.',
   },
 ]
 
-function StepCard({ step, index }) {
-  const [ref, visible] = useScrollAnimation(0.12)
-  const { number, tag, color, colorLight, title, description, icon } = step
-
-  return (
-    <div
-      ref={ref}
-      className={`flex items-start gap-8 transition-all duration-700 ${
-        visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
-      }`}
-    >
-      {/* Left: number + icon block */}
-      <div className="flex flex-col items-center flex-shrink-0">
-        <div
-          className="w-16 h-16 rounded-2xl flex items-center justify-center text-white font-extrabold text-lg shadow-md"
-          style={{ background: color }}
-        >
-          {number}
-        </div>
-        {index < STEPS.length - 1 && (
-          <div className="w-0.5 mt-3 flex-1 min-h-[48px]" style={{ background: `${color}30` }} />
-        )}
-      </div>
-
-      {/* Right: content card */}
-      <div
-        className="flex-1 rounded-2xl p-6 mb-8 border"
-        style={{ background: colorLight, borderColor: `${color}25` }}
-      >
-        <div className="flex items-center gap-3 mb-3">
-          <span className="text-2xl" aria-hidden="true">{icon}</span>
-          <span
-            className="text-xs font-bold px-3 py-1 rounded-full tracking-widest uppercase"
-            style={{ background: '#fff', color }}
-          >
-            {tag}
-          </span>
-          <span className="text-xs font-semibold text-gray-400 uppercase tracking-widest ml-auto">
-            Étape {index + 1} / {STEPS.length}
-          </span>
-        </div>
-        <h3 className="text-lg font-bold text-gray-900 mb-2 leading-snug tracking-tight">
-          {title}
-        </h3>
-        <p className="text-sm text-gray-500 leading-relaxed m-0">
-          {description}
-        </p>
-      </div>
-    </div>
-  )
-}
-
 export default function HowItWorks() {
   const [headerRef, headerVisible] = useScrollAnimation(0.1)
+  const [stepsRef, stepsVisible] = useScrollAnimation(0.06)
 
   return (
-    <section id="how-it-works" className="py-24 px-6 bg-slate-50" aria-labelledby="how-it-works-title">
-      <div className="max-w-3xl mx-auto">
-        {/* Header */}
-        <div
-          ref={headerRef}
-          className={`text-center mb-16 transition-all duration-700 ${
-            headerVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'
-          }`}
-        >
-          <p className="text-sm font-semibold uppercase tracking-widest mb-4" style={{ color: '#C9910A' }}>
-            Comment ça marche
-          </p>
-          <h2 id="how-it-works-title" className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-4 tracking-tight">
-            Un workflow simple en 5 étapes
+    <section id="how-it-works" style={{ padding:'96px 24px', background:'#F8FAFC', borderTop:'1px solid rgba(15,23,42,0.07)', borderBottom:'1px solid rgba(15,23,42,0.07)' }} aria-labelledby="how-it-works-title">
+      <div style={{ maxWidth:1100, margin:'0 auto' }}>
+
+        <div ref={headerRef} style={{ textAlign:'center', marginBottom:72, opacity:headerVisible?1:0, transform:headerVisible?'translateY(0)':'translateY(24px)', transition:'all .7s cubic-bezier(.16,1,.3,1)' }}>
+          <p style={{ fontSize:11, fontWeight:700, textTransform:'uppercase', letterSpacing:'.15em', color:'#2563EB', marginBottom:16 }}>Comment ça marche</p>
+          <h2 id="how-it-works-title" style={{ fontSize:'clamp(1.8rem,3.5vw,3rem)', fontWeight:800, letterSpacing:'-0.04em', color:'#0F172A', marginBottom:16, lineHeight:1.15 }}>
+            Simple. Rapide. Tracé.
           </h2>
-          <p className="text-lg text-gray-500 max-w-xl mx-auto leading-relaxed">
-            De l'allocation initiale à la clôture de l'exercice, Gestion Budgétaire structure
-            et sécurise chaque étape de votre cycle budgétaire.
+          <p style={{ fontSize:16, color:'#64748B', maxWidth:480, margin:'0 auto', lineHeight:1.6 }}>
+            De la création du budget à la clôture de l'exercice, Gestion budgétaire structure chaque étape de votre cycle financier.
           </p>
         </div>
 
-        {/* Steps timeline */}
-        <div>
-          {STEPS.map((step, index) => (
-            <StepCard key={step.number} step={step} index={index} />
-          ))}
+        <div ref={stepsRef} style={{ position:'relative' }}>
+          {/* Connector line */}
+          <div aria-hidden="true" style={{
+            position:'absolute', top:28, left:'calc(16.67% + 28px)', right:'calc(16.67% + 28px)',
+            height:1, background:'rgba(15,23,42,0.1)', zIndex:0,
+          }}>
+            <div style={{ position:'absolute', top:0, left:0, height:'100%', width:'33%', background:'linear-gradient(90deg, #2563EB, rgba(37,99,235,0.2))', boxShadow:'0 0 6px rgba(37,99,235,0.3)' }} />
+          </div>
+
+          <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:48, position:'relative', zIndex:1 }}>
+            {STEPS.map((step, i) => <StepCard key={step.number} step={step} index={i} visible={stepsVisible} />)}
+          </div>
         </div>
       </div>
     </section>
+  )
+}
+
+function StepCard({ step, index, visible }) {
+  const { number, title, description, icon, active } = step
+  return (
+    <div style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', textAlign:'center', opacity:visible?1:0, transform:visible?'translateY(0)':'translateY(24px)', transition:`all .7s cubic-bezier(.16,1,.3,1) ${index*.12}s` }}>
+      <div style={{
+        width:56, height:56, borderRadius:'50%', marginBottom:20,
+        display:'flex', alignItems:'center', justifyContent:'center',
+        background:active?'rgba(37,99,235,0.1)':'#FFFFFF',
+        border:`2px solid ${active?'#2563EB':'rgba(15,23,42,0.12)'}`,
+        color:active?'#2563EB':'#94A3B8',
+        boxShadow:active?'0 0 16px rgba(37,99,235,0.2)':'0 1px 4px rgba(15,23,42,0.08)',
+        position:'relative', zIndex:1,
+      }}>{icon}</div>
+      <div style={{ fontSize:10, fontWeight:700, letterSpacing:'.12em', color:active?'#2563EB':'#94A3B8', textTransform:'uppercase', marginBottom:10 }}>Étape {number}</div>
+      <h3 style={{ fontSize:17, fontWeight:700, color:'#0F172A', marginBottom:10, letterSpacing:'-0.02em' }}>{title}</h3>
+      <p style={{ fontSize:13, color:'#64748B', lineHeight:1.65, margin:0, maxWidth:260 }}>{description}</p>
+    </div>
   )
 }

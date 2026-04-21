@@ -16,10 +16,10 @@ load_dotenv(BASE_DIR / '.env')
 
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-y2(m0&q27a$6os9%+fxf@(fqq1gu86tc-+*307kd1p#4-ndnv^')
+SECRET_KEY = os.getenv('SECRET_KEY', '')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.getenv('DEBUG', 'True') == 'True'
+DEBUG = os.getenv('DEBUG', 'False').lower() in ('true', '1', 'yes')
 
 _extra_hosts = os.getenv('ALLOWED_HOSTS', '')
 _railway_domain = os.getenv('RAILWAY_PUBLIC_DOMAIN', '')
@@ -138,7 +138,10 @@ if _db_url and any(_db_url.startswith(s) for s in ('postgres://', 'postgresql://
 
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [
-    {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator', 'OPTIONS': {'min_length': 4}},
+    {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
+    {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator', 'OPTIONS': {'min_length': 8}},
+    {'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator'},
+    {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
 ]
 
 
@@ -186,6 +189,8 @@ CSRF_TRUSTED_ORIGINS += [o.strip() for o in _csrf_extra.split(',') if o.strip()]
 
 # ── Sécurité — uniquement en production (HTTPS) ───────────────────────────────
 if not DEBUG:
+    if not SECRET_KEY:
+        raise RuntimeError("SECRET_KEY manquante en production.")
     SECURE_SSL_REDIRECT              = True
     SECURE_HSTS_SECONDS              = 31_536_000  # 1 an
     SECURE_HSTS_INCLUDE_SUBDOMAINS   = True
@@ -321,7 +326,7 @@ else:
 
 DEFAULT_FROM_EMAIL = os.getenv(
     'DEFAULT_FROM_EMAIL',
-    f'BudgetFlow <{_email_user}>' if _email_user else 'BudgetFlow <noreply@budgetflow.bf>',
+    f'Gestion budgétaire <{_email_user}>' if _email_user else 'Gestion budgétaire <noreply@gestion-budgetaire.bf>',
 )
 
 # URL du frontend React (utilisé dans les liens des emails)

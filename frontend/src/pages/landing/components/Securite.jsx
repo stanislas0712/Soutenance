@@ -2,97 +2,86 @@ import { useScrollAnimation } from '../hooks/useScrollAnimation'
 
 const SECURITY_ITEMS = [
   {
-    emoji: '🔑',
-    title: 'Authentification JWT',
-    description: 'Tokens sécurisés avec expiration automatique et refresh token. Accès révocable à tout moment.',
+    wide: true,
+    icon: <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>,
+    title: 'Audit Trail Cryptographique',
+    description: 'Chaque action — modification budgétaire, validation, rejet — est horodatée et enregistrée dans un registre immuable. Consultable par les auditeurs externes via un portail dédié en lecture seule.',
+    badge: 'Conformité Institutionnelle',
   },
   {
-    emoji: '🛡️',
-    title: 'Contrôle d\'accès granulaire',
-    description: 'Trois rôles distincts (Admin, Gestionnaire, Comptable) avec permissions précises sur chaque ressource.',
+    icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>,
+    title: 'Chiffrement AES-256',
+    description: 'Données chiffrées au repos et en transit. Pièces justificatives stockées de manière sécurisée avec clés gérées par HSM.',
   },
   {
-    emoji: '📝',
-    title: 'Journal d\'audit complet',
-    description: 'Traçabilité de toutes les opérations : création, modification, validation, suppression. Horodatées et immuables.',
+    icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>,
+    title: 'RBAC Granulaire',
+    description: 'Trois rôles distincts (Admin, Gestionnaire, Comptable) avec permissions précises sur chaque ressource de la plateforme.',
   },
   {
-    emoji: '🔒',
-    title: 'Chiffrement des données',
-    description: 'Données chiffrées en transit (HTTPS/TLS) et au repos. Pièces justificatives stockées de manière sécurisée.',
+    icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>,
+    title: 'Disponibilité 99.9%',
+    description: 'Infrastructure redondante avec sauvegardes automatiques. Données persistantes et récupérables en cas d\'incident.',
   },
   {
-    emoji: '💾',
-    title: 'Sauvegardes automatiques',
-    description: 'Base de données sauvegardée automatiquement. Données persistantes et récupérables en cas d\'incident.',
+    icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>,
+    title: 'Hébergement Souverain',
+    description: 'Option de déploiement sur serveurs européens isolés. Conformité RGPD et réglementations institutionnelles internationales.',
   },
 ]
 
 export default function Securite() {
-  const [ref, visible] = useScrollAnimation(0.1)
+  const [headerRef, headerVisible] = useScrollAnimation(0.1)
+  const [gridRef, gridVisible] = useScrollAnimation(0.06)
 
   return (
-    <section
-      className="py-24 px-6 relative overflow-hidden"
-      style={{ background: '#1E3A8A' }}
-      aria-labelledby="securite-title"
-    >
-      {/* Decorative circles */}
-      <div
-        className="absolute top-0 right-0 w-96 h-96 rounded-full pointer-events-none"
-        style={{ background: 'radial-gradient(circle, rgba(201,168,76,.12) 0%, transparent 70%)', transform: 'translate(30%, -30%)' }}
-        aria-hidden="true"
-      />
-      <div
-        className="absolute bottom-0 left-0 w-80 h-80 rounded-full pointer-events-none"
-        style={{ background: 'radial-gradient(circle, rgba(201,168,76,.08) 0%, transparent 70%)', transform: 'translate(-30%, 30%)' }}
-        aria-hidden="true"
-      />
+    <section id="securite" style={{ padding:'96px 24px', background:'#FFFFFF', position:'relative', overflow:'hidden' }} aria-labelledby="securite-title">
 
-      <div className="max-w-6xl mx-auto relative z-10">
-        {/* Header */}
-        <div
-          ref={ref}
-          className={`text-center mb-16 transition-all duration-700 ${
-            visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'
-          }`}
-        >
-          <p className="text-sm font-semibold uppercase tracking-widest mb-4" style={{ color: '#C9910A' }}>
-            Sécurité & Conformité
-          </p>
-          <h2 id="securite-title" className="text-3xl md:text-4xl font-extrabold text-white mb-4 tracking-tight">
-            Vos données en sécurité
+      <div style={{ maxWidth:1100, margin:'0 auto', position:'relative', zIndex:1 }}>
+        <div ref={headerRef} style={{ marginBottom:56, opacity:headerVisible?1:0, transform:headerVisible?'translateY(0)':'translateY(24px)', transition:'all .7s cubic-bezier(.16,1,.3,1)' }}>
+          <div style={{
+            display:'inline-flex', alignItems:'center', gap:8,
+            padding:'4px 12px', borderRadius:6,
+            background:'rgba(220,38,38,0.07)', border:'1px solid rgba(220,38,38,0.15)',
+            color:'#DC2626', fontSize:11, fontWeight:700, letterSpacing:'.08em',
+            textTransform:'uppercase', marginBottom:20,
+          }}>
+            <div style={{ width:6, height:6, borderRadius:'50%', background:'#EF4444' }} />
+            Standard Institutionnel
+          </div>
+          <h2 id="securite-title" style={{ fontSize:'clamp(1.8rem,3.5vw,3rem)', fontWeight:800, letterSpacing:'-0.04em', color:'#0F172A', marginBottom:14, lineHeight:1.15 }}>
+            Sécurité sans compromis.
           </h2>
-          <p className="text-lg max-w-xl mx-auto leading-relaxed" style={{ color: 'rgba(250,247,242,0.65)' }}>
-            Gestion Budgétaire est conçu avec la sécurité au cœur de son architecture.
-            Confidentialité, intégrité et disponibilité garanties.
+          <p style={{ fontSize:16, color:'#64748B', maxWidth:520, lineHeight:1.6, margin:0 }}>
+            Vos données financières méritent une protection de niveau institutionnel. Notre infrastructure est conçue pour résister aux audits les plus exigeants.
           </p>
         </div>
 
-        {/* Items grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
+        <div ref={gridRef} style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:12 }}>
           {SECURITY_ITEMS.map((item, i) => (
-            <div
-              key={item.title}
-              className={`text-center p-6 rounded-2xl border border-white/10 hover:bg-white/10 transition-all duration-300 ${
-                visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-5'
-              }`}
+            <div key={item.title}
               style={{
-                background: 'rgba(255,255,255,0.05)',
-                transitionDelay: `${i * 0.08}s`,
+                gridColumn: item.wide ? 'span 2' : 'span 1',
+                padding:28, borderRadius:14,
+                background:'#F8FAFC',
+                border:'1px solid rgba(15,23,42,0.08)',
+                opacity:gridVisible?1:0, transform:gridVisible?'translateY(0)':'translateY(20px)',
+                transition:`all .65s cubic-bezier(.16,1,.3,1) ${i*.08}s`,
+                position:'relative', overflow:'hidden',
               }}
-              onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(201,168,76,0.45)' }}
-              onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)' }}
+              onMouseEnter={e => { e.currentTarget.style.borderColor='rgba(37,99,235,0.25)'; e.currentTarget.style.background='#FFFFFF'; e.currentTarget.style.boxShadow='0 4px 20px rgba(37,99,235,0.08)' }}
+              onMouseLeave={e => { e.currentTarget.style.borderColor='rgba(15,23,42,0.08)'; e.currentTarget.style.background='#F8FAFC'; e.currentTarget.style.boxShadow='none' }}
             >
-              <div
-                className="w-14 h-14 rounded-2xl flex items-center justify-center text-2xl mx-auto mb-4"
-                style={{ background: 'rgba(255,255,255,0.1)' }}
-                aria-hidden="true"
-              >
-                {item.emoji}
+              <div style={{ color:'#2563EB', marginBottom:16 }}>{item.icon}</div>
+              <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', gap:12, marginBottom:10 }}>
+                <h3 style={{ fontSize:item.wide?18:15, fontWeight:600, color:'#0F172A', margin:0, letterSpacing:'-0.02em' }}>{item.title}</h3>
+                {item.badge && (
+                  <span style={{ flexShrink:0, padding:'3px 10px', borderRadius:999, background:'rgba(37,99,235,0.08)', border:'1px solid rgba(37,99,235,0.2)', color:'#2563EB', fontSize:10, fontWeight:600, letterSpacing:'.04em' }}>
+                    {item.badge}
+                  </span>
+                )}
               </div>
-              <h3 className="text-sm font-bold text-white mb-2 leading-tight">{item.title}</h3>
-              <p className="text-xs leading-relaxed m-0" style={{ color: 'rgba(250,247,242,0.55)' }}>{item.description}</p>
+              <p style={{ fontSize:13, color:'#64748B', lineHeight:1.65, margin:0, maxWidth:item.wide?520:'100%' }}>{item.description}</p>
             </div>
           ))}
         </div>

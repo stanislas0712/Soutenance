@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import {
-  FileBarChart, Calendar, CalendarDays, CalendarRange, Sliders,
+  FileBarChart, Calendar, CalendarDays, CalendarRange,
   Download, RefreshCw, AlertTriangle, ChevronDown,
 } from 'lucide-react'
 import { useGenererRapport, useExportRapport } from '../../hooks/useRapport'
@@ -25,7 +25,6 @@ const TABS = [
   { key: 'MENSUEL',     label: 'Mensuel',     icon: Calendar      },
   { key: 'TRIMESTRIEL', label: 'Trimestriel', icon: CalendarDays  },
   { key: 'ANNUEL',      label: 'Annuel',      icon: CalendarRange },
-  { key: 'ADHOC',       label: 'Ad-hoc',      icon: Sliders       },
 ]
 
 /* ── Petits composants formulaire ─────────────────────────────────────────── */
@@ -58,24 +57,6 @@ function Select({ label, value, onChange, children }) {
   )
 }
 
-function DateInput({ label, value, onChange }) {
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-      <label style={{ fontSize: '11px', fontWeight: 600, color: '#6B7280', letterSpacing: '.3px' }}>
-        {label}
-      </label>
-      <input
-        type="date"
-        value={value}
-        onChange={e => onChange(e.target.value)}
-        style={{
-          padding: '8px 12px', border: '1.5px solid #E5E7EB', borderRadius: 8,
-          fontSize: '13px', color: '#111827', fontFamily: 'inherit',
-        }}
-      />
-    </div>
-  )
-}
 
 /* ── Panneau de résultats ──────────────────────────────────────────────────── */
 function ResultPanel({ rapport, isLoading, error }) {
@@ -207,8 +188,6 @@ export default function RapportPage() {
   const [mois,     setMois]     = useState(String(THIS_MONTH))
   const [trim,     setTrim]     = useState(String(THIS_Q))
   const [annee,    setAnnee]    = useState(String(THIS_YEAR))
-  const [debut,    setDebut]    = useState('')
-  const [fin,      setFin]      = useState('')
 
   const generer      = useGenererRapport()
   const exportMut    = useExportRapport()
@@ -229,9 +208,6 @@ export default function RapportPage() {
       case 'ANNUEL':
         generer.mutate({ type: 'ANNUEL', annee: parseInt(annee) })
         break
-      case 'ADHOC':
-        generer.mutate({ type: 'ADHOC', date_debut: debut, date_fin: fin })
-        break
     }
   }
 
@@ -241,8 +217,7 @@ export default function RapportPage() {
       switch (tab) {
         case 'MENSUEL':     return { mois: parseInt(mois), annee: parseInt(annee) }
         case 'TRIMESTRIEL': return { trimestre: parseInt(trim), annee: parseInt(annee) }
-        case 'ANNUEL':      return { annee: parseInt(annee) }
-        default:            return { date_debut: debut, date_fin: fin }
+        default:            return { annee: parseInt(annee) }
       }
     })()
     exportMut.mutate({ type: tab, format, params })
@@ -251,8 +226,7 @@ export default function RapportPage() {
   const canGenerate = () => {
     if (tab === 'MENSUEL')     return mois && annee
     if (tab === 'TRIMESTRIEL') return trim && annee
-    if (tab === 'ANNUEL')      return !!annee
-    return debut && fin
+    return !!annee
   }
 
   const handleTabChange = (key) => {
@@ -361,11 +335,6 @@ export default function RapportPage() {
                 {YEARS.map(y => <option key={y} value={String(y)}>{y}</option>)}
               </Select>
             )}
-
-            {tab === 'ADHOC' && <>
-              <DateInput label="Date de début" value={debut} onChange={setDebut} />
-              <DateInput label="Date de fin"   value={fin}   onChange={setFin} />
-            </>}
           </div>
 
           <button

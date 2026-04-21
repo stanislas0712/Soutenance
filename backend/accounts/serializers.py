@@ -25,7 +25,7 @@ class UtilisateurSerializer(serializers.ModelSerializer):
 
 
 class CreerUtilisateurSerializer(serializers.ModelSerializer):
-    password = serializers.CharField(write_only=True, min_length=4)
+    password = serializers.CharField(write_only=True, min_length=8)
 
     class Meta:
         model  = Utilisateur
@@ -47,7 +47,7 @@ class ModifierUtilisateurSerializer(serializers.ModelSerializer):
 
 class ModifierMotDePasseSerializer(serializers.Serializer):
     ancien_password  = serializers.CharField(write_only=True)
-    nouveau_password = serializers.CharField(write_only=True, min_length=4)
+    nouveau_password = serializers.CharField(write_only=True, min_length=8)
 
     def validate_ancien_password(self, value):
         user = self.context['request'].user
@@ -63,7 +63,7 @@ class ModifierMotDePasseSerializer(serializers.Serializer):
 
 
 class AdminResetPasswordSerializer(serializers.Serializer):
-    nouveau_password = serializers.CharField(write_only=True, min_length=4)
+    nouveau_password = serializers.CharField(write_only=True, min_length=8)
 
     def save(self, user):
         user.set_password(self.validated_data['nouveau_password'])

@@ -6,9 +6,29 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import permissions, status
 from django.db.models import Q
+from django.core.mail import send_mail
+from django.conf import settings
 
 from .models import ConsommationLigne, StatutDepense, PieceJustificative, creer_notification
 from accounts.views import IsComptableOrAdmin, IsComptable
+
+APP_NAME = 'Gestion budgétaire'
+
+
+def _envoyer_email(destinataire, sujet, corps):
+    if not getattr(destinataire, 'email', None):
+        return
+    try:
+        from_email = getattr(settings, 'DEFAULT_FROM_EMAIL', f'{APP_NAME} <noreply@gestion-budgetaire.bf>')
+        send_mail(
+            subject=f'{sujet} — {APP_NAME}',
+            message=corps,
+            from_email=from_email,
+            recipient_list=[destinataire.email],
+            fail_silently=True,
+        )
+    except Exception:
+        pass
 
 
 def _serialiser_depense(c, request=None):
@@ -18,7 +38,6 @@ def _serialiser_depense(c, request=None):
             pj_url = request.build_absolute_uri(c.piece_justificative.url) if request else c.piece_justificative.url
         except Exception:
             pj_url = None
-    # Pièces multiples
     pieces = []
     for p in c.pieces.all():
         try:
@@ -26,15 +45,33 @@ def _serialiser_depense(c, request=None):
         except Exception:
             url = None
         pieces.append({'id': str(p.id), 'nom': p.nom, 'url': url})
+
+    budget       = c.ligne.budget if c.ligne and c.ligne.budget_id else None
+    ligne        = c.ligne
+    sous_cat     = ligne.sous_categorie if ligne and ligne.sous_categorie_id else None
+    cat          = sous_cat.categorie   if sous_cat and sous_cat.categorie_id  else None
+
     return {
         'id':                      str(c.id),
         'reference':               c.reference or str(c.id)[:8].upper(),
-        'fournisseur':             c.fournisseur or '—',
+        'fournisseur':             c.fournisseur or '',
         'montant':                 str(c.montant),
-        'budget_reference':        c.ligne.budget.code if c.ligne and c.ligne.budget_id else '—',
-        'budget_nom':              c.ligne.budget.nom  if c.ligne and c.ligne.budget_id else '—',
-        'ligne_designation':       c.ligne.libelle     if c.ligne else '—',
-        'date_depense':            c.date.isoformat()  if c.date else None,
+        'budget_id':               str(budget.id)   if budget else None,
+        'budget_code':             budget.code       if budget else '—',
+        'budget_nom':              budget.nom        if budget else '—',
+        'budget_reference':        budget.code       if budget else '—',
+        'ligne_id':                str(ligne.id)     if ligne else None,
+        'ligne_designation':       ligne.libelle     if ligne else '—',
+        'ligne_code':              ligne.code        if ligne else '—',
+        'ligne_unite':             ligne.unite       if ligne else '—',
+        'ligne_quantite':          str(ligne.quantite) if ligne and ligne.quantite else '—',
+        'sous_cat_id':             str(sous_cat.id)    if sous_cat else None,
+        'sous_cat_code':           sous_cat.code       if sous_cat else '—',
+        'sous_cat_libelle':        sous_cat.libelle    if sous_cat else '—',
+        'cat_id':                  str(cat.id)         if cat else None,
+        'cat_code':                cat.code            if cat else '—',
+        'cat_libelle':             cat.libelle         if cat else '—',
+        'date_depense':            c.date.isoformat() if c.date else None,
         'statut':                  c.statut,
         'motif_rejet':             c.motif_rejet,
         'note':                    c.note,
@@ -56,7 +93,8 @@ class DepenseListView(APIView):
 
     def get(self, request):
         qs = ConsommationLigne.objects.select_related(
-            'ligne__budget', 'enregistre_par', 'validateur'
+            'ligne__budget', 'ligne__sous_categorie__categorie',
+            'enregistre_par', 'validateur'
         ).order_by('-date')
 
         statut    = request.query_params.get('statut')
@@ -94,10 +132,17 @@ class DepenseDetailView(APIView):
     def get(self, request, pk):
         try:
             c = ConsommationLigne.objects.select_related(
-                'ligne__budget', 'enregistre_par', 'validateur'
+                'ligne__budget__gestionnaire',
+                'ligne__sous_categorie__categorie',
+                'enregistre_par', 'validateur'
             ).get(pk=pk)
         except ConsommationLigne.DoesNotExist:
             return Response({'detail': 'Dépense introuvable.'}, status=status.HTTP_404_NOT_FOUND)
+
+        u = request.user
+        if u.is_gestionnaire and c.ligne and c.ligne.budget.gestionnaire_id != u.id:
+            return Response({'detail': 'Accès non autorisé.'}, status=status.HTTP_403_FORBIDDEN)
+
         return Response({'data': _serialiser_depense(c, request)})
 
 
@@ -124,6 +169,15 @@ class ValiderDepenseView(APIView):
                 type_notif='DEPENSE_VALIDEE',
                 message=f"Votre dépense {depense.reference} ({depense.montant} FCFA) a été validée.",
                 lien=f"/mes-depenses",
+            )
+            _envoyer_email(
+                depense.enregistre_par,
+                f"Dépense validée : {depense.reference}",
+                (
+                    f"Bonjour {depense.enregistre_par.prenom} {depense.enregistre_par.nom},\n\n"
+                    f"Votre dépense {depense.reference} d'un montant de {depense.montant} FCFA "
+                    f"a été validée par {request.user.prenom} {request.user.nom}."
+                ),
             )
         return Response({'detail': 'Dépense validée.', 'data': _serialiser_depense(depense, request)})
 
@@ -158,5 +212,15 @@ class RejeterDepenseView(APIView):
                 type_notif='DEPENSE_REJETEE',
                 message=f"Votre dépense {depense.reference} ({depense.montant} FCFA) a été rejetée. Motif : {motif[:100]}",
                 lien=f"/mes-depenses",
+            )
+            _envoyer_email(
+                depense.enregistre_par,
+                f"Dépense rejetée : {depense.reference}",
+                (
+                    f"Bonjour {depense.enregistre_par.prenom} {depense.enregistre_par.nom},\n\n"
+                    f"Votre dépense {depense.reference} d'un montant de {depense.montant} FCFA "
+                    f"a été rejetée par {request.user.prenom} {request.user.nom}.\n\n"
+                    f"Motif : {motif}"
+                ),
             )
         return Response({'detail': 'Dépense rejetée.', 'data': _serialiser_depense(depense, request)})

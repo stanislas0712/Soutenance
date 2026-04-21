@@ -1,10 +1,11 @@
 /**
- * ChatbotDrawer — Chatbot IA flottant accessible depuis toutes les pages (F2)
- * Persiste la conversation active en sessionStorage.
+ * ChatbotDrawer — Chatbot IA flottant accessible depuis toutes les pages
+ * Suggestions et accès filtrés selon le rôle de l'utilisateur.
  */
 import { useState, useRef, useEffect } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { Brain } from 'lucide-react'
+import { Brain, Lock } from 'lucide-react'
+import { useAuth } from '../../context/AuthContext'
 import {
   creerConversation,
   envoyerMessage,
@@ -12,14 +13,25 @@ import {
   supprimerConversation,
 } from '../../api/ia'
 
-const SUGGESTIONS = [
-  "Mon taux d'exécution budgétaire",
-  'Alertes de dépassement',
-  'Fonds disponibles',
-  'Résumé de mes budgets',
+/* Suggestions par rôle */
+const SUGGESTIONS_ADMIN = [
+  "Résumé global des budgets",
+  "Anomalies détectées",
+  "Taux d'exécution par département",
+  "Alertes de dépassement",
+  "Dépenses en attente de validation",
+  "Fonds disponibles globaux",
+]
+
+const SUGGESTIONS_COMPTABLE = SUGGESTIONS_ADMIN
+
+const SUGGESTIONS_GESTIONNAIRE = [
+  "Résumé de mes budgets",
+  "Résumé de mes dépenses",
 ]
 
 export default function ChatbotDrawer() {
+  const { isGestionnaire } = useAuth()
   const [open,     setOpen]     = useState(false)
   const [convId,   setConvId]   = useState(() => sessionStorage.getItem('bf_chat_conv'))
   const [input,    setInput]    = useState('')
@@ -28,6 +40,9 @@ export default function ChatbotDrawer() {
   const messagesEndRef = useRef(null)
   const inputRef       = useRef(null)
   const qc = useQueryClient()
+
+  const suggestions = isGestionnaire ? SUGGESTIONS_GESTIONNAIRE : SUGGESTIONS_ADMIN
+  const msgAccueil  = isGestionnaire ? MSG_ACCUEIL_GESTIONNAIRE : MSG_ACCUEIL_DEFAULT
 
   /* ── Scroll auto vers le bas ───────────────────────────────────────────── */
   useEffect(() => {
@@ -56,7 +71,7 @@ export default function ChatbotDrawer() {
       if (conv?.messages?.length) {
         setMessages(conv.messages.map(m => ({ role: m.role, contenu: m.contenu })))
       } else {
-        setMessages([{ role: 'assistant', contenu: MSG_ACCUEIL }])
+        setMessages([{ role: 'assistant', contenu: msgAccueil }])
       }
     } catch {
       setConvId(null)
@@ -73,7 +88,7 @@ export default function ChatbotDrawer() {
       if (!id) return
       setConvId(id)
       sessionStorage.setItem('bf_chat_conv', id)
-      setMessages([{ role: 'assistant', contenu: MSG_ACCUEIL }])
+      setMessages([{ role: 'assistant', contenu: msgAccueil }])
     },
     onError: () => setErreur('Impossible de démarrer une conversation IA.'),
   })
@@ -137,19 +152,6 @@ export default function ChatbotDrawer() {
   /* ── Render ──────────────────────────────────────────────────────────── */
   return (
     <>
-      {/* Bouton flottant */}
-      <button
-        onClick={handleOpen}
-        aria-label="Ouvrir l'assistant IA"
-        className="fixed bottom-6 right-6 z-[1000] w-[52px] h-[52px] rounded-full border-none cursor-pointer flex items-center justify-center transition-[transform_.2s,box-shadow_.2s] hover:scale-110"
-        style={{
-          background: '#1E3A8A',
-          boxShadow: '0 4px 16px rgba(13,34,64,.35)',
-        }}
-      >
-        <Brain size={21} strokeWidth={1.8} style={{ color: '#fff' }} />
-      </button>
-
       {/* Drawer */}
       {open && (
         <div
@@ -225,10 +227,10 @@ export default function ChatbotDrawer() {
             <div ref={messagesEndRef} />
           </div>
 
-          {/* Suggestions rapides (uniquement au début) */}
-          {messages.length <= 1 && !sending && convId && (
+          {/* Suggestions — gestionnaire : toujours visibles + saisie libre bloquée */}
+          {!sending && convId && (
             <div className="px-3 pb-2 flex gap-[6px] flex-wrap shrink-0">
-              {SUGGESTIONS.map(s => (
+              {suggestions.map(s => (
                 <button
                   key={s}
                   onClick={() => handleSuggestion(s)}
@@ -240,28 +242,40 @@ export default function ChatbotDrawer() {
             </div>
           )}
 
-          {/* Input */}
-          <form
-            onSubmit={handleSubmit}
-            className="px-[14px] py-[10px] border-t border-[#F3F4F6] flex gap-2 shrink-0"
-          >
-            <input
-              ref={inputRef}
-              value={input}
-              onChange={e => setInput(e.target.value)}
-              placeholder={convId ? 'Votre question…' : 'Initialisation…'}
-              disabled={sending || !convId}
-              className="flex-1 border border-[#E5E7EB] rounded-[8px] px-3 py-2 text-[.8rem] outline-none bg-[#F9FAFB] transition-colors focus:border-[#C9910A]"
-            />
-            <button
-              type="submit"
-              disabled={!input.trim() || sending || !convId}
-              className="border-none rounded-[8px] px-[14px] py-2 text-[.85rem] cursor-pointer transition-opacity"
-              style={{ background: '#1E3A8A', color: '#C9910A', border: '1px solid rgba(201,145,10,.4)', opacity: (!input.trim() || sending || !convId) ? 0.45 : 1 }}
+          {/* Input — masqué pour le gestionnaire */}
+          {isGestionnaire ? (
+            <div
+              className="px-[14px] py-[10px] border-t border-[#F3F4F6] flex items-center gap-2 shrink-0"
+              style={{ background: '#F9FAFB' }}
             >
-              ➤
-            </button>
-          </form>
+              <Lock size={13} strokeWidth={2} style={{ color: '#9CA3AF', flexShrink: 0 }} />
+              <span style={{ fontSize: '11px', color: '#9CA3AF', fontStyle: 'italic' }}>
+                Utilisez les raccourcis ci-dessus pour poser votre question
+              </span>
+            </div>
+          ) : (
+            <form
+              onSubmit={handleSubmit}
+              className="px-[14px] py-[10px] border-t border-[#F3F4F6] flex gap-2 shrink-0"
+            >
+              <input
+                ref={inputRef}
+                value={input}
+                onChange={e => setInput(e.target.value)}
+                placeholder={convId ? 'Votre question…' : 'Initialisation…'}
+                disabled={sending || !convId}
+                className="flex-1 border border-[#E5E7EB] rounded-[8px] px-3 py-2 text-[.8rem] outline-none bg-[#F9FAFB] transition-colors focus:border-[#C9910A]"
+              />
+              <button
+                type="submit"
+                disabled={!input.trim() || sending || !convId}
+                className="border-none rounded-[8px] px-[14px] py-2 text-[.85rem] cursor-pointer transition-opacity"
+                style={{ background: '#1E3A8A', color: '#C9910A', border: '1px solid rgba(201,145,10,.4)', opacity: (!input.trim() || sending || !convId) ? 0.45 : 1 }}
+              >
+                ➤
+              </button>
+            </form>
+          )}
         </div>
       )}
     </>
@@ -270,7 +284,9 @@ export default function ChatbotDrawer() {
 
 /* ── Sous-composants ──────────────────────────────────────────────────────── */
 
-const MSG_ACCUEIL = "Bonjour\u00a0! Je suis l'assistant IA Gestion Budgétaire. Je peux vous aider avec l'analyse de vos budgets, le suivi des d\u00e9penses et toutes vos questions de gestion financi\u00e8re. Comment puis-je vous aider\u00a0?"
+const MSG_ACCUEIL_DEFAULT = "Bonjour\u00a0! Je suis l'assistant IA Gestion Budgétaire. Je peux vous aider avec l'analyse des budgets, le suivi des dépenses, la détection d'anomalies et toutes vos questions de gestion financière. Comment puis-je vous aider\u00a0?"
+
+const MSG_ACCUEIL_GESTIONNAIRE = "Bonjour\u00a0! Je suis votre assistant budgétaire. Je peux vous donner un **résumé de vos budgets** ou un **résumé de vos dépenses**. Sélectionnez l'une des deux options ci-dessous."
 
 /* Rendu Markdown minimal : **gras**, _italique_, `code`, listes */
 function renderMd(text) {

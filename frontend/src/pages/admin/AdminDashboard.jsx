@@ -12,6 +12,7 @@ import {
 import {
   ArrowRight, CheckCircle2, Clock,
   Building2, TrendingUp, Wallet, ShieldAlert, Users, Target,
+  Sparkles, AlertTriangle, MessageSquare,
 } from 'lucide-react'
 
 const fmt     = n => new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 0 }).format(parseFloat(n || 0))
@@ -251,6 +252,129 @@ export default function AdminDashboard() {
             </LineChart>
           </ResponsiveContainer>
         )}
+      </div>
+
+      {/* ── Renseignements IA ────────────────────────────────────────────── */}
+      <div style={{ marginBottom: 24 }}>
+        <div className="card" style={{ overflow: 'hidden', padding: 0 }}>
+          {/* Header */}
+          <div style={{
+            padding: '16px 22px', background: '#F8FAFF', borderBottom: '1px solid #E5E7EB',
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <div style={{
+                width: 38, height: 38, borderRadius: 10, flexShrink: 0,
+                background: 'var(--color-primary-50)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}>
+                <Sparkles size={18} strokeWidth={2} style={{ color: 'var(--color-primary-600)' }} />
+              </div>
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span style={{ fontWeight: 700, fontSize: '14px', color: '#111827' }}>
+                    Renseignements IA
+                  </span>
+                  <div style={{
+                    display: 'flex', alignItems: 'center', gap: 5,
+                    background: '#F0FDF4', border: '1px solid #BBF7D0',
+                    borderRadius: 9999, padding: '2px 9px',
+                  }}>
+                    <div style={{
+                      width: 5, height: 5, borderRadius: '50%',
+                      background: '#16A34A', animation: 'ia-pulse 2s ease-in-out infinite',
+                    }} />
+                    <span style={{ fontSize: '9px', fontWeight: 700, color: '#15803D', letterSpacing: '.4px' }}>EN LIGNE</span>
+                  </div>
+                </div>
+                <div style={{ fontSize: '12px', color: '#6B7280', marginTop: 1 }}>
+                  Détection d'anomalies, prédictions et assistant intelligent
+                </div>
+              </div>
+            </div>
+            <button onClick={() => navigate('/ia')} className="btn btn-secondary btn-sm" style={{ gap: 6 }}>
+              Explorer <ArrowRight size={12} strokeWidth={2.5} />
+            </button>
+          </div>
+
+          {/* 3 action cards */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(220px,100%), 1fr))' }}>
+            {[
+              {
+                icon: <AlertTriangle size={19} strokeWidth={1.8} />,
+                iconBg: 'var(--color-danger-50)', iconColor: 'var(--color-danger-600)',
+                title: 'Anomalies',
+                desc: 'Dépassements, sous-utilisations et pièces manquantes',
+                action: () => navigate('/ia'),
+                label: 'Détecter',
+                badge: budgetsRejetes > 0 ? budgetsRejetes : null,
+              },
+              {
+                icon: <TrendingUp size={19} strokeWidth={1.8} />,
+                iconBg: 'var(--color-primary-50)', iconColor: 'var(--color-primary-600)',
+                title: 'Prédictions',
+                desc: 'Projections de consommation et recommandations IA',
+                action: () => navigate('/ia'),
+                label: 'Analyser',
+                badge: null,
+              },
+              {
+                icon: <MessageSquare size={19} strokeWidth={1.8} />,
+                iconBg: 'var(--color-info-50)', iconColor: 'var(--color-info-600)',
+                title: 'Assistant IA',
+                desc: 'Posez vos questions budgétaires à Claude',
+                action: () => window.dispatchEvent(new Event('open-chatbot')),
+                label: 'Ouvrir le chat',
+                badge: null,
+              },
+            ].map((item, i) => (
+              <button
+                key={i}
+                onClick={item.action}
+                style={{
+                  padding: '20px 22px', textAlign: 'left', background: 'transparent',
+                  border: 'none', borderRight: i < 2 ? '1px solid #F3F4F6' : 'none',
+                  cursor: 'pointer', transition: 'background .15s',
+                  display: 'flex', flexDirection: 'column', gap: 10,
+                }}
+                onMouseEnter={e => e.currentTarget.style.background = '#F8FAFF'}
+                onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <div style={{
+                    width: 42, height: 42, borderRadius: 11, flexShrink: 0,
+                    background: item.iconBg, color: item.iconColor,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  }}>
+                    {item.icon}
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+                    <span style={{ fontWeight: 700, fontSize: '13px', color: '#111827' }}>
+                      {item.title}
+                    </span>
+                    {item.badge && (
+                      <span style={{
+                        background: 'var(--color-danger-600)', color: '#fff',
+                        fontSize: '10px', fontWeight: 700, padding: '1px 7px', borderRadius: 9999,
+                      }}>
+                        {item.badge}
+                      </span>
+                    )}
+                  </div>
+                </div>
+                <p style={{ fontSize: '12px', color: '#6B7280', margin: 0, lineHeight: 1.5 }}>
+                  {item.desc}
+                </p>
+                <span style={{
+                  fontSize: '12px', fontWeight: 600, color: 'var(--color-primary-600)',
+                  display: 'flex', alignItems: 'center', gap: 5,
+                }}>
+                  {item.label} <ArrowRight size={11} strokeWidth={2.5} />
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
       </div>
 
       {/* ── Action panels ────────────────────────────────────────────────── */}

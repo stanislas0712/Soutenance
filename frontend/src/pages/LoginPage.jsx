@@ -127,12 +127,31 @@ export default function LoginPage() {
 
   return (
     <div style={{
-      minHeight: '100vh',
+      minHeight: '100vh', position: 'relative',
       display: 'flex', alignItems: 'center', justifyContent: 'center',
-      background: '#F1F5F9',
       padding: '20px 16px',
       fontFamily: "'Inter', system-ui, sans-serif",
+      overflow: 'hidden',
     }}>
+      {/* Image de fond plein écran */}
+      <img
+        src="/gestion.jpg"
+        alt=""
+        aria-hidden="true"
+        style={{
+          position: 'absolute', inset: 0,
+          width: '100%', height: '100%',
+          objectFit: 'cover', objectPosition: 'center',
+          filter: 'blur(6px)',
+          transform: 'scale(1.05)',
+        }}
+      />
+      {/* Overlay sombre pour lisibilité */}
+      <div aria-hidden="true" style={{
+        position: 'absolute', inset: 0,
+        background: 'rgba(10, 30, 80, 0.55)',
+      }} />
+
       {showForgot && <ForgotPasswordModal onClose={() => setShowForgot(false)} />}
 
       {/* Carte formulaire */}
@@ -140,9 +159,10 @@ export default function LoginPage() {
         width: '100%', maxWidth: 440,
         background: '#FFFFFF',
         borderRadius: 16,
-        border: '1px solid #E2E8F0',
-        boxShadow: '0 4px 24px rgba(30,58,138,.08), 0 1px 4px rgba(30,58,138,.06)',
+        border: '1px solid rgba(255,255,255,0.2)',
+        boxShadow: '0 24px 64px rgba(0,0,0,0.35), 0 1px 0 rgba(255,255,255,0.1) inset',
         overflow: 'hidden',
+        position: 'relative', zIndex: 1,
       }}>
 
         {/* Header navy */}

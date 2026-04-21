@@ -2,8 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { getBudgets, getRapportCloture } from '../../api/budget'
 import { StatutBadge, AlerteBadge } from '../../components/StatusBadge'
-import { Search, FileText, TrendingUp, Building2, X, Download, Printer } from 'lucide-react'
-import { exportCSV, printPDF } from '../../utils/export'
+import { Search, FileText, TrendingUp, Building2, X } from 'lucide-react'
 
 const fmt = (n) => new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 0 }).format(parseFloat(n || 0))
 
@@ -98,45 +97,6 @@ export default function BudgetsPage() {
             <TrendingUp size={14} strokeWidth={2} />
             {hasMore ? `${visibleCount} / ${filtered.length}` : filtered.length} budget{filtered.length !== 1 ? 's' : ''}
           </div>
-          <button
-            onClick={() => {
-              const headers = ['Code', 'Nom', 'Département', 'Statut', 'Montant global (FCFA)', 'Consommé (FCFA)', 'Taux %', 'Date début', 'Date fin']
-              const rows = filtered.map(b => [
-                b.code, b.nom, b.departement_nom || '—', b.statut,
-                fmt(b.montant_global), fmt(b.montant_consomme),
-                `${parseFloat(b.taux_consommation || 0).toFixed(1)}%`,
-                b.date_debut, b.date_fin,
-              ])
-              exportCSV(`budgets-${new Date().toISOString().slice(0,10)}`, headers, rows)
-            }}
-            className="btn btn-secondary btn-sm"
-            style={{ gap: 6 }}
-          >
-            <Download size={13} strokeWidth={2} /> CSV
-          </button>
-          <button
-            onClick={() => {
-              const headers = ['Code', 'Nom', 'Département', 'Statut', 'Montant global', 'Taux %']
-              const rows = filtered.map(b => [
-                b.code, b.nom, b.departement_nom || '—', b.statut,
-                fmt(b.montant_global) + ' FCFA',
-                `${parseFloat(b.taux_consommation || 0).toFixed(1)}%`,
-              ])
-              printPDF('Liste des budgets', headers, rows, {
-                subtitle: 'Supervision et gestion complète des budgets',
-                stats: [
-                  { value: filtered.length, label: 'Budgets affichés' },
-                  { value: filtered.filter(b => b.statut === 'APPROUVE').length, label: 'Approuvés' },
-                  { value: filtered.filter(b => b.statut === 'SOUMIS').length, label: 'En attente' },
-                  { value: fmt(filtered.reduce((s, b) => s + parseFloat(b.montant_global || 0), 0)) + ' FCFA', label: 'Total' },
-                ],
-              })
-            }}
-            className="btn btn-secondary btn-sm"
-            style={{ gap: 6 }}
-          >
-            <Printer size={13} strokeWidth={2} /> PDF
-          </button>
         </div>
       </div>
 
@@ -158,8 +118,8 @@ export default function BudgetsPage() {
       )}
 
       {/* Filtres */}
-      <div className="filter-bar mb-[20px]">
-        <div className="search-wrapper flex-1 min-w-[220px]">
+      <div className="filter-bar mb-[20px]" style={{ flexWrap: 'nowrap' }}>
+        <div className="search-wrapper flex-1 min-w-[200px]">
           <Search size={15} strokeWidth={2} className="search-icon" />
           <input
             className="search-input"
@@ -168,7 +128,7 @@ export default function BudgetsPage() {
             placeholder="Rechercher par code, nom, département…"
           />
         </div>
-        <div className="flex gap-[6px] flex-wrap">
+        <div className="flex gap-[6px]" style={{ flexShrink: 0 }}>
           {STATUTS.map(s => (
             <button
               key={s.value}

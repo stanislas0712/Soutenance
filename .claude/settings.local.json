@@ -4,7 +4,13 @@
   },
   "permissions": {
     "allow": [
-      "Bash(npm run:*)"
+      "Bash(npm run:*)",
+      "mcp__aidesigner__generate_design",
+      "mcp__aidesigner__refine_design"
     ]
-  }
+  },
+  "enableAllProjectMcpServers": true,
+  "enabledMcpjsonServers": [
+    "aidesigner"
+  ]
 }

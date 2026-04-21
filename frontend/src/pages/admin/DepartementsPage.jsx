@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { getDepartements, createDepartement, updateDepartement, deleteDepartement } from '../../api/accounts'
-import { getBudgetAnnuels } from '../../api/budget'
-import { Plus, Building2, Pencil, Trash2, UserCheck, UserX, FileText } from 'lucide-react'
+import { getBudgetAnnuels, createAllocation, updateAllocation } from '../../api/budget'
+import { Plus, Building2, Pencil, Trash2, UserCheck, UserX, FileText, Coins, AlertTriangle } from 'lucide-react'
 import { ConfirmModal } from '../../components/ui'
 
 const fmt = (n) => new Intl.NumberFormat('fr-FR').format(n ?? 0)
@@ -15,15 +15,17 @@ const jaugeColor = (taux) => {
 
 export default function DepartementsPage() {
   const navigate = useNavigate()
-  const [depts,      setDepts]      = useState([])
-  const [enveloppes, setEnveloppes] = useState([])
-  const [loading,    setLoading]    = useState(true)
-  const [showModal,  setShowModal]  = useState(false)
-  const [editTarget, setEditTarget] = useState(null)
-  const [saving,     setSaving]     = useState(false)
-  const [error,      setError]      = useState('')
-  const [form,         setForm]         = useState({ nom: '', description: '' })
-  const [confirmModal, setConfirmModal] = useState(null)
+  const [depts,          setDepts]          = useState([])
+  const [enveloppes,     setEnveloppes]     = useState([])
+  const [budgetActuelId, setBudgetActuelId] = useState(null)
+  const [loading,        setLoading]        = useState(true)
+  const [showModal,      setShowModal]      = useState(false)
+  const [editTarget,     setEditTarget]     = useState(null)
+  const [saving,         setSaving]         = useState(false)
+  const [error,          setError]          = useState('')
+  const [form,           setForm]           = useState({ nom: '', description: '' })
+  const [confirmModal,   setConfirmModal]   = useState(null)
+  const [allouerTarget,  setAllouerTarget]  = useState(null) // { dept, existingAlloc }
 
   const load = () => {
     setLoading(true)
@@ -31,8 +33,14 @@ export default function DepartementsPage() {
       .then(([d, a]) => {
         setDepts(d.data.results ?? d.data)
         const annuels      = a.data.results ?? a.data
-        const budgetActuel = annuels.find(ba => ba.annee === new Date().getFullYear())
+        const currentYear  = new Date().getFullYear()
+        const budgetActuel = annuels.find(ba => {
+          const start = Number(ba.annee)
+          const end   = ba.annee_fin ? Number(ba.annee_fin) : start
+          return currentYear >= start && currentYear <= end
+        }) ?? annuels[0] ?? null
         setEnveloppes(budgetActuel?.allocations ?? [])
+        setBudgetActuelId(budgetActuel?.id ?? null)
       })
       .finally(() => setLoading(false))
   }
@@ -192,6 +200,16 @@ export default function DepartementsPage() {
                   >
                     <FileText size={12} strokeWidth={2} /> Voir les budgets
                   </button>
+                  {budgetActuelId && (
+                    <button
+                      onClick={() => setAllouerTarget({ dept, existingAlloc: env ?? null })}
+                      className="btn btn-secondary btn-sm gap-[5px]"
+                      title={env ? "Modifier l'enveloppe" : 'Allouer un montant'}
+                    >
+                      <Coins size={12} strokeWidth={2} />
+                      {env ? 'Enveloppe' : 'Allouer'}
+                    </button>
+                  )}
                   <button onClick={() => openEdit(dept)} className="btn btn-secondary btn-sm" title="Modifier">
                     <Pencil size={12} strokeWidth={2} />
                   </button>
@@ -254,6 +272,79 @@ export default function DepartementsPage() {
         </div>
       )}
       {confirmModal && <ConfirmModal {...confirmModal} onClose={() => setConfirmModal(null)} />}
+      {allouerTarget && (
+        <AllouerModal
+          dept={allouerTarget.dept}
+          existingAlloc={allouerTarget.existingAlloc}
+          budgetActuelId={budgetActuelId}
+          onClose={() => setAllouerTarget(null)}
+          onSaved={() => { setAllouerTarget(null); load() }}
+        />
+      )}
+    </div>
+  )
+}
+
+/* ─── Modal allocation enveloppe ───────────────────────────────────────────── */
+function AllouerModal({ dept, existingAlloc, budgetActuelId, onClose, onSaved }) {
+  const [montant, setMontant] = useState(existingAlloc?.montant_alloue ?? '')
+  const [saving,  setSaving]  = useState(false)
+  const [error,   setError]   = useState('')
+
+  const handle = async (e) => {
+    e.preventDefault(); setError(''); setSaving(true)
+    try {
+      if (existingAlloc) {
+        await updateAllocation(budgetActuelId, existingAlloc.id, { montant_alloue: montant })
+      } else {
+        await createAllocation(budgetActuelId, { departement: dept.id, montant_alloue: montant })
+      }
+      onSaved()
+    } catch (err) {
+      const d = err.response?.data
+      setError(typeof d === 'string' ? d : d?.detail || d?.non_field_errors?.[0] || JSON.stringify(d))
+    } finally { setSaving(false) }
+  }
+
+  return (
+    <div className="modal-overlay" onClick={e => { if (e.target === e.currentTarget) onClose() }}>
+      <div className="modal-panel max-w-[420px]" onClick={e => e.stopPropagation()}>
+        <div className="modal-header">
+          <h2 className="font-display font-bold text-[15px]">
+            {existingAlloc ? "Modifier l'enveloppe" : 'Allouer un montant'}
+          </h2>
+        </div>
+        <form onSubmit={handle}>
+          <div className="modal-body">
+            <div className="mb-[14px] px-[14px] py-[10px] rounded-[9px] bg-[#F9FAFB] border border-[#E5E7EB] text-[13px]">
+              <span className="text-[#4B5563]">Département : </span>
+              <span className="font-bold text-[#111827]">{dept.nom}</span>
+            </div>
+            <div>
+              <label className="form-label">Montant alloué (FCFA)</label>
+              <input
+                className="form-input font-mono"
+                type="number" required min="0" step="0.01" autoFocus
+                value={montant}
+                onChange={e => setMontant(e.target.value)}
+                placeholder="Ex : 5 000 000"
+              />
+            </div>
+            {error && (
+              <div className="flex items-start gap-[9px] px-[14px] py-[10px] rounded-[9px] bg-[#FEF2F2] border border-[#FECACA] mt-[14px]">
+                <AlertTriangle size={14} strokeWidth={2} className="text-[#EF4444] shrink-0 mt-[1px]" />
+                <p className="text-[12px] text-[#B91C1C] m-0">{error}</p>
+              </div>
+            )}
+          </div>
+          <div className="modal-footer">
+            <button type="button" onClick={onClose} className="btn btn-secondary btn-md">Annuler</button>
+            <button type="submit" disabled={saving} className="btn btn-primary btn-md">
+              {saving ? <><span className="spinner-sm" /> Enregistrement…</> : 'Enregistrer'}
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   )
 }

@@ -45,9 +45,12 @@ urlpatterns = [
             static_serve,
             {'document_root': settings.BASE_DIR / 'frontend_dist'}),
 
-    # Fichiers media uploadés (justificatifs, etc.) — servis en dev ET prod
-    re_path(r'^media/(?P<path>.*)$', static_serve, {'document_root': settings.MEDIA_ROOT}),
-
     # React SPA — catch-all (doit être en dernier)
     re_path(r'^(?!api|manager|static|media).*$', TemplateView.as_view(template_name='index.html')),
 ]
+
+# En production, les fichiers media doivent être servis par le reverse proxy / stockage dédié.
+if settings.DEBUG:
+    urlpatterns += [
+        re_path(r'^media/(?P<path>.*)$', static_serve, {'document_root': settings.MEDIA_ROOT}),
+    ]

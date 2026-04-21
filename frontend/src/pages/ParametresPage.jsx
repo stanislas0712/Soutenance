@@ -149,20 +149,19 @@ const TAB_STYLE = (active) => ({
 
 /* ══ Page principale ══════════════════════════════════════════════════════ */
 export default function ParametresPage() {
-  const { user, isAdmin } = useAuth()
+  const { user, isAdmin, lang, setLanguage, t } = useAuth()
 
   /* Tabs */
   const TABS = [
-    { id: 'apparence',      label: 'Apparence',       Icon: Sun          },
-    { id: 'notifications',  label: 'Notifications',   Icon: Bell         },
-    ...(isAdmin ? [{ id: 'audit', label: "Journal d'audit", Icon: ClipboardList }] : []),
-    { id: 'about',          label: 'À propos',        Icon: Info         },
+    { id: 'apparence',      label: t('tab_apparence'),     Icon: Sun          },
+    { id: 'notifications',  label: t('tab_notifications'), Icon: Bell         },
+    ...(isAdmin ? [{ id: 'audit', label: t('tab_audit'), Icon: ClipboardList }] : []),
+    { id: 'about',          label: t('tab_about'),         Icon: Info         },
   ]
   const [tab, setTab] = useState('apparence')
 
   /* Préférences */
   const [theme,        setThemeState]   = useState(() => load('pref_theme', 'light'))
-  const [lang,         setLangState]    = useState(() => load('pref_lang', 'fr'))
   const [density,      setDensityState] = useState(() => load('pref_densite', 'normal'))
   const [notifBudget,  setNotifBudget]  = useState(() => load('notif_budget', true))
   const [notifDepense, setNotifDepense] = useState(() => load('notif_depense', true))
@@ -174,7 +173,6 @@ export default function ParametresPage() {
   useEffect(() => {
     applyTheme(load('pref_theme', 'light'))
     applyDensity(load('pref_densite', 'normal'))
-    document.documentElement.setAttribute('lang', load('pref_lang', 'fr') === 'en' ? 'en' : 'fr')
     const mq = window.matchMedia('(prefers-color-scheme: dark)')
     const handler = () => { if (load('pref_theme', 'light') === 'system') applyTheme('system') }
     mq.addEventListener('change', handler)
@@ -182,17 +180,11 @@ export default function ParametresPage() {
   }, [])
 
   /* Helpers */
-  const flash = (msg = 'Préférence enregistrée') => setToast(msg)
+  const flash = (msg) => setToast(msg ?? t('pref_enregistree'))
 
   const handleTheme = (v) => { setThemeState(v); applyTheme(v); flash() }
   const handleDensity = (v) => { setDensityState(v); applyDensity(v); flash() }
-  const handleLang = (v) => {
-    setLangState(v)
-    save('pref_lang', v)
-    document.documentElement.setAttribute('lang', v === 'en' ? 'en' : 'fr')
-    flash(v === 'en' ? 'Anglais sélectionné — traduction en cours de déploiement' : 'Français activé')
-  }
-
+  const handleLang = (v) => { setLanguage(v); flash(v === 'en' ? 'English selected' : 'Français activé') }
   const handleToggle = (setter, key) => (v) => {
     setter(v); save(key, v)
     if (key === 'notif_son' && v) playNotifSound()
@@ -204,8 +196,8 @@ export default function ParametresPage() {
       {/* Header */}
       <div className="page-header">
         <div>
-          <h1 className="page-title">Paramètres</h1>
-          <p className="page-subtitle">Personnalisez votre expérience sur la plateforme</p>
+          <h1 className="page-title">{t('param_titre')}</h1>
+          <p className="page-subtitle">{t('param_sous_titre')}</p>
         </div>
       </div>
 
@@ -224,48 +216,48 @@ export default function ParametresPage() {
       {/* ── Apparence ────────────────────────────────────────────────────── */}
       {tab === 'apparence' && (
         <>
-          <SectionCard icon={Sun} iconBg="#FEF9EC" iconColor="#C9910A" title="Apparence">
+          <SectionCard icon={Sun} iconBg="#FEF9EC" iconColor="#C9910A" title={t('tab_apparence')}>
             <Row
-              label="Thème de l'interface"
-              description="Clair, sombre ou automatique selon le système."
+              label={t('theme_label')}
+              description={t('theme_desc')}
               control={
                 <ChipGroup
                   value={theme}
                   onChange={handleTheme}
                   options={[
-                    { v: 'light',  label: 'Clair',   Icon: Sun     },
-                    { v: 'dark',   label: 'Sombre',  Icon: Moon    },
-                    { v: 'system', label: 'Système', Icon: Monitor },
+                    { v: 'light',  label: t('theme_clair'),   Icon: Sun     },
+                    { v: 'dark',   label: t('theme_sombre'),  Icon: Moon    },
+                    { v: 'system', label: t('theme_systeme'), Icon: Monitor },
                   ]}
                 />
               }
             />
             <Row
-              label="Langue"
-              description="Langue d'affichage de l'interface."
+              label={t('langue_label')}
+              description={t('langue_desc')}
               control={
                 <ChipGroup
                   value={lang}
                   onChange={handleLang}
                   options={[
-                    { v: 'fr', label: 'Français' },
-                    { v: 'en', label: 'English'  },
+                    { v: 'fr', label: 'Français', Icon: Globe },
+                    { v: 'en', label: 'English',  Icon: Globe },
                   ]}
                 />
               }
             />
             <Row
-              label="Densité du tableau"
-              description="Espacement des lignes dans les listes de données."
+              label={t('densite_label')}
+              description={t('densite_desc')}
               last
               control={
                 <ChipGroup
                   value={density}
                   onChange={handleDensity}
                   options={[
-                    { v: 'compact', label: 'Compact' },
-                    { v: 'normal',  label: 'Normal'  },
-                    { v: 'relaxed', label: 'Aéré'    },
+                    { v: 'compact', label: t('densite_compact') },
+                    { v: 'normal',  label: t('densite_normal')  },
+                    { v: 'relaxed', label: t('densite_aere')    },
                   ]}
                 />
               }
@@ -307,25 +299,25 @@ export default function ParametresPage() {
 
       {/* ── Notifications ─────────────────────────────────────────────────── */}
       {tab === 'notifications' && (
-        <SectionCard icon={Bell} iconBg="#EFF6FF" iconColor="#1E3A8A" title="Préférences de notifications">
+        <SectionCard icon={Bell} iconBg="#EFF6FF" iconColor="#1E3A8A" title={t('tab_notifications')}>
           <Row
-            label="Alertes budgets"
-            description="Notifié lors de la création, soumission, validation ou rejet d'un budget."
+            label={t('notif_budgets_label')}
+            description={t('notif_budgets_desc')}
             control={<Toggle checked={notifBudget}  onChange={handleToggle(setNotifBudget,  'notif_budget')}  />}
           />
           <Row
-            label="Alertes dépenses"
-            description="Notifié lors de l'enregistrement ou du traitement d'une dépense."
+            label={t('notif_depenses_label')}
+            description={t('notif_depenses_desc')}
             control={<Toggle checked={notifDepense} onChange={handleToggle(setNotifDepense, 'notif_depense')} />}
           />
           <Row
-            label="Notifications par email"
-            description="Recevoir un résumé des activités importantes par email."
+            label={t('notif_email_label')}
+            description={t('notif_email_desc')}
             control={<Toggle checked={notifEmail}   onChange={handleToggle(setNotifEmail,   'notif_email')}   />}
           />
           <Row
-            label="Son de notification"
-            description="Jouer un son lors de l'arrivée d'une nouvelle notification. Cliquez pour tester."
+            label={t('notif_son_label')}
+            description={t('notif_son_desc')}
             last
             control={<Toggle checked={notifSon}     onChange={handleToggle(setNotifSon,     'notif_son')}     />}
           />
