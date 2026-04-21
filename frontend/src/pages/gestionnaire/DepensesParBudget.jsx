@@ -65,10 +65,11 @@ export default function DepensesParBudget({ basePath = '/mes-depenses', depenseB
     depByLigne[d.ligne_id].push(d)
   })
 
-  const total   = depenses.reduce((s, d) => s + parseFloat(d.montant || 0), 0)
+  const total      = depenses.reduce((s, d) => s + parseFloat(d.montant || 0), 0)
   const budgetGlobal = parseFloat(budget?.montant_global || 0)
-  const taux    = budgetGlobal > 0 ? Math.min(100, Math.round(total / budgetGlobal * 100)) : 0
-  const tauxColor = taux >= 95 ? '#DC2626' : taux >= 80 ? '#D97706' : '#2563EB'
+  const disponible = budgetGlobal - total
+  const taux       = budgetGlobal > 0 ? Math.min(100, Math.round(total / budgetGlobal * 100)) : 0
+  const tauxColor  = taux >= 95 ? '#DC2626' : taux >= 80 ? '#D97706' : '#2563EB'
 
   const budgetPath = isAdmin
     ? `/budgets/${budgetId}`
@@ -144,6 +145,29 @@ export default function DepensesParBudget({ basePath = '/mes-depenses', depenseB
               </div>
             </div>
           )}
+        </div>
+
+        {/* ── Mini KPI strip ── */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', borderBottom: '1px solid var(--color-gray-100)' }}>
+          {[
+            { label: 'Budget global',  val: fmt(budgetGlobal) + ' FCFA', color: 'var(--color-primary-700)', bg: 'var(--color-primary-50)' },
+            { label: 'Total dépensé',  val: fmt(total) + ' FCFA',        color: '#6a2fa0',                  bg: '#f5f0fd' },
+            { label: 'Disponible',     val: fmt(Math.max(0, disponible)) + ' FCFA', color: disponible <= 0 ? 'var(--color-danger-700)' : 'var(--color-success-700)', bg: disponible <= 0 ? 'var(--color-danger-50)' : 'var(--color-success-50)' },
+            { label: "Taux d'exéc.",   val: taux + '%',                  color: tauxColor,                  bg: taux > 75 ? 'var(--color-danger-50)' : taux > 50 ? 'var(--color-warning-50)' : 'var(--color-success-50)' },
+          ].map((k, idx, arr) => (
+            <div key={k.label} style={{
+              padding: '12px 20px', background: k.bg,
+              borderRight: idx < arr.length - 1 ? '1px solid var(--color-gray-100)' : 'none',
+              textAlign: 'center',
+            }}>
+              <div style={{ fontSize: '10px', fontWeight: 700, color: k.color, textTransform: 'uppercase', letterSpacing: '.4px', marginBottom: 4 }}>
+                {k.label}
+              </div>
+              <div style={{ fontFamily: 'var(--font-mono)', fontWeight: 800, fontSize: '13px', color: k.color }}>
+                {k.val}
+              </div>
+            </div>
+          ))}
         </div>
 
         {/* ── Bande budget parent + export ── */}

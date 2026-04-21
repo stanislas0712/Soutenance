@@ -87,7 +87,9 @@ function AppRoutes() {
           <Route path="/audit"         element={<AuditLogsPage />} />
           <Route path="/rapports"           element={<RapportsKPIPage />} />
           <Route path="/rapports-detailles" element={<RapportPage />} />
-          <Route path="/depenses/:id"  element={<DepenseDetail basePath="/depenses" />} />
+          <Route path="/depenses"                      element={<DepensesPage />} />
+          <Route path="/depenses/budget/:budgetId"     element={<DepensesParBudget basePath="/depenses" depenseBasePath="/depenses" />} />
+          <Route path="/depenses/:id"                  element={<DepenseDetail basePath="/depenses" />} />
         </>}
 
         {/* ── Gestionnaire ── */}

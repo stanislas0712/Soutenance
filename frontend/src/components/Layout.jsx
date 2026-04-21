@@ -20,14 +20,15 @@ const ROLE_BADGE = {
 /* ── Navigation par rôle ─────────────────────────────────────────────────── */
 function navItems(role, t) {
   if (role === 'ADMINISTRATEUR') return [
-    { to: '/dashboard',          icon: LayoutDashboard, label: t('nav_dashboard')       },
-    { to: '/budget-annuel',      icon: CalendarDays,    label: t('nav_budget_annuel')   },
-    { to: '/departements',       icon: Building2,       label: t('nav_departements')    },
-    { to: '/utilisateurs',       icon: Users,           label: t('nav_utilisateurs')    },
-    { to: '/rapports',           icon: BarChart3,       label: t('nav_statistiques')    },
-    { to: '/rapports-detailles', icon: FileBarChart,    label: t('nav_rapports_detail') },
-    { to: '/ia',                 icon: Sparkles,        label: t('nav_assistance_ia')   },
-    { to: '/parametres',         icon: Settings,        label: t('nav_parametres')      },
+    { to: '/dashboard',          icon: LayoutDashboard, label: t('nav_dashboard')        },
+    { to: '/budget-annuel',      icon: CalendarDays,    label: t('nav_budget_annuel')    },
+    { to: '/departements',       icon: Building2,       label: t('nav_departements')     },
+    { to: '/utilisateurs',       icon: Users,           label: t('nav_utilisateurs')     },
+    { to: '/depenses',           icon: CreditCard,      label: t('nav_depenses_valider') },
+    { to: '/rapports',           icon: BarChart3,       label: t('nav_statistiques')     },
+    { to: '/rapports-detailles', icon: FileBarChart,    label: t('nav_rapports_detail')  },
+    { to: '/ia',                 icon: Sparkles,        label: t('nav_assistance_ia')    },
+    { to: '/parametres',         icon: Settings,        label: t('nav_parametres')       },
   ]
   if (role === 'GESTIONNAIRE') return [
     { to: '/dashboard',    icon: LayoutDashboard, label: t('nav_dashboard')     },
@@ -52,10 +53,10 @@ function getSections(role, items, t) {
   if (role === 'ADMINISTRATEUR') {
     return [
       { label: t('section_principal'),  items: items.slice(0, 1) },
-      { label: t('section_admin'),      items: items.slice(1, 4) },
-      { label: t('section_rapports'),   items: items.slice(4, 6) },
-      { label: t('section_assistance'), items: items.slice(6, 7) },
-      { label: t('section_systeme'),    items: items.slice(7) },
+      { label: t('section_admin'),      items: items.slice(1, 5) },
+      { label: t('section_rapports'),   items: items.slice(5, 7) },
+      { label: t('section_assistance'), items: items.slice(7, 8) },
+      { label: t('section_systeme'),    items: items.slice(8) },
     ]
   }
   if (role === 'GESTIONNAIRE') {

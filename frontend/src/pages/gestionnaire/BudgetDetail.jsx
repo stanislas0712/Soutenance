@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import {
@@ -15,7 +15,7 @@ import {
   ArrowLeft, Pencil, Send, DollarSign,
   CheckCircle2, AlertTriangle, Info,
   FileText, Receipt,
-  Download, Printer, Paperclip,
+  Download, Printer, Paperclip, ChevronDown,
 } from 'lucide-react'
 
 const fmt = (n) => new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 0 }).format(parseFloat(n || 0))
@@ -51,7 +51,9 @@ export default function BudgetDetail({ basePath = '/mes-budgets' }) {
 
   const [confirmModal, setConfirmModal] = useState(null)
 
-  const [exporting, setExporting] = useState('')
+  const [exporting,   setExporting]   = useState('')
+  const [exportOpen,  setExportOpen]  = useState(false)
+  const exportRef = useRef(null)
 
   const load = () => {
     getBudget(id)
@@ -98,6 +100,12 @@ export default function BudgetDetail({ basePath = '/mes-budgets' }) {
   useEffect(() => {
     if (budget?.statut === 'APPROUVE' && !depensesLoaded) loadDepenses()
   }, [budget?.statut])
+
+  useEffect(() => {
+    const handler = (e) => { if (exportRef.current && !exportRef.current.contains(e.target)) setExportOpen(false) }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [])
 
   if (loading || !budget) return <div className="page-loader"><div className="spinner" /></div>
 
@@ -400,32 +408,81 @@ export default function BudgetDetail({ basePath = '/mes-budgets' }) {
           </div>
         )}
 
-        {/* ── Barre téléchargement ──────────────────────────────────────────── */}
+        {/* ── Barre export dropdown ──────────────────────────────────────────── */}
         <div style={{
           padding: '10px 24px', borderTop: '1px solid var(--color-gray-100)',
-          background: '#FAFAFA', display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap',
+          background: '#FAFAFA', display: 'flex', alignItems: 'center', justifyContent: 'flex-end',
         }}>
-          <span style={{
-            fontSize: '9px', fontWeight: 700, color: 'var(--color-gray-400)',
-            textTransform: 'uppercase', letterSpacing: '.4px', marginRight: 4,
-          }}>Télécharger</span>
-          <button onClick={() => handleExport(exportBudgetExcel, 'bxls')} disabled={!!exporting} className="btn btn-secondary btn-sm" style={{ gap: 6 }}>
-            {exporting === 'bxls' ? <span className="spinner-sm" /> : <Download size={13} strokeWidth={2} />} Budget.xlsx
-          </button>
-          <button onClick={() => handleExport(exportBudgetPdf, 'bpdf')} disabled={!!exporting} className="btn btn-secondary btn-sm" style={{ gap: 6 }}>
-            {exporting === 'bpdf' ? <span className="spinner-sm" /> : <Printer size={13} strokeWidth={2} />} Budget.pdf
-          </button>
-          {approuve && (
-            <>
-              <div style={{ width: 1, height: 16, background: 'var(--color-gray-200)', margin: '0 4px' }} />
-              <button onClick={() => handleExport(exportDepensesExcel, 'dxls')} disabled={!!exporting} className="btn btn-secondary btn-sm" style={{ gap: 6 }}>
-                {exporting === 'dxls' ? <span className="spinner-sm" /> : <Download size={13} strokeWidth={2} />} Dépenses.xlsx
-              </button>
-              <button onClick={() => handleExport(exportDepensesPdf, 'dpdf')} disabled={!!exporting} className="btn btn-secondary btn-sm" style={{ gap: 6 }}>
-                {exporting === 'dpdf' ? <span className="spinner-sm" /> : <Printer size={13} strokeWidth={2} />} Dépenses.pdf
-              </button>
-            </>
-          )}
+          <div ref={exportRef} style={{ position: 'relative' }}>
+            <button
+              onClick={() => setExportOpen(o => !o)}
+              disabled={!!exporting}
+              className="btn btn-secondary btn-sm"
+              style={{ gap: 6 }}
+            >
+              {exporting
+                ? <><span className="spinner-sm" /> Export…</>
+                : <><Download size={13} strokeWidth={2} /> Exporter <ChevronDown size={10} strokeWidth={2.5} /></>
+              }
+            </button>
+            {exportOpen && (
+              <div style={{
+                position: 'absolute', bottom: 'calc(100% + 6px)', right: 0, zIndex: 50,
+                background: '#fff', border: '1px solid var(--color-gray-200)',
+                borderRadius: 10, boxShadow: '0 8px 24px rgba(15,23,42,.12)',
+                minWidth: 210, overflow: 'hidden',
+              }}>
+                <div style={{ padding: '4px 12px', borderBottom: '1px solid var(--color-gray-100)', fontSize: '9px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.4px', color: 'var(--color-gray-400)', paddingTop: 8 }}>
+                  Budget
+                </div>
+                <div style={{ padding: '4px 0' }}>
+                  {[
+                    { fn: exportBudgetExcel, key: 'bxls', icon: '📊', label: 'Budget Excel', sub: '.xlsx — compatible Excel' },
+                    { fn: exportBudgetPdf,   key: 'bpdf', icon: '📄', label: 'Budget PDF',   sub: 'Document imprimable' },
+                  ].map(item => (
+                    <button key={item.key}
+                      onClick={() => { handleExport(item.fn, item.key); setExportOpen(false) }}
+                      style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', padding: '8px 16px', background: 'none', border: 'none', cursor: 'pointer', fontSize: '13px', color: 'var(--color-gray-700)', textAlign: 'left' }}
+                      onMouseEnter={e => e.currentTarget.style.background = 'var(--color-gray-50)'}
+                      onMouseLeave={e => e.currentTarget.style.background = 'none'}
+                    >
+                      <span style={{ fontSize: '15px' }}>{item.icon}</span>
+                      <div>
+                        <div style={{ fontWeight: 600 }}>{item.label}</div>
+                        <div style={{ fontSize: '11px', color: 'var(--color-gray-400)' }}>{item.sub}</div>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+                {approuve && (
+                  <>
+                    <div style={{ padding: '4px 12px', borderTop: '1px solid var(--color-gray-100)', borderBottom: '1px solid var(--color-gray-100)', fontSize: '9px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.4px', color: 'var(--color-gray-400)', paddingTop: 8 }}>
+                      Dépenses
+                    </div>
+                    <div style={{ padding: '4px 0' }}>
+                      {[
+                        { fn: exportDepensesExcel, key: 'dxls', icon: '📊', label: 'Dépenses Excel', sub: '.xlsx — compatible Excel' },
+                        { fn: exportDepensesPdf,   key: 'dpdf', icon: '📄', label: 'Dépenses PDF',   sub: 'Document imprimable' },
+                      ].map(item => (
+                        <button key={item.key}
+                          onClick={() => { handleExport(item.fn, item.key); setExportOpen(false) }}
+                          style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', padding: '8px 16px', background: 'none', border: 'none', cursor: 'pointer', fontSize: '13px', color: 'var(--color-gray-700)', textAlign: 'left' }}
+                          onMouseEnter={e => e.currentTarget.style.background = 'var(--color-gray-50)'}
+                          onMouseLeave={e => e.currentTarget.style.background = 'none'}
+                        >
+                          <span style={{ fontSize: '15px' }}>{item.icon}</span>
+                          <div>
+                            <div style={{ fontWeight: 600 }}>{item.label}</div>
+                            <div style={{ fontSize: '11px', color: 'var(--color-gray-400)' }}>{item.sub}</div>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Footer / barre d'actions */}
