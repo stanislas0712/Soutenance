@@ -191,7 +191,7 @@ CSRF_TRUSTED_ORIGINS += [o.strip() for o in _csrf_extra.split(',') if o.strip()]
 if not DEBUG:
     if not SECRET_KEY:
         raise RuntimeError("SECRET_KEY manquante en production.")
-    SECURE_SSL_REDIRECT              = True
+    SECURE_SSL_REDIRECT              = False  # Railway gère le SSL à l'edge
     SECURE_HSTS_SECONDS              = 31_536_000  # 1 an
     SECURE_HSTS_INCLUDE_SUBDOMAINS   = True
     SECURE_HSTS_PRELOAD              = True
