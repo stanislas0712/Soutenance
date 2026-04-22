@@ -272,34 +272,45 @@ export function BudgetValidationDetail() {
   const ecartGlobal = totalBudget - totalReel
   const tauxGlobal  = totalBudget > 0 ? Math.round(totalReel / totalBudget * 100) : 0
 
-  const handleExportCSV = () => {
-    const headers = ['Code', 'Libellé', 'Section', 'Budget alloué (FCFA)', 'Réel (FCFA)', 'Écart (FCFA)', 'Taux (%)']
-    const rows = lignes.map(l => {
-      const a = parseFloat(l.montant_alloue || 0)
-      const c = parseFloat(l.montant_consomme || 0)
-      return [l.code || '', l.libelle, l.section, a, c, a - c, a > 0 ? Math.round(c / a * 100) + '%' : '0%']
+  const SECTION_LABEL = { DEPENSE: 'Dépenses', REVENU: 'Revenus' }
+
+  const buildRows = (useFmt) => {
+    const totalDep = depenses.reduce((s, l) => s + parseFloat(l.montant_alloue || 0), 0)
+    const totalRev = revenus.reduce((s,  l) => s + parseFloat(l.montant_alloue || 0), 0)
+    return lignes.map(l => {
+      const a          = parseFloat(l.montant_alloue   || 0)
+      const c          = parseFloat(l.montant_consomme || 0)
+      const e          = a - c
+      const sectionTot = l.section === 'DEPENSE' ? totalDep : totalRev
+      const pct        = sectionTot > 0 ? Math.round(a / sectionTot * 100) : 0
+      const section    = SECTION_LABEL[l.section] ?? l.section
+      return useFmt
+        ? [l.code || '—', l.libelle, section, fmt(a), fmt(c), (e >= 0 ? '+' : '') + fmt(e), pct + '%']
+        : [l.code || '',  l.libelle, section, a,       c,      e,                             pct + '%']
     })
-    exportCSV(`Budget_${budget.code}`, headers, rows)
+  }
+
+  const handleExportCSV = () => {
+    exportCSV(`Budget_${budget.code}`,
+      ['Code', 'Libellé', 'Section', 'Budget alloué (FCFA)', 'Réel (FCFA)', 'Écart (FCFA)', '% Budget'],
+      buildRows(false),
+    )
   }
 
   const handleExportPDF = () => {
-    const headers = ['Code', 'Libellé', 'Section', 'Budget (FCFA)', 'Réel (FCFA)', 'Écart (FCFA)', 'Taux']
-    const rows = lignes.map(l => {
-      const a = parseFloat(l.montant_alloue || 0)
-      const c = parseFloat(l.montant_consomme || 0)
-      const e = a - c
-      const t = a > 0 ? Math.round(c / a * 100) : 0
-      return [l.code || '—', l.libelle, l.section, fmt(a), fmt(c), (e >= 0 ? '+' : '') + fmt(e), t + '%']
-    })
-    printPDF(budget.nom, headers, rows, {
-      subtitle: `${budget.code} · ${budget.departement_nom} · ${budget.gestionnaire_nom || '—'}`,
-      filters: `Statut : ${budget.statut}`,
-      stats: [
-        { value: fmt(totalBudget) + ' FCFA', label: 'Budget global' },
-        { value: fmt(totalReel) + ' FCFA', label: 'Montant réel' },
-        { value: tauxGlobal + '%', label: 'Taux consommation' },
-      ],
-    })
+    printPDF(budget.nom,
+      ['Code', 'Libellé', 'Section', 'Budget (FCFA)', 'Réel (FCFA)', 'Écart (FCFA)', '% Budget'],
+      buildRows(true),
+      {
+        subtitle: `${budget.code} · ${budget.departement_nom} · ${budget.gestionnaire_nom || '—'}`,
+        filters: `Statut : ${budget.statut}`,
+        stats: [
+          { value: fmt(totalBudget) + ' FCFA', label: 'Budget global' },
+          { value: fmt(totalReel)   + ' FCFA', label: 'Montant réel'  },
+          { value: tauxGlobal + '%',            label: 'Taux consommation' },
+        ],
+      },
+    )
   }
 
   const tauColor = (t) => t >= 95 ? 'var(--color-danger-600)' : t >= 80 ? 'var(--color-warning-600)' : t >= 50 ? 'var(--color-success-600)' : 'var(--color-primary-600)'
