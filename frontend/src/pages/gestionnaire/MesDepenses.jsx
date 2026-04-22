@@ -28,7 +28,7 @@ export default function MesDepenses() {
   const [allDepenses,      setAllDepenses]      = useState([])
   const [loading,          setLoading]          = useState(true)
   const [error,            setError]            = useState('')
-  const [tab,              setTab]              = useState('')
+  const [tab,              setTab]              = useState('SAISIE')
   const [search,           setSearch]           = useState('')
   const [showDepenseModal, setShowDepenseModal] = useState(false)
 
@@ -41,8 +41,6 @@ export default function MesDepenses() {
   }
 
   useEffect(() => { charger() }, [])
-
-  const totalMontant = allDepenses.reduce((s, d) => s + parseFloat(d.montant || 0), 0)
 
   // Grouper TOUS les items (non filtrés) pour les KPIs
   const allGroups = Object.values(
@@ -103,22 +101,20 @@ export default function MesDepenses() {
       </div>
 
       {/* KPI */}
-      {!loading && !error && (
-        <div className="kpi-grid">
-          {[
-            { label: 'Total dépensé', val: fmt(totalMontant), sub: 'FCFA',       color: 'var(--color-gray-500)'    },
-            { label: 'En attente',    val: countFor('SAISIE'),  sub: 'budget(s)', color: 'var(--color-warning-600)' },
-            { label: 'Validées',      val: countFor('VALIDEE'), sub: 'budget(s)', color: 'var(--color-success-600)' },
-            { label: 'Rejetées',      val: countFor('REJETEE'), sub: 'budget(s)', color: 'var(--color-danger-600)'  },
-          ].map(k => (
-            <div key={k.label} className="card">
-              <div style={{ fontSize: '11px', fontWeight: 700, color: k.color, textTransform: 'uppercase', letterSpacing: '.4px', marginBottom: 8 }}>{k.label}</div>
-              <div style={{ fontFamily: 'var(--font-mono)', fontWeight: 800, fontSize: '20px', color: 'var(--color-gray-900)' }}>{k.val}</div>
-              <div style={{ fontSize: '11px', color: 'var(--color-gray-400)', marginTop: 2 }}>{k.sub}</div>
-            </div>
-          ))}
-        </div>
-      )}
+      <div className="kpi-grid">
+        {[
+          { label: 'EN ATTENTE', val: countFor('SAISIE'),  sub: 'budget(s)', color: 'var(--color-warning-600)', bg: 'var(--color-warning-50)'  },
+          { label: 'VALIDÉES',   val: countFor('VALIDEE'), sub: 'budget(s)', color: 'var(--color-success-600)', bg: 'var(--color-success-50)'  },
+          { label: 'REJETÉES',   val: countFor('REJETEE'), sub: 'budget(s)', color: 'var(--color-danger-600)',  bg: 'var(--color-danger-50)'   },
+          { label: 'TOTAL',      val: countFor(''),        sub: 'budgets',   color: 'var(--color-primary-600)', bg: 'var(--color-primary-50)'  },
+        ].map(k => (
+          <div key={k.label} className="card" style={{ borderTop: `3px solid ${k.color}` }}>
+            <div style={{ fontSize: '10px', fontWeight: 700, color: k.color, textTransform: 'uppercase', letterSpacing: '.4px', marginBottom: 8 }}>{k.label}</div>
+            <div style={{ fontFamily: 'var(--font-mono)', fontWeight: 800, fontSize: '22px', color: 'var(--color-gray-900)' }}>{k.val}</div>
+            <div style={{ fontSize: '11px', color: 'var(--color-gray-400)', marginTop: 2 }}>{k.sub}</div>
+          </div>
+        ))}
+      </div>
 
       {/* Tabs */}
       <div style={{ display: 'flex', gap: 4, marginBottom: 16, borderBottom: '1px solid var(--color-gray-200)' }}>
@@ -192,8 +188,8 @@ export default function MesDepenses() {
         <div className="card p-0 overflow-hidden" style={{ overflowX: 'auto' }}>
           {/* Entêtes colonnes */}
           <div style={{
-            display: 'grid', gridTemplateColumns: '1fr 180px 160px 120px',
-            minWidth: 580, padding: '8px 20px',
+            display: 'grid', gridTemplateColumns: '1fr 180px 160px 130px',
+            minWidth: 600, padding: '8px 20px',
             background: 'var(--color-gray-50)', borderBottom: '1px solid var(--color-gray-200)',
             fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.4px', color: 'var(--color-gray-500)',
           }}>
@@ -211,8 +207,8 @@ export default function MesDepenses() {
 
             return (
               <div key={g.reference} style={{
-                display: 'grid', gridTemplateColumns: '1fr 180px 160px 120px',
-                minWidth: 580, padding: '14px 20px',
+                display: 'grid', gridTemplateColumns: '1fr 180px 160px 130px',
+                minWidth: 600, padding: '14px 20px',
                 borderBottom: i < groups.length - 1 ? '1px solid var(--color-gray-100)' : 'none',
                 alignItems: 'center', cursor: 'pointer', transition: 'background .12s',
               }}
@@ -242,7 +238,7 @@ export default function MesDepenses() {
                 {/* Jauge */}
                 <div style={{ padding: '0 12px' }}>
                   <div className="progress-track">
-                    <div className={`progress-fill ${tauxValid > 75 ? 'progress-fill-green' : tauxValid > 0 ? 'progress-fill-orange' : ''}`} style={{ width: `${Math.min(tauxValid, 100)}%` }} />
+                    <div className={`progress-fill ${tauxValid >= 100 ? 'progress-fill-green' : tauxValid > 0 ? 'progress-fill-orange' : ''}`} style={{ width: `${Math.min(tauxValid, 100)}%` }} />
                   </div>
                   <div style={{ fontSize: '10px', color: 'var(--color-gray-500)', textAlign: 'center', marginTop: 3, fontWeight: 600 }}>
                     {tauxValid.toFixed(0)}% validé
@@ -252,7 +248,7 @@ export default function MesDepenses() {
                 {/* Actions */}
                 <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end', alignItems: 'center' }} onClick={e => e.stopPropagation()}>
                   <button onClick={() => navigate('/mes-depenses/budget/' + g.budget_id)} className="btn btn-secondary btn-sm" style={{ gap: 5 }}>
-                    <Eye size={12} strokeWidth={2} /> Voir
+                    <Eye size={12} strokeWidth={2} /> Examiner
                   </button>
                   <ChevronRight size={14} strokeWidth={2} style={{ color: 'var(--color-gray-300)' }} />
                 </div>

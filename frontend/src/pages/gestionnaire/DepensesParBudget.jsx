@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
-import { getDepenses } from '../../api/depenses'
+import { getDepenses, validerDepense, rejeterDepense } from '../../api/depenses'
 import { getBudget, getBudgetArbre, exportDepensesExcel, exportDepensesPdf } from '../../api/budget'
-import { ArrowLeft, ExternalLink, Download, ChevronDown, ChevronRight } from 'lucide-react'
+import { ArrowLeft, ExternalLink, Download, ChevronDown, ChevronRight, CheckCircle2, XCircle, AlertTriangle } from 'lucide-react'
 
 const fmt     = (n)   => new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 0 }).format(parseFloat(n || 0))
 const fmtDate = (iso) => iso ? new Date(iso).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'
@@ -24,9 +24,12 @@ export default function DepensesParBudget({ basePath = '/mes-depenses', depenseB
   const [depenses,   setDepenses]   = useState([])
   const [loading,    setLoading]    = useState(true)
   const [openCats,   setOpenCats]   = useState({})
-  const [exportOpen, setExportOpen] = useState(false)
-  const [exporting,  setExporting]  = useState('')
+  const [exportOpen,  setExportOpen]  = useState(false)
+  const [exporting,   setExporting]   = useState('')
   const exportRef = useRef(null)
+
+  const [rejectModal, setRejectModal] = useState({ open: false, depense: null, motif: '', saving: false, error: '' })
+  const [validating,  setValidating]  = useState('')
 
   const load = () => {
     setLoading(true)
@@ -77,6 +80,39 @@ export default function DepensesParBudget({ basePath = '/mes-depenses', depenseB
       ? `/validation/${budgetId}`
       : `/mes-budgets/${budgetId}`
 
+  const handleValider = async (depense) => {
+    if (validating) return
+    setValidating(depense.id)
+    try {
+      await validerDepense(depense.id)
+      load()
+    } catch (e) {
+      alert(e?.response?.data?.detail || 'Erreur lors de la validation')
+    } finally { setValidating('') }
+  }
+
+  const openRejet = (depense) => setRejectModal({ open: true, depense, motif: '', saving: false, error: '' })
+
+  const handleRejeter = async (e) => {
+    e.preventDefault()
+    if (!rejectModal.motif.trim()) return setRejectModal(m => ({ ...m, error: 'Le motif est obligatoire.' }))
+    setRejectModal(m => ({ ...m, saving: true, error: '' }))
+    try {
+      if (rejectModal.depense.id === '__all__') {
+        const enAttente = depenses.filter(d => d.statut === 'SAISIE')
+        for (const d of enAttente) {
+          try { await rejeterDepense(d.id, { motif_rejet: rejectModal.motif }) } catch { /* continue */ }
+        }
+      } else {
+        await rejeterDepense(rejectModal.depense.id, { motif_rejet: rejectModal.motif })
+      }
+      setRejectModal({ open: false, depense: null, motif: '', saving: false, error: '' })
+      load()
+    } catch (e) {
+      setRejectModal(m => ({ ...m, saving: false, error: e?.response?.data?.detail || 'Erreur lors du rejet' }))
+    }
+  }
+
   const handleExport = async (fn, key) => {
     if (exporting) return
     setExporting(key)
@@ -87,6 +123,7 @@ export default function DepensesParBudget({ basePath = '/mes-depenses', depenseB
   }
 
   return (
+    <>
     <div>
       {/* Retour */}
       <div style={{ marginBottom: 16 }}>
@@ -324,7 +361,6 @@ export default function DepensesParBudget({ basePath = '/mes-depenses', depenseB
 
                           {/* ── Dépenses de cette ligne ── */}
                           {lignesDeps.map((d, idx) => {
-                            const dot = STATUS_DOT[d.statut] || { bg: '#9CA3AF', label: d.statut }
                             return (
                               <div
                                 key={d.id}
@@ -338,24 +374,15 @@ export default function DepensesParBudget({ basePath = '/mes-depenses', depenseB
                                 onMouseEnter={e => e.currentTarget.style.background = '#EFF6FF'}
                                 onMouseLeave={e => e.currentTarget.style.background = ''}
                               >
-                                {/* Désignation + dot statut */}
+                                {/* Désignation */}
                                 <div style={{ minWidth: 0 }}>
-                                  <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 2, flexWrap: 'wrap' }}>
-                                    {/* Dot statut */}
-                                    <span
-                                      title={dot.label}
-                                      style={{
-                                        display: 'inline-block', width: 7, height: 7,
-                                        borderRadius: '50%', background: dot.bg,
-                                        flexShrink: 0, cursor: 'help',
-                                      }}
-                                    />
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 2 }}>
                                     <span style={{ fontFamily: 'var(--font-mono)', fontSize: '10px', background: 'var(--color-gray-100)', color: 'var(--color-gray-600)', padding: '1px 6px', borderRadius: 4, fontWeight: 700 }}>
                                       {d.reference}
                                     </span>
                                   </div>
                                   {d.fournisseur && (
-                                    <div style={{ fontSize: '11px', color: 'var(--color-gray-400)', paddingLeft: 14 }}>{d.fournisseur}</div>
+                                    <div style={{ fontSize: '11px', color: 'var(--color-gray-400)' }}>{d.fournisseur}</div>
                                   )}
                                 </div>
 
@@ -384,18 +411,125 @@ export default function DepensesParBudget({ basePath = '/mes-depenses', depenseB
           )
         })}
 
-        {/* ── Total général ── */}
-        {depenses.length > 0 && (
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 24px', background: '#1E3A8A' }}>
-            <span style={{ fontSize: '12px', fontWeight: 700, color: 'rgba(255,255,255,.65)', textTransform: 'uppercase', letterSpacing: '.5px' }}>
-              Total général
-            </span>
-            <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 900, fontSize: '16px', color: '#fff' }}>
-              {fmt(total)} FCFA
-            </span>
-          </div>
-        )}
+        {/* ── Total général + actions ── */}
+        {depenses.length > 0 && (() => {
+          const enAttente    = depenses.filter(d => d.statut === 'SAISIE')
+          const totalAttente = enAttente.reduce((s, d) => s + parseFloat(d.montant || 0), 0)
+          const piece        = depenses.find(d => d.piece_justificative_url)
+          return (
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 24px', background: '#1E3A8A', gap: 12, flexWrap: 'wrap' }}>
+              <span style={{ fontSize: '12px', fontWeight: 700, color: 'rgba(255,255,255,.65)', textTransform: 'uppercase', letterSpacing: '.5px' }}>
+                Total général
+              </span>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                {/* Pièce justificative */}
+                {(isComptable || isAdmin) && piece && (
+                  <a href={piece.piece_justificative_url} target="_blank" rel="noreferrer"
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: '12px', fontWeight: 600, color: '#93C5FD', textDecoration: 'none', padding: '5px 12px', borderRadius: 6, background: 'rgba(147,197,253,.15)', border: '1px solid rgba(147,197,253,.3)' }}>
+                    📎 Pièce justificative
+                  </a>
+                )}
+
+                {/* Valider / Rejeter — comptable uniquement */}
+                {isComptable && enAttente.length > 0 && (
+                  <>
+                    <button
+                      onClick={async () => {
+                        setValidating('__all__')
+                        for (const d of enAttente) {
+                          try { await validerDepense(d.id) } catch { /* continue */ }
+                        }
+                        setValidating('')
+                        load()
+                      }}
+                      disabled={!!validating}
+                      style={{
+                        display: 'inline-flex', alignItems: 'center', gap: 7,
+                        padding: '7px 18px', borderRadius: 8, fontSize: '13px', fontWeight: 700,
+                        cursor: 'pointer', border: '1px solid rgba(255,255,255,.3)',
+                        background: validating === '__all__' ? '#16A34A' : 'rgba(22,163,74,.2)', color: '#86EFAC',
+                        transition: 'all .15s',
+                      }}
+                      onMouseEnter={e => { if (!validating) { e.currentTarget.style.background = '#16A34A'; e.currentTarget.style.color = '#fff' } }}
+                      onMouseLeave={e => { if (!validating) { e.currentTarget.style.background = 'rgba(22,163,74,.2)'; e.currentTarget.style.color = '#86EFAC' } }}
+                    >
+                      {validating === '__all__' ? <><span className="spinner-sm" /> Validation…</> : <><CheckCircle2 size={14} strokeWidth={2.5} /> Valider</>}
+                    </button>
+                    <button
+                      onClick={() => openRejet({ id: '__all__', reference: 'Toutes', ligne_designation: `${enAttente.length} dépenses`, montant: totalAttente })}
+                      disabled={!!validating}
+                      style={{
+                        display: 'inline-flex', alignItems: 'center', gap: 7,
+                        padding: '7px 18px', borderRadius: 8, fontSize: '13px', fontWeight: 700,
+                        cursor: 'pointer', border: '1px solid rgba(255,255,255,.3)',
+                        background: 'rgba(220,38,38,.2)', color: '#FCA5A5',
+                        transition: 'all .15s',
+                      }}
+                      onMouseEnter={e => { e.currentTarget.style.background = '#DC2626'; e.currentTarget.style.color = '#fff' }}
+                      onMouseLeave={e => { e.currentTarget.style.background = 'rgba(220,38,38,.2)'; e.currentTarget.style.color = '#FCA5A5' }}
+                    >
+                      <XCircle size={14} strokeWidth={2.5} /> Rejeter
+                    </button>
+                  </>
+                )}
+
+                <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 900, fontSize: '16px', color: '#fff' }}>
+                  {fmt(total)} FCFA
+                </span>
+              </div>
+            </div>
+          )
+        })()}
       </div>
     </div>
+
+    {/* ── Modal rejet dépense ── */}
+      {rejectModal.open && (
+        <div className="modal-overlay" onClick={e => { if (e.target === e.currentTarget) setRejectModal(m => ({ ...m, open: false })) }}>
+          <div className="modal-panel" onClick={e => e.stopPropagation()} style={{ maxWidth: 460 }}>
+            <div className="modal-header">
+              <h2 style={{ fontWeight: 700, fontSize: '15px', display: 'flex', alignItems: 'center', gap: 8 }}>
+                <XCircle size={16} strokeWidth={2} style={{ color: 'var(--color-danger-500)' }} />
+                Rejeter la dépense
+              </h2>
+            </div>
+            <form onSubmit={handleRejeter}>
+              <div className="modal-body">
+                <div style={{ padding: '10px 14px', borderRadius: 8, background: 'var(--color-gray-50)', border: '1px solid var(--color-gray-200)', marginBottom: 14 }}>
+                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: '11px', fontWeight: 700, color: 'var(--color-gray-500)', marginBottom: 2 }}>{rejectModal.depense?.reference}</div>
+                  <div style={{ fontWeight: 600, fontSize: '13px', color: 'var(--color-gray-800)' }}>{rejectModal.depense?.ligne_designation || '—'}</div>
+                  <div style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, fontSize: '13px', color: 'var(--color-gray-900)', marginTop: 4 }}>{fmt(rejectModal.depense?.montant)} FCFA</div>
+                </div>
+                <div>
+                  <label className="form-label">Motif du rejet <span style={{ color: 'var(--color-danger-500)' }}>*</span></label>
+                  <textarea
+                    className="form-input"
+                    rows={3}
+                    placeholder="Expliquez la raison du rejet…"
+                    value={rejectModal.motif}
+                    onChange={e => setRejectModal(m => ({ ...m, motif: e.target.value, error: '' }))}
+                    style={{ resize: 'vertical' }}
+                  />
+                </div>
+                {rejectModal.error && (
+                  <div style={{ display: 'flex', gap: 8, alignItems: 'center', padding: '8px 12px', borderRadius: 8, background: 'var(--color-danger-50)', border: '1px solid var(--color-danger-200)', marginTop: 10 }}>
+                    <AlertTriangle size={13} style={{ color: 'var(--color-danger-500)', flexShrink: 0 }} />
+                    <span style={{ color: 'var(--color-danger-700)', fontSize: '12px' }}>{rejectModal.error}</span>
+                  </div>
+                )}
+              </div>
+              <div className="modal-footer">
+                <button type="button" onClick={() => setRejectModal(m => ({ ...m, open: false }))} className="btn btn-secondary btn-md">Annuler</button>
+                <button type="submit" disabled={rejectModal.saving} className="btn btn-danger btn-md" style={{ gap: 6 }}>
+                  {rejectModal.saving ? <><span className="spinner-sm" /> Rejet…</> : <><XCircle size={14} strokeWidth={2} /> Confirmer le rejet</>}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+  </>
   )
 }
+
