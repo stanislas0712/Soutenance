@@ -6,7 +6,7 @@ import { StatutBadge, DepenseBadge } from '../../components/StatusBadge'
 import { Search, ArrowLeft, ArrowRight, CheckCircle2, XCircle, TrendingUp, BarChart3, Download, Printer } from 'lucide-react'
 import { notifRefresh } from '../../utils/notifRefresh'
 import { ConfirmModal } from '../../components/ui'
-import { exportCSV, printPDF } from '../../utils/export'
+import { exportCSV, exportCSVMulti, printPDF, printPDFMulti } from '../../utils/export'
 
 const fmt     = (n)   => new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 0 }).format(parseFloat(n || 0))
 const fmtK    = fmt
@@ -207,6 +207,7 @@ export function BudgetValidationDetail({ basePath = '/validation' }) {
   const [motifRejet,    setMotifRejet]    = useState('')
   const [motifError,    setMotifError]    = useState('')
   const [confirmModal,  setConfirmModal]  = useState(null)
+  const [openExport,    setOpenExport]    = useState(null)
 
   const load = () => {
     Promise.all([getBudget(id), getLignes(id), getDepenses({ budget: id })])
@@ -297,27 +298,74 @@ export function BudgetValidationDetail({ basePath = '/validation' }) {
     })
   }
 
-  const handleExportCSV = () => {
-    exportCSV(`Budget_${budget.code}`,
-      ['Code', 'Libellé', 'Section', 'Budget alloué (FCFA)', 'Réel (FCFA)', 'Écart (FCFA)', '% Budget'],
-      buildRows(false),
-    )
+  const STATUT_DEP = { SAISIE: 'En attente', VALIDEE: 'Validée', REJETEE: 'Rejetée' }
+  const DEP_HEADERS = ['Référence', 'Ligne budgétaire', 'Montant (FCFA)', 'Date', 'Statut']
+
+  const buildDepensesRows = (useFmt) =>
+    depensesItems.map(d => {
+      const ligne = lignes.find(l => String(l.id) === String(d.ligne ?? d.ligne_id))
+      const m     = parseFloat(d.montant || 0)
+      return useFmt
+        ? [d.reference || d.libelle || '—', ligne?.libelle || d.ligne_designation || '—', fmt(m), fmtDate(d.date_depense || d.date), STATUT_DEP[d.statut] ?? d.statut]
+        : [d.reference || d.libelle || '',  ligne?.libelle || d.ligne_designation || '',  m,       d.date_depense || d.date || '',    d.statut || '']
+    })
+
+  const metaBase = {
+    subtitle: `${budget.code} · ${budget.departement_nom} · ${budget.gestionnaire_nom || '—'}`,
+    filters:  `Statut : ${budget.statut}`,
   }
 
-  const handleExportPDF = () => {
-    printPDF(budget.nom,
-      ['Code', 'Libellé', 'Section', 'Budget (FCFA)', 'Réel (FCFA)', 'Écart (FCFA)', '% Budget'],
-      buildRows(true),
-      {
-        subtitle: `${budget.code} · ${budget.departement_nom} · ${budget.gestionnaire_nom || '—'}`,
-        filters: `Statut : ${budget.statut}`,
-        stats: [
-          { value: fmt(totalBudget) + ' FCFA', label: 'Budget global' },
-          { value: fmt(totalReel)   + ' FCFA', label: 'Montant réel'  },
-          { value: tauxGlobal + '%',            label: 'Taux consommation' },
-        ],
-      },
-    )
+  const handleExportCSV = (type) => {
+    setOpenExport(null)
+    if (type === 'budget') {
+      exportCSV(`Budget_${budget.code}`,
+        ['Code', 'Libellé', 'Section', 'Budget alloué (FCFA)', 'Réel (FCFA)', 'Écart (FCFA)', '% Budget'],
+        buildRows(false),
+      )
+    } else if (type === 'depenses') {
+      exportCSV(`Depenses_${budget.code}`, DEP_HEADERS, buildDepensesRows(false))
+    } else {
+      exportCSVMulti(`Rapport_Global_${budget.code}`, [
+        { title: 'Lignes budgétaires', headers: ['Code', 'Libellé', 'Section', 'Budget alloué (FCFA)', 'Réel (FCFA)', 'Écart (FCFA)', '% Budget'], rows: buildRows(false) },
+        { title: 'Dépenses',           headers: DEP_HEADERS, rows: buildDepensesRows(false) },
+      ])
+    }
+  }
+
+  const handleExportPDF = (type) => {
+    setOpenExport(null)
+    if (type === 'budget') {
+      printPDF(budget.nom,
+        ['Code', 'Libellé', 'Section', 'Budget (FCFA)', 'Réel (FCFA)', 'Écart (FCFA)', '% Budget'],
+        buildRows(true),
+        { ...metaBase, stats: [
+          { value: fmt(totalBudget) + ' FCFA', label: 'Budget global'      },
+          { value: fmt(totalReel)   + ' FCFA', label: 'Montant réel'        },
+          { value: tauxGlobal + '%',            label: 'Taux consommation'  },
+        ]},
+      )
+    } else if (type === 'depenses') {
+      const totalDep  = depensesItems.reduce((s, d) => s + parseFloat(d.montant || 0), 0)
+      const nbValides = depensesItems.filter(d => d.statut === 'VALIDEE').length
+      printPDF(`Dépenses — ${budget.nom}`,
+        DEP_HEADERS,
+        buildDepensesRows(true),
+        { ...metaBase, stats: [
+          { value: fmt(totalDep) + ' FCFA',       label: 'Total dépensé' },
+          { value: String(depensesItems.length),  label: 'Nb dépenses'  },
+          { value: String(nbValides),             label: 'Validées'     },
+        ]},
+      )
+    } else {
+      printPDFMulti(`Rapport global — ${budget.nom}`, [
+        { title: 'Lignes budgétaires',  headers: ['Code', 'Libellé', 'Section', 'Budget (FCFA)', 'Réel (FCFA)', 'Écart (FCFA)', '% Budget'], rows: buildRows(true) },
+        { title: 'Dépenses enregistrées', headers: DEP_HEADERS, rows: buildDepensesRows(true) },
+      ], { ...metaBase, stats: [
+        { value: fmt(totalBudget) + ' FCFA', label: 'Budget global'     },
+        { value: fmt(totalReel)   + ' FCFA', label: 'Montant réel'       },
+        { value: tauxGlobal + '%',            label: 'Taux consommation' },
+      ]})
+    }
   }
 
   const tauColor = (t) => t >= 95 ? 'var(--color-danger-600)' : t >= 80 ? 'var(--color-warning-600)' : t >= 50 ? 'var(--color-success-600)' : 'var(--color-primary-600)'
@@ -406,34 +454,56 @@ export function BudgetValidationDetail({ basePath = '/validation' }) {
 
       {/* Export toolbar */}
       <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginBottom: 16 }}>
-        <button
-          onClick={handleExportCSV}
-          style={{
-            display: 'inline-flex', alignItems: 'center', gap: 6,
-            padding: '7px 16px', borderRadius: 8, cursor: 'pointer',
-            background: '#EFF6FF', border: '1px solid #BFDBFE',
-            color: '#1E3A8A', fontSize: '12px', fontWeight: 600,
-            transition: 'background .15s',
-          }}
-          onMouseEnter={e => e.currentTarget.style.background = '#DBEAFE'}
-          onMouseLeave={e => e.currentTarget.style.background = '#EFF6FF'}
-        >
-          <Download size={13} strokeWidth={2.2} /> Exporter CSV
-        </button>
-        <button
-          onClick={handleExportPDF}
-          style={{
-            display: 'inline-flex', alignItems: 'center', gap: 6,
-            padding: '7px 16px', borderRadius: 8, cursor: 'pointer',
-            background: '#1E3A8A', border: '1px solid #1E3A8A',
-            color: '#fff', fontSize: '12px', fontWeight: 600,
-            transition: 'background .15s',
-          }}
-          onMouseEnter={e => e.currentTarget.style.background = '#1e40af'}
-          onMouseLeave={e => e.currentTarget.style.background = '#1E3A8A'}
-        >
-          <Printer size={13} strokeWidth={2.2} /> Exporter PDF
-        </button>
+        {[
+          { key: 'csv', icon: <Download size={13} strokeWidth={2.2} />, label: 'CSV', bg: '#EFF6FF', bgHover: '#DBEAFE', border: '#BFDBFE', color: '#1E3A8A', handler: handleExportCSV },
+          { key: 'pdf', icon: <Printer  size={13} strokeWidth={2.2} />, label: 'PDF', bg: '#1E3A8A', bgHover: '#1e40af', border: '#1E3A8A', color: '#fff',    handler: handleExportPDF },
+        ].map(btn => (
+          <div key={btn.key} style={{ position: 'relative' }}>
+            <button
+              onClick={() => setOpenExport(openExport === btn.key ? null : btn.key)}
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: 6,
+                padding: '7px 14px', borderRadius: 8, cursor: 'pointer',
+                background: btn.bg, border: `1px solid ${btn.border}`,
+                color: btn.color, fontSize: '12px', fontWeight: 600,
+              }}
+              onMouseEnter={e => e.currentTarget.style.background = btn.bgHover}
+              onMouseLeave={e => e.currentTarget.style.background = btn.bg}
+            >
+              {btn.icon} Exporter {btn.label} <span style={{ fontSize: 9, marginLeft: 2 }}>▾</span>
+            </button>
+            {openExport === btn.key && (
+              <div
+                style={{
+                  position: 'absolute', right: 0, top: 'calc(100% + 4px)',
+                  background: '#fff', border: '1px solid #E5E7EB', borderRadius: 8,
+                  boxShadow: '0 4px 16px rgba(0,0,0,.1)', zIndex: 50, minWidth: 170, overflow: 'hidden',
+                }}
+              >
+                {[
+                  { type: 'budget',   label: 'Lignes budget'   },
+                  { type: 'depenses', label: 'Dépenses'         },
+                  { type: 'global',   label: 'Rapport global'   },
+                ].map(opt => (
+                  <button
+                    key={opt.type}
+                    onClick={() => btn.handler(opt.type)}
+                    style={{
+                      display: 'block', width: '100%', textAlign: 'left',
+                      padding: '9px 14px', fontSize: '12px', fontWeight: 600,
+                      color: '#374151', background: 'transparent', border: 'none',
+                      cursor: 'pointer', borderBottom: '1px solid #F3F4F6',
+                    }}
+                    onMouseEnter={e => e.currentTarget.style.background = '#F9FAFB'}
+                    onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        ))}
       </div>
 
       {/* 4 KPI cards */}
