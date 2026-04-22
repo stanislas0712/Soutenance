@@ -82,7 +82,7 @@ function AppRoutes() {
           <Route path="/budget-annuel" element={<BudgetAnnuelPage />} />
           <Route path="/departements"  element={<DepartementsPage />} />
           <Route path="/budgets"       element={<BudgetsPage />} />
-          <Route path="/budgets/:id"   element={<BudgetDetail basePath="/budgets" />} />
+          <Route path="/budgets/:id"   element={<BudgetValidationDetail basePath="/budgets" />} />
           <Route path="/utilisateurs"  element={<UtilisateursPage />} />
           <Route path="/audit"         element={<AuditLogsPage />} />
           <Route path="/rapports"           element={<RapportsKPIPage />} />

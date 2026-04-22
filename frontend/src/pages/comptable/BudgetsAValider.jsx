@@ -1,14 +1,16 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
 import { getBudgets, getBudget, getLignes, approuverBudget, rejeterBudget, cloturerBudget } from '../../api/budget'
-import { StatutBadge } from '../../components/StatusBadge'
+import { getDepenses } from '../../api/depenses'
+import { StatutBadge, DepenseBadge } from '../../components/StatusBadge'
 import { Search, ArrowLeft, ArrowRight, CheckCircle2, XCircle, TrendingUp, BarChart3, Download, Printer } from 'lucide-react'
 import { notifRefresh } from '../../utils/notifRefresh'
 import { ConfirmModal } from '../../components/ui'
 import { exportCSV, printPDF } from '../../utils/export'
 
-const fmt  = (n) => new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 0 }).format(parseFloat(n || 0))
-const fmtK = fmt
+const fmt     = (n)   => new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 0 }).format(parseFloat(n || 0))
+const fmtK    = fmt
+const fmtDate = (iso) => iso ? new Date(iso).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'
 
 /* ══════════════════════════════════════════════════════════════════════════════
    Liste des budgets à valider
@@ -193,21 +195,26 @@ export function BudgetsAValiderList() {
 /* ══════════════════════════════════════════════════════════════════════════════
    Détail budget — vue comptable (Budget vs Réel)
 ══════════════════════════════════════════════════════════════════════════════ */
-export function BudgetValidationDetail() {
+export function BudgetValidationDetail({ basePath = '/validation' }) {
   const { id }   = useParams()
   const navigate = useNavigate()
-  const [budget,      setBudget]      = useState(null)
-  const [lignes,      setLignes]      = useState([])
-  const [loading,     setLoading]     = useState(true)
-  const [saving,      setSaving]      = useState(false)
-  const [showRejet,    setShowRejet]    = useState(false)
-  const [motifRejet,   setMotifRejet]   = useState('')
-  const [motifError,   setMotifError]   = useState('')
-  const [confirmModal, setConfirmModal] = useState(null)
+  const [budget,        setBudget]        = useState(null)
+  const [lignes,        setLignes]        = useState([])
+  const [depensesItems, setDepensesItems] = useState([])
+  const [loading,       setLoading]       = useState(true)
+  const [saving,        setSaving]        = useState(false)
+  const [showRejet,     setShowRejet]     = useState(false)
+  const [motifRejet,    setMotifRejet]    = useState('')
+  const [motifError,    setMotifError]    = useState('')
+  const [confirmModal,  setConfirmModal]  = useState(null)
 
   const load = () => {
-    Promise.all([getBudget(id), getLignes(id)])
-      .then(([b, l]) => { setBudget(b.data); setLignes(l.data.results ?? l.data) })
+    Promise.all([getBudget(id), getLignes(id), getDepenses({ budget: id })])
+      .then(([b, l, d]) => {
+        setBudget(b.data)
+        setLignes(l.data.results ?? l.data)
+        setDepensesItems(d.data?.data ?? d.data?.results ?? d.data ?? [])
+      })
       .finally(() => setLoading(false))
   }
 
@@ -225,7 +232,7 @@ export function BudgetValidationDetail() {
       variant: 'success',
       onConfirm: async () => {
         setSaving(true)
-        try { await approuverBudget(id); notifRefresh(); navigate('/validation') }
+        try { await approuverBudget(id); notifRefresh(); navigate(basePath) }
         catch (err) { alert(err.response?.data?.detail || 'Erreur') }
         finally { setSaving(false) }
       },
@@ -243,7 +250,7 @@ export function BudgetValidationDetail() {
       await rejeterBudget(id, { motif: motifRejet })
       notifRefresh()
       setShowRejet(false)
-      navigate('/validation')
+      navigate(basePath)
     } catch (err) { setMotifError(err.response?.data?.detail || 'Erreur') }
     finally { setSaving(false) }
   }
@@ -256,7 +263,7 @@ export function BudgetValidationDetail() {
       variant: 'warning',
       onConfirm: async () => {
         setSaving(true)
-        try { await cloturerBudget(id); navigate('/validation') }
+        try { await cloturerBudget(id); navigate(basePath) }
         catch (err) { alert(err.response?.data?.detail || 'Erreur') }
         finally { setSaving(false) }
       },
@@ -325,7 +332,7 @@ export function BudgetValidationDetail() {
         <div className="absolute rounded-full pointer-events-none" style={{ top: -50, right: -50, width: 200, height: 200, background: 'rgba(201,168,76,.06)' }} />
         <div className="relative flex items-start gap-4">
           <button
-            onClick={() => navigate('/validation')}
+            onClick={() => navigate(basePath)}
             className="rounded-[9px] px-[10px] py-2 cursor-pointer text-white flex items-center shrink-0 mt-[2px]"
             style={{ background: 'rgba(255,255,255,.12)', border: '1px solid rgba(255,255,255,.2)' }}
           >
@@ -500,22 +507,23 @@ export function BudgetValidationDetail() {
         </div>
       </div>
 
-      {/* Sections */}
+      {/* ── Section Dépenses ── */}
+      <SectionDepenses
+        depenses={depensesItems}
+        lignes={lignes}
+      />
+      <div className="h-5" />
+
+      {/* ── Section Budget ── */}
       <SectionBudget
-        titre="Dépenses"
+        titre="Budget — Dépenses"
         lignes={depenses}
         couleur="#D97706"
         couleurBg="var(--color-warning-50)"
         couleurBorder="var(--color-warning-200)"
       />
-      <div className="h-4" />
-      <SectionBudget
-        titre="Revenus"
-        lignes={revenus}
-        couleur="#0D9488"
-        couleurBg="#f0fdfa"
-        couleurBorder="#99f6e4"
-      />
+      {revenus.length > 0 && <><div className="h-4" /><SectionBudget titre="Budget — Revenus" lignes={revenus} couleur="#0D9488" couleurBg="#f0fdfa" couleurBorder="#99f6e4" /></>}
+
 
       {/* Zone de décision */}
       {(budget.statut === 'SOUMIS' || budget.statut === 'APPROUVE') && (
@@ -614,6 +622,212 @@ export function BudgetValidationDetail() {
         </div>
       )}
       {confirmModal && <ConfirmModal {...confirmModal} onClose={() => setConfirmModal(null)} />}
+    </div>
+  )
+}
+
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   Section Dépenses — ConsommationLigne groupées par ligne budgétaire
+══════════════════════════════════════════════════════════════════════════════ */
+function SectionDepenses({ depenses, lignes }) {
+  const couleur       = '#1D4ED8'
+  const couleurBg     = '#EFF6FF'
+  const couleurBorder = '#BFDBFE'
+
+  const totalDepense = depenses.reduce((s, d) => s + parseFloat(d.montant || 0), 0)
+  const nbDepenses   = depenses.length
+  const nbValides    = depenses.filter(d => d.statut === 'VALIDEE').length
+  const tauxValide   = nbDepenses > 0 ? Math.round(nbValides / nbDepenses * 100) : 0
+
+  // Grouper par ligne_id et croiser avec les lignes budgétaires
+  const groupsMap = {}
+  depenses.forEach(d => {
+    const key = d.ligne ?? d.ligne_id
+    if (!groupsMap[key]) groupsMap[key] = []
+    groupsMap[key].push(d)
+  })
+  const lignesDepense = lignes.filter(l => l.section === 'DEPENSE')
+  const groups = Object.entries(groupsMap).map(([ligneId, items]) => {
+    const ligne      = lignesDepense.find(l => String(l.id) === String(ligneId))
+    const totalGrp   = items.reduce((s, d) => s + parseFloat(d.montant || 0), 0)
+    return {
+      ligneId,
+      libelle: ligne?.libelle ?? items[0]?.ligne_designation ?? `Ligne ${ligneId}`,
+      alloue:  parseFloat(ligne?.montant_alloue || 0),
+      depense: totalGrp,
+      items,
+    }
+  })
+  const maxVal = Math.max(...groups.map(g => Math.max(g.alloue, g.depense)), 1)
+
+  return (
+    <div className="card p-0 overflow-hidden">
+      {/* En-tête */}
+      <div
+        className="px-5 py-3 flex justify-between items-center"
+        style={{ borderBottom: `1px solid ${couleurBorder}`, background: couleurBg }}
+      >
+        <h3 className="font-display font-extrabold text-[15px]" style={{ color: couleur }}>
+          Dépenses
+        </h3>
+        <div className="flex gap-[18px] text-[12px]">
+          <span className="text-[#6B7280]">
+            Total : <strong style={{ color: couleur }}>{fmt(totalDepense)} FCFA</strong>
+          </span>
+          <span className="text-[#6B7280]">{nbDepenses} dépense{nbDepenses !== 1 ? 's' : ''}</span>
+          <span className="font-bold" style={{ color: nbValides > 0 ? 'var(--color-success-600)' : 'var(--color-gray-600)' }}>
+            {nbValides} validée{nbValides !== 1 ? 's' : ''}
+          </span>
+        </div>
+      </div>
+
+      {depenses.length === 0 ? (
+        <div className="text-center py-8 text-[#9CA3AF] text-[13px]">
+          Aucune dépense enregistrée pour ce budget
+        </div>
+      ) : (
+        <div className="grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(min(220px,100%), 1fr))', gap: 0 }}>
+
+          {/* Panneau gauche : KPI */}
+          <div className="p-5 border-r border-[#F3F4F6]">
+            <div className="mb-[14px]">
+              <span className="font-mono font-extrabold text-[1.4rem]" style={{ color: couleur }}>
+                {fmt(totalDepense)} FCFA
+              </span>
+            </div>
+            <div className="flex justify-between text-[12px] mb-1">
+              <span className="text-[#6B7280]">Nb dépenses</span>
+              <span className="font-bold font-mono">{nbDepenses}</span>
+            </div>
+            <div className="flex justify-between text-[12px] mb-[18px]">
+              <span className="text-[#6B7280]">Validées</span>
+              <span className="font-bold font-mono">{nbValides}</span>
+            </div>
+            <div className="text-[10px] font-bold text-[#9CA3AF] mb-[6px] tracking-[.3px]">TAUX DE VALIDATION</div>
+            <div
+              className="h-6 rounded-[6px] overflow-hidden relative mb-1"
+              style={{ background: couleurBg, border: `1px solid ${couleurBorder}` }}
+            >
+              <div
+                className="h-full rounded-[6px] transition-[width_.4s]"
+                style={{ width: `${Math.min(tauxValide, 100)}%`, background: couleur }}
+              />
+              <span
+                className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-[11px] font-bold"
+                style={{ color: tauxValide > 40 ? '#fff' : couleur }}
+              >
+                {tauxValide}%
+              </span>
+            </div>
+          </div>
+
+          {/* Centre : barres horizontales par ligne budgétaire */}
+          <div className="p-4 border-r border-[#F3F4F6] overflow-y-auto max-h-[300px]">
+            <div className="flex gap-4 text-[10px] font-bold text-[#9CA3AF] mb-3">
+              <span className="flex items-center gap-[5px]">
+                <span className="w-[10px] h-[10px] rounded-[2px] inline-block" style={{ background: couleur }} />
+                Alloué
+              </span>
+              <span className="flex items-center gap-[5px]">
+                <span
+                  className="w-[10px] h-[10px] rounded-[2px] inline-block"
+                  style={{ background: `${couleur}55`, border: `1.5px dashed ${couleur}` }}
+                />
+                Dépensé
+              </span>
+            </div>
+            {groups.map(g => {
+              const nVal = g.items.filter(d => d.statut === 'VALIDEE').length
+              const nAtt = g.items.filter(d => d.statut === 'SAISIE').length
+              const nRej = g.items.filter(d => d.statut === 'REJETEE').length
+              return (
+                <div key={g.ligneId} className="mb-[16px]">
+                  <div className="text-[12px] font-medium text-[#374151] mb-1 whitespace-nowrap overflow-hidden text-ellipsis">
+                    {g.libelle}
+                  </div>
+                  <div className="h-[9px] bg-[#F3F4F6] rounded-full overflow-hidden mb-[3px]">
+                    <div className="h-full rounded-full" style={{ width: `${(g.alloue / maxVal) * 100}%`, background: couleur }} />
+                  </div>
+                  <div className="h-[9px] bg-[#F3F4F6] rounded-full overflow-hidden">
+                    <div
+                      className="h-full rounded-full"
+                      style={{ width: `${(g.depense / maxVal) * 100}%`, background: `${couleur}88`, border: `1px dashed ${couleur}` }}
+                    />
+                  </div>
+                  <div className="flex justify-between text-[10px] text-[#9CA3AF] mt-[2px] font-mono mb-[5px]">
+                    <span>{fmt(g.alloue)} FCFA</span>
+                    <span>{fmt(g.depense)} FCFA</span>
+                  </div>
+                  <div className="flex gap-[6px] flex-wrap">
+                    {nVal > 0 && (
+                      <span className="inline-flex items-center gap-[3px] text-[10px] font-bold px-[6px] py-[2px] rounded-full" style={{ background: '#D1FAE5', color: '#065F46' }}>
+                        <span className="w-[5px] h-[5px] rounded-full inline-block" style={{ background: '#059669' }} />
+                        {nVal} validée{nVal > 1 ? 's' : ''}
+                      </span>
+                    )}
+                    {nAtt > 0 && (
+                      <span className="inline-flex items-center gap-[3px] text-[10px] font-bold px-[6px] py-[2px] rounded-full" style={{ background: '#FFFBEB', color: '#92400E' }}>
+                        <span className="w-[5px] h-[5px] rounded-full inline-block" style={{ background: '#D97706' }} />
+                        {nAtt} en attente
+                      </span>
+                    )}
+                    {nRej > 0 && (
+                      <span className="inline-flex items-center gap-[3px] text-[10px] font-bold px-[6px] py-[2px] rounded-full" style={{ background: '#FEE2E2', color: '#991B1B' }}>
+                        <span className="w-[5px] h-[5px] rounded-full inline-block" style={{ background: '#DC2626' }} />
+                        {nRej} rejetée{nRej > 1 ? 's' : ''}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+
+          {/* Droite : tableau des dépenses individuelles */}
+          <div className="overflow-y-auto max-h-[300px]">
+            <table className="data-table rounded-none">
+              <thead className="sticky top-0 z-[1]">
+                <tr style={{ background: couleur }}>
+                  {['Désignation', 'Ligne', 'Montant', 'Date', 'Statut'].map(h => (
+                    <th
+                      key={h}
+                      className="text-[10px] font-bold text-white tracking-[.3px] whitespace-nowrap px-[10px] py-2"
+                      style={{ textAlign: h === 'Montant' ? 'right' : 'left', background: couleur }}
+                    >
+                      {h}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {depenses.map((d, i) => {
+                  const ligne = lignes.find(l => String(l.id) === String(d.ligne ?? d.ligne_id))
+                  return (
+                    <tr key={d.id} style={{ background: i % 2 === 0 ? '#fff' : couleurBg }}>
+                      <td className="px-[10px] py-2 text-[12px] font-medium max-w-[120px] overflow-hidden text-ellipsis whitespace-nowrap">
+                        {d.libelle || d.designation || d.reference || '—'}
+                      </td>
+                      <td className="px-[10px] py-2 text-[11px] text-[#6B7280] max-w-[100px] overflow-hidden text-ellipsis whitespace-nowrap">
+                        {ligne?.libelle || d.ligne_designation || '—'}
+                      </td>
+                      <td className="px-[10px] py-2 text-[12px] text-right font-semibold font-mono">
+                        {fmt(d.montant)}
+                      </td>
+                      <td className="px-[10px] py-2 text-[11px] text-[#6B7280] whitespace-nowrap">
+                        {fmtDate(d.date_depense || d.date)}
+                      </td>
+                      <td className="px-[10px] py-2">
+                        <DepenseBadge statut={d.statut} />
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
