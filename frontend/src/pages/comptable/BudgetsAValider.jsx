@@ -784,16 +784,16 @@ function SectionDepenses({ depenses, lignes }) {
             })}
           </div>
 
-          {/* Droite : tableau des dépenses individuelles */}
+          {/* Droite : tableau par ligne budgétaire avec statuts */}
           <div className="overflow-y-auto max-h-[300px]">
             <table className="data-table rounded-none">
               <thead className="sticky top-0 z-[1]">
                 <tr style={{ background: couleur }}>
-                  {['Désignation', 'Ligne', 'Montant', 'Date', 'Statut'].map(h => (
+                  {['Ligne budgétaire', 'Nb', 'Montant'].map(h => (
                     <th
                       key={h}
                       className="text-[10px] font-bold text-white tracking-[.3px] whitespace-nowrap px-[10px] py-2"
-                      style={{ textAlign: h === 'Montant' ? 'right' : 'left', background: couleur }}
+                      style={{ textAlign: h === 'Montant' || h === 'Nb' ? 'right' : 'left', background: couleur }}
                     >
                       {h}
                     </th>
@@ -801,24 +801,17 @@ function SectionDepenses({ depenses, lignes }) {
                 </tr>
               </thead>
               <tbody>
-                {depenses.map((d, i) => {
-                  const ligne = lignes.find(l => String(l.id) === String(d.ligne ?? d.ligne_id))
+                {groups.map((g, i) => {
                   return (
-                    <tr key={d.id} style={{ background: i % 2 === 0 ? '#fff' : couleurBg }}>
-                      <td className="px-[10px] py-2 text-[12px] font-medium max-w-[120px] overflow-hidden text-ellipsis whitespace-nowrap">
-                        {d.libelle || d.designation || d.reference || '—'}
+                    <tr key={g.ligneId} style={{ background: i % 2 === 0 ? '#fff' : couleurBg }}>
+                      <td className="px-[10px] py-2 text-[12px] font-medium max-w-[130px] overflow-hidden text-ellipsis whitespace-nowrap">
+                        {g.libelle}
                       </td>
-                      <td className="px-[10px] py-2 text-[11px] text-[#6B7280] max-w-[100px] overflow-hidden text-ellipsis whitespace-nowrap">
-                        {ligne?.libelle || d.ligne_designation || '—'}
+                      <td className="px-[10px] py-2 text-[12px] text-right font-mono text-[#6B7280]">
+                        {g.items.length}
                       </td>
                       <td className="px-[10px] py-2 text-[12px] text-right font-semibold font-mono">
-                        {fmt(d.montant)}
-                      </td>
-                      <td className="px-[10px] py-2 text-[11px] text-[#6B7280] whitespace-nowrap">
-                        {fmtDate(d.date_depense || d.date)}
-                      </td>
-                      <td className="px-[10px] py-2">
-                        <DepenseBadge statut={d.statut} />
+                        {fmt(g.depense)}
                       </td>
                     </tr>
                   )
