@@ -24,7 +24,7 @@ function navItems(role, t) {
     { to: '/budget-annuel',      icon: CalendarDays,    label: t('nav_budget_annuel')    },
     { to: '/departements',       icon: Building2,       label: t('nav_departements')     },
     { to: '/utilisateurs',       icon: Users,           label: t('nav_utilisateurs')     },
-    { to: '/depenses',           icon: CreditCard,      label: t('nav_depenses_valider') },
+    { to: '/depenses',           icon: CreditCard,      label: t('nav_depenses') },
     { to: '/rapports',           icon: BarChart3,       label: t('nav_statistiques')     },
     { to: '/rapports-detailles', icon: FileBarChart,    label: t('nav_rapports_detail')  },
     { to: '/ia',                 icon: Sparkles,        label: t('nav_assistance_ia')    },
