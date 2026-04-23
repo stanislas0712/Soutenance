@@ -38,7 +38,6 @@ function ForgotPasswordModal({ onClose }) {
         boxShadow: '0 20px 60px rgba(13,34,64,.18)', border: '1px solid #D1D8E0',
         overflow: 'hidden', animation: 'scaleIn .2s cubic-bezier(.34,1.56,.64,1)',
       }}>
-        {/* Header */}
         <div style={{ background: '#1E3A8A', padding: '16px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <div style={{ width: 32, height: 32, borderRadius: 8, background: 'rgba(255,255,255,.12)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -53,7 +52,6 @@ function ForgotPasswordModal({ onClose }) {
             <X size={14} strokeWidth={2} />
           </button>
         </div>
-
         <div style={{ padding: 24 }}>
           {done ? (
             <div style={{ textAlign: 'center', padding: '8px 0' }}>
@@ -127,150 +125,171 @@ export default function LoginPage() {
 
   return (
     <div style={{
-      minHeight: '100vh', position: 'relative',
+      minHeight: '100vh',
       display: 'flex', alignItems: 'center', justifyContent: 'center',
-      padding: '20px 16px',
+      background: '#F0F4F8',
+      padding: '24px 16px',
       fontFamily: "'Inter', system-ui, sans-serif",
-      overflow: 'hidden',
     }}>
-      {/* Fond dégradé bleu */}
-      <div aria-hidden="true" style={{
-        position: 'absolute', inset: 0,
-        background: 'linear-gradient(135deg, #0D1B4B 0%, #1E3A8A 40%, #2563EB 75%, #3B82F6 100%)',
-      }} />
-      {/* Effet de lumière subtil */}
-      <div aria-hidden="true" style={{
-        position: 'absolute', inset: 0,
-        background: 'radial-gradient(ellipse at 60% 20%, rgba(96,165,250,0.25) 0%, transparent 60%)',
-      }} />
-
       {showForgot && <ForgotPasswordModal onClose={() => setShowForgot(false)} />}
 
-      {/* Carte formulaire */}
+      {/* Carte deux colonnes */}
       <div style={{
-        width: '100%', maxWidth: 440,
-        background: '#FFFFFF',
-        borderRadius: 16,
-        border: '1px solid rgba(255,255,255,0.2)',
-        boxShadow: '0 24px 64px rgba(0,0,0,0.35), 0 1px 0 rgba(255,255,255,0.1) inset',
+        width: '100%', maxWidth: 900,
+        display: 'flex',
+        borderRadius: 18,
         overflow: 'hidden',
-        position: 'relative', zIndex: 1,
+        boxShadow: '0 24px 64px rgba(0,0,0,0.18)',
+        minHeight: 520,
       }}>
 
-        {/* Header navy */}
+        {/* ── Colonne gauche : image ── */}
         <div style={{
-          background: '#1E3A8A',
-          padding: '28px 32px 24px',
-          textAlign: 'center',
+          flex: 1,
+          position: 'relative',
+          minHeight: 480,
+          display: 'flex', flexDirection: 'column', justifyContent: 'flex-end',
+          overflow: 'hidden',
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, marginBottom: 16 }}>
-            <img src="/budget.jpg" alt="Gestion Budgétaire" style={{ width: 38, height: 38, borderRadius: 9, objectFit: 'cover', flexShrink: 0 }} />
-            <span style={{ fontWeight: 700, fontSize: 16, color: '#F0F5FF', letterSpacing: '-.01em' }}>
-              Gestion <span style={{ fontWeight: 800 }}>Budgétaire</span>
-            </span>
+          <img
+            src="/gestion.jpg"
+            alt="Gestion Budgétaire"
+            style={{
+              position: 'absolute', inset: 0,
+              width: '100%', height: '100%',
+              objectFit: 'cover', objectPosition: 'center',
+            }}
+          />
+          {/* Dégradé bleu léger en bas pour lisibilité du texte */}
+          <div aria-hidden="true" style={{
+            position: 'absolute', inset: 0,
+            background: 'linear-gradient(to top, rgba(13,27,75,0.72) 0%, rgba(13,27,75,0.15) 55%, transparent 100%)',
+          }} />
+          <div style={{ position: 'relative', zIndex: 1, padding: '32px 28px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+              <img src="/budget.jpg" alt="" style={{ width: 36, height: 36, borderRadius: 8, objectFit: 'cover' }} />
+              <span style={{ fontWeight: 700, fontSize: 15, color: '#FFFFFF', letterSpacing: '-.01em' }}>
+                Gestion <span style={{ fontWeight: 800 }}>Budgétaire</span>
+              </span>
+            </div>
+            <p style={{ fontSize: 12, color: 'rgba(255,255,255,.65)', margin: 0, lineHeight: 1.5 }}>
+              Plateforme de suivi et de gestion des budgets
+            </p>
           </div>
-          <h1 style={{ fontWeight: 700, fontSize: 20, color: '#FFFFFF', marginBottom: 6, letterSpacing: '-.02em' }}>
-            Connexion
-          </h1>
-          <p style={{ fontSize: 13, color: 'rgba(255,255,255,.6)', margin: 0 }}>
-            Accédez à votre espace de gestion budgétaire
-          </p>
         </div>
 
-        {/* Corps formulaire */}
-        <div style={{ padding: '28px 32px 24px' }}>
+        {/* ── Colonne droite : formulaire bleu ── */}
+        <div style={{
+          width: 380,
+          flexShrink: 0,
+          background: '#2196F3',
+          display: 'flex', flexDirection: 'column', justifyContent: 'center',
+          padding: '48px 40px',
+        }}>
+          <h2 style={{ fontWeight: 700, fontSize: 22, color: '#FFFFFF', marginBottom: 6, letterSpacing: '-.02em' }}>
+            Vous avez déjà un compte ?
+          </h2>
+          <p style={{ fontSize: 13, color: 'rgba(255,255,255,.75)', marginBottom: 32, lineHeight: 1.5 }}>
+            Connectez-vous pour accéder à votre espace.
+          </p>
+
           <form onSubmit={handleSubmit} noValidate>
 
             {/* Email */}
-            <div style={{ marginBottom: 16 }}>
-              <label className="form-label" htmlFor="email">
-                Adresse email <span style={{ color: '#C0392B' }}>*</span>
-              </label>
+            <div style={{ marginBottom: 20 }}>
               <div style={{ position: 'relative' }}>
-                <Mail size={15} strokeWidth={1.8} style={{ position: 'absolute', left: 13, top: '50%', transform: 'translateY(-50%)', color: '#94A3B8', pointerEvents: 'none' }} />
+                <Mail size={15} strokeWidth={1.8} style={{ position: 'absolute', left: 0, top: '50%', transform: 'translateY(-50%)', color: 'rgba(255,255,255,.7)', pointerEvents: 'none' }} />
                 <input
                   id="email" type="email" required autoComplete="email" autoFocus
                   value={form.email}
                   onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
-                  placeholder="votre@email.com"
-                  className={`form-input${error ? ' error' : ''}`}
-                  style={{ paddingLeft: 40 }}
+                  placeholder="Nom d'utilisateur / adresse email"
+                  style={{
+                    width: '100%', background: 'transparent',
+                    border: 'none', borderBottom: '1.5px solid rgba(255,255,255,0.55)',
+                    padding: '8px 0 8px 24px',
+                    color: '#FFFFFF', fontSize: 13,
+                    outline: 'none', boxSizing: 'border-box',
+                  }}
+                  onFocus={e => e.target.style.borderBottomColor = '#FFFFFF'}
+                  onBlur={e => e.target.style.borderBottomColor = 'rgba(255,255,255,0.55)'}
                 />
               </div>
             </div>
 
             {/* Mot de passe */}
-            <div style={{ marginBottom: 14 }}>
-              <label className="form-label" htmlFor="password">
-                Mot de passe <span style={{ color: '#C0392B' }}>*</span>
-              </label>
+            <div style={{ marginBottom: 20 }}>
               <div style={{ position: 'relative' }}>
-                <Lock size={15} strokeWidth={1.8} style={{ position: 'absolute', left: 13, top: '50%', transform: 'translateY(-50%)', color: '#94A3B8', pointerEvents: 'none' }} />
+                <Lock size={15} strokeWidth={1.8} style={{ position: 'absolute', left: 0, top: '50%', transform: 'translateY(-50%)', color: 'rgba(255,255,255,.7)', pointerEvents: 'none' }} />
                 <input
                   id="password"
                   type={showPwd ? 'text' : 'password'}
                   required autoComplete="current-password"
                   value={form.password}
                   onChange={e => setForm(f => ({ ...f, password: e.target.value }))}
-                  placeholder="••••••••"
-                  className={`form-input${error ? ' error' : ''}`}
-                  style={{ paddingLeft: 40, paddingRight: 44 }}
+                  placeholder="Mot de passe"
+                  style={{
+                    width: '100%', background: 'transparent',
+                    border: 'none', borderBottom: '1.5px solid rgba(255,255,255,0.55)',
+                    padding: '8px 36px 8px 24px',
+                    color: '#FFFFFF', fontSize: 13,
+                    outline: 'none', boxSizing: 'border-box',
+                  }}
+                  onFocus={e => e.target.style.borderBottomColor = '#FFFFFF'}
+                  onBlur={e => e.target.style.borderBottomColor = 'rgba(255,255,255,0.55)'}
                 />
                 <button
                   type="button"
                   onClick={() => setShowPwd(s => !s)}
                   aria-label={showPwd ? 'Masquer' : 'Afficher'}
-                  style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', padding: 4, color: '#94A3B8', display: 'flex', alignItems: 'center' }}
+                  style={{ position: 'absolute', right: 0, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', padding: 4, color: 'rgba(255,255,255,.7)', display: 'flex', alignItems: 'center' }}
                 >
                   {showPwd ? <EyeOff size={15} strokeWidth={1.8} /> : <Eye size={15} strokeWidth={1.8} />}
                 </button>
               </div>
             </div>
 
-            {/* Mot de passe oublié */}
-            <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 20 }}>
-              <button
-                type="button"
-                onClick={() => setShowForgot(true)}
-                style={{ fontSize: 12.5, color: '#2563EB', fontWeight: 600, background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
-              >
-                Mot de passe oublié ?
-              </button>
-            </div>
-
             {/* Erreur */}
             {error && (
-              <div role="alert" className="alert alert-error" style={{ marginBottom: 16 }}>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ flexShrink: 0 }}><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+              <div role="alert" style={{ marginBottom: 16, background: 'rgba(255,255,255,.15)', border: '1px solid rgba(255,255,255,.3)', borderRadius: 8, padding: '8px 12px', fontSize: 12, color: '#FFFFFF', display: 'flex', alignItems: 'center', gap: 8 }}>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ flexShrink: 0 }}><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
                 <span>{error}</span>
               </div>
             )}
 
-            {/* Bouton */}
+            {/* Bouton Connexion */}
             <button
               type="submit"
               disabled={loading}
-              className="btn btn-primary btn-md"
-              style={{ width: '100%', justifyContent: 'center', gap: 8 }}
+              style={{
+                width: '100%', padding: '12px 0',
+                background: '#FFFFFF', color: '#1565C0',
+                border: '2px solid #FFFFFF', borderRadius: 50,
+                fontWeight: 700, fontSize: 14, cursor: loading ? 'not-allowed' : 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                marginBottom: 20, opacity: loading ? 0.8 : 1,
+                transition: 'background .2s, color .2s',
+              }}
+              onMouseEnter={e => { if (!loading) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#FFFFFF' } }}
+              onMouseLeave={e => { e.currentTarget.style.background = '#FFFFFF'; e.currentTarget.style.color = '#1565C0' }}
             >
               {loading
-                ? <><span className="spinner-sm" /> Connexion en cours…</>
-                : <>Se connecter <ArrowRight size={14} strokeWidth={2.5} /></>
+                ? <><span className="spinner-sm" style={{ borderColor: '#1565C0', borderTopColor: 'transparent' }} /> Connexion…</>
+                : <>Connexion <ArrowRight size={14} strokeWidth={2.5} /></>
               }
             </button>
-          </form>
-        </div>
 
-        {/* Footer */}
-        <div style={{
-          padding: '12px 32px 20px',
-          textAlign: 'center',
-          borderTop: '1px solid #F1F5F9',
-        }}>
-          <p style={{ fontSize: 12, color: '#94A3B8', margin: 0, lineHeight: 1.6 }}>
-            Accès réservé aux utilisateurs autorisés.<br />
-            Contactez votre administrateur pour tout problème.
-          </p>
+            {/* Mot de passe oublié */}
+            <div style={{ textAlign: 'center' }}>
+              <button
+                type="button"
+                onClick={() => setShowForgot(true)}
+                style={{ fontSize: 12.5, color: 'rgba(255,255,255,.85)', fontWeight: 500, background: 'none', border: 'none', cursor: 'pointer', padding: 0, textDecoration: 'underline' }}
+              >
+                Vous avez oublié votre mot de passe ?
+              </button>
+            </div>
+          </form>
         </div>
       </div>
     </div>
