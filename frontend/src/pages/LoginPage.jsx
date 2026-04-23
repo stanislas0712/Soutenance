@@ -133,23 +133,15 @@ export default function LoginPage() {
       fontFamily: "'Inter', system-ui, sans-serif",
       overflow: 'hidden',
     }}>
-      {/* Image de fond plein écran */}
-      <img
-        src="/gestion.jpg"
-        alt=""
-        aria-hidden="true"
-        style={{
-          position: 'absolute', inset: 0,
-          width: '100%', height: '100%',
-          objectFit: 'cover', objectPosition: 'center',
-          filter: 'blur(6px)',
-          transform: 'scale(1.05)',
-        }}
-      />
-      {/* Overlay sombre pour lisibilité */}
+      {/* Fond dégradé bleu */}
       <div aria-hidden="true" style={{
         position: 'absolute', inset: 0,
-        background: 'rgba(10, 30, 80, 0.55)',
+        background: 'linear-gradient(135deg, #0D1B4B 0%, #1E3A8A 40%, #2563EB 75%, #3B82F6 100%)',
+      }} />
+      {/* Effet de lumière subtil */}
+      <div aria-hidden="true" style={{
+        position: 'absolute', inset: 0,
+        background: 'radial-gradient(ellipse at 60% 20%, rgba(96,165,250,0.25) 0%, transparent 60%)',
       }} />
 
       {showForgot && <ForgotPasswordModal onClose={() => setShowForgot(false)} />}
