@@ -5,7 +5,7 @@
  * @example <ExecutionJauge taux={75} />
  * @example <ExecutionJauge consomme={750000} alloue={1000000} compact />
  */
-import { calculerTauxExecution, getCouleurExecution, formaterMontant } from '../../utils/formatters'
+import { calculerTauxExecution, getCouleurExecution, formaterMontant, formaterPourcentage } from '../../utils/formatters'
 
 export default function ExecutionJauge({
   consomme,
@@ -32,7 +32,7 @@ export default function ExecutionJauge({
         </div>
         {showLabel && (
           <span className="font-mono font-bold whitespace-nowrap text-[11px]" style={{ color: couleur }}>
-            {taux.toFixed(0)} %
+            {formaterPourcentage(taux, { decimales: 0 })}
           </span>
         )}
       </div>
@@ -45,7 +45,7 @@ export default function ExecutionJauge({
         <div className="flex justify-between items-center mb-1">
           <span className="text-[11px] text-[#6B7280] font-semibold">Exécution</span>
           <span className="font-mono font-bold text-[12px]" style={{ color: couleur }}>
-            {taux.toFixed(1)} %
+            {formaterPourcentage(taux, { decimales: 1 })}
           </span>
         </div>
       )}

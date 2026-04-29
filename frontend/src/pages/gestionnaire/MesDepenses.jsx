@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+﻿import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { getDepenses } from '../../api/depenses'
 import {
@@ -6,8 +6,9 @@ import {
   Search, Eye, ChevronRight, Plus,
 } from 'lucide-react'
 import DepenseMultiModal from '../../components/budget/DepenseMultiModal'
+import { formaterNombre, formaterPourcentage } from '../../utils/formatters'
 
-const fmt     = (n)   => new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 0 }).format(parseFloat(n || 0))
+const fmt = (n) => formaterNombre(n, { maximumFractionDigits: 0 })
 const fmtDate = (iso) => iso ? new Date(iso).toLocaleDateString('fr-FR') : '—'
 
 const STATUT = {
@@ -241,7 +242,7 @@ export default function MesDepenses() {
                     <div className={`progress-fill ${tauxValid >= 100 ? 'progress-fill-green' : tauxValid > 0 ? 'progress-fill-orange' : ''}`} style={{ width: `${Math.min(tauxValid, 100)}%` }} />
                   </div>
                   <div style={{ fontSize: '10px', color: 'var(--color-gray-500)', textAlign: 'center', marginTop: 3, fontWeight: 600 }}>
-                    {tauxValid.toFixed(0)}% validé
+                    {formaterPourcentage(tauxValid, { decimales: 0 })} validé
                   </div>
                 </div>
 
@@ -267,4 +268,3 @@ export default function MesDepenses() {
     </div>
   )
 }
-

@@ -6,6 +6,7 @@ import {
 } from '../../api/ia'
 import { getBudgets } from '../../api/budget'
 import { printPDF } from '../../utils/export'
+import { formaterMontant, formaterMontantSigne } from '../../utils/formatters'
 import {
   AlertTriangle, TrendingUp,
   CheckCircle2, XCircle, Brain, Zap, Shield,
@@ -133,10 +134,8 @@ export default function IADashboard() {
     const rowsPred = predictions.map(p => [
       p.budget_reference,
       `${Math.round(p.probabilite_depassement * 100)}%`,
-      Number(p.montant_prevu_final).toLocaleString('fr-FR') + ' FCFA',
-      Number(p.ecart_prevu) >= 0
-        ? `+${Number(p.ecart_prevu).toLocaleString('fr-FR')} FCFA`
-        : `${Number(p.ecart_prevu).toLocaleString('fr-FR')} FCFA`,
+      formaterMontant(p.montant_prevu_final),
+      formaterMontantSigne(p.ecart_prevu),
     ])
 
     // Construire rapport combiné
@@ -467,8 +466,8 @@ function PredictionsTab({ predictions, onPredire, scanning }) {
     const rows = predictions.map(p => [
       p.budget_reference,
       `${Math.round(p.probabilite_depassement * 100)}%`,
-      Number(p.montant_prevu_final).toLocaleString('fr-FR') + ' FCFA',
-      (Number(p.ecart_prevu) >= 0 ? '+' : '') + Number(p.ecart_prevu).toLocaleString('fr-FR') + ' FCFA',
+      formaterMontant(p.montant_prevu_final),
+      formaterMontantSigne(p.ecart_prevu),
     ])
     printPDF('Prédictions de dépassement', ['Budget', 'Probabilité dépassement', 'Montant prévu final', 'Écart prévu'], rows, {
       subtitle: 'Prédictions IA des budgets à risque',
@@ -535,13 +534,13 @@ function PredictionsTab({ predictions, onPredire, scanning }) {
                     <span style={{ fontSize: '12px', color: '#6B7280' }}>
                       Montant consommé :&nbsp;
                       <strong style={{ fontFamily: 'var(--font-mono)', color: '#1F2937' }}>
-                        {Number(p.montant_prevu_final).toLocaleString('fr-FR')} FCFA
+                        {formaterMontant(p.montant_prevu_final)}
                       </strong>
                     </span>
                     <span style={{ fontSize: '12px', color: '#6B7280' }}>
                       Écart :&nbsp;
                       <strong style={{ fontFamily: 'var(--font-mono)', color }}>
-                        {Number(p.ecart_prevu) >= 0 ? '+' : ''}{Number(p.ecart_prevu).toLocaleString('fr-FR')} FCFA
+                        {formaterMontantSigne(p.ecart_prevu)}
                       </strong>
                     </span>
                   </div>
@@ -597,4 +596,3 @@ function PredictionsTab({ predictions, onPredire, scanning }) {
     </div>
   )
 }
-

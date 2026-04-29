@@ -1,11 +1,11 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { getBudgets, getBudgetAnnuels } from '../../api/budget'
 import { getUtilisateurs } from '../../api/accounts'
 import KpiCard from '../../components/KpiCard'
 import { StatutBadge, AlerteBadge } from '../../components/StatusBadge'
 import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
+  CartesianGrid, Tooltip, XAxis, YAxis,
   ResponsiveContainer, PieChart, Pie, Cell, Legend,
   LineChart, Line,
 } from 'recharts'
@@ -14,14 +14,85 @@ import {
   Building2, TrendingUp, Wallet, ShieldAlert, Users, Target,
   Sparkles, AlertTriangle, MessageSquare,
 } from 'lucide-react'
+import { formaterMontant, formaterNombre } from '../../utils/formatters'
 
-const fmt     = n => new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 0 }).format(parseFloat(n || 0))
-const fmtFull = n => new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'XOF', maximumFractionDigits: 0 }).format(n)
+const fmt = (n) => formaterNombre(n, { maximumFractionDigits: 0 })
+const fmtFull = (n) => formaterMontant(n)
+const fmtMillions = (n) => `${formaterNombre(n / 1e6, { maximumFractionDigits: 1 })}M`
+const MAX_DEPT_SLICES = 7
+const DEPT_COLORS = [
+  '#3B82F6', // bleu
+  '#10B981', // vert
+  '#F59E0B', // orange
+  '#8B5CF6', // violet
+  '#EC4899', // rose
+  '#06B6D4', // cyan
+  '#EF4444', // rouge
+]
+const DEPT_COLOR_MAP = {
+  Informatique: '#3B82F6',
+  Logistique: '#10B981',
+  'Ressources Hum': '#F59E0B',
+  'Ressources Hum.': '#F59E0B',
+  RH: '#F59E0B',
+  Finance: '#8B5CF6',
+  Comptabilite: '#3B82F6',
+  Comptabilité: '#3B82F6',
+  Administration: '#EC4899',
+  Sante: '#06B6D4',
+  Santé: '#06B6D4',
+  Education: '#10B981',
+  Éducation: '#10B981',
+  Agriculture: '#10B981',
+  Transport: '#F59E0B',
+  Justice: '#8B5CF6',
+  Securite: '#EF4444',
+  Sécurité: '#EF4444',
+}
+const RADIAN = Math.PI / 180
 
-const STATUT_COLORS = {
-  BROUILLON: '#D1D5DB', SOUMIS: '#8B5CF6',
-  APPROUVE: '#22C55E', REJETE: '#F43F5E',
-  CLOTURE: '#F59E0B', ARCHIVE: '#7C3AED',
+function getDeptColor(name = '') {
+  if (name === 'Autres') return '#9CA3AF'
+  if (DEPT_COLOR_MAP[name]) return DEPT_COLOR_MAP[name]
+
+  const key = String(name)
+  let hash = 0
+  for (let i = 0; i < key.length; i += 1) {
+    hash = ((hash << 5) - hash) + key.charCodeAt(i)
+    hash |= 0
+  }
+  return DEPT_COLORS[Math.abs(hash) % DEPT_COLORS.length]
+}
+
+function normalizeDeptName(raw = '') {
+  return String(raw).replace(/^Ministère (de |du |des |de l')?/i, '').trim() || 'Autre'
+}
+
+function toTopSlicesWithOthers(entries, maxSlices = MAX_DEPT_SLICES) {
+  const sorted = [...entries]
+    .filter(e => Number(e?.value || 0) > 0)
+    .sort((a, b) => b.value - a.value)
+
+  if (sorted.length <= maxSlices) return sorted
+
+  const top = sorted.slice(0, maxSlices)
+  const othersValue = sorted.slice(maxSlices).reduce((sum, item) => sum + item.value, 0)
+  return othersValue > 0 ? [...top, { name: 'Autres', value: othersValue }] : top
+}
+
+function renderPiePercentLabel({ cx, percent, x, y }) {
+  if (!percent || percent < 0.04) return null
+  return (
+    <text
+      x={x}
+      y={y}
+      textAnchor={x > cx ? 'start' : 'end'}
+      dominantBaseline="central"
+      style={{ fontSize: 11, fontWeight: 700, fill: '#111827', pointerEvents: 'none' }}
+    >
+      {`${(percent * 100).toFixed(1)}%`}
+    </text>
+  )
 }
 
 function jaugeColor(t) {
@@ -47,6 +118,23 @@ export default function AdminDashboard() {
       .finally(() => setLoading(false))
   }, [])
 
+  // ✅ CORRIGÉ : useMemo placé AVANT tout return conditionnel
+  const countPieData = useMemo(() => {
+    const budgetCountByDept = {}
+    budgets
+      .filter(b => b.statut !== 'BROUILLON')
+      .forEach(b => {
+        const dept = b.departement_detail?.nom || b.departement_nom || 'Autre'
+        const short = normalizeDeptName(dept)
+        budgetCountByDept[short] = (budgetCountByDept[short] || 0) + 1
+      })
+    const countData = Object.entries(budgetCountByDept)
+      .map(([name, value]) => ({ name, value }))
+      .sort((a, b) => b.value - a.value)
+    return toTopSlicesWithOthers(countData)
+  }, [budgets])
+
+  // ✅ return conditionnel APRÈS tous les hooks
   if (loading) return (
     <div className="page-loader">
       <div className="spinner" />
@@ -56,37 +144,32 @@ export default function AdminDashboard() {
 
   /* ── KPIs ── */
   const ba = annuels[0]
+  const budgetsActifs   = budgets.filter(b => b.statut !== 'BROUILLON')
   const enveloppeGlobale = parseFloat(ba?.montant_global || 0)
-  const enveloppeAllouee = parseFloat(ba?.montant_alloue_depts || 0)
-  const totalBudgets     = budgets.length
-  const budgetsApprouves = budgets.filter(b => b.statut === 'APPROUVE').length
-  const budgetsSoumis    = budgets.filter(b => b.statut === 'SOUMIS').length
-  const budgetsRejetes   = budgets.filter(b => b.statut === 'REJETE').length
-  const montantTotal     = budgets.reduce((s, b) => s + parseFloat(b.montant_global || 0), 0)
-  const montantConsom    = budgets.reduce((s, b) => s + parseFloat(b.montant_consomme || 0), 0)
-  const tauxGlobal       = montantTotal > 0 ? Math.round(montantConsom / montantTotal * 100) : 0
+  const totalBudgets     = budgetsActifs.length
+  const budgetsApprouves = budgetsActifs.filter(b => b.statut === 'APPROUVE').length
+  const budgetsSoumis    = budgetsActifs.filter(b => b.statut === 'SOUMIS').length
+  const budgetsRejetes   = budgetsActifs.filter(b => b.statut === 'REJETE').length
+  const montantAlloue    = budgetsActifs.reduce((s, b) => s + parseFloat(b.montant_global || 0), 0)
+  const montantConsom    = budgetsActifs.reduce((s, b) => s + parseFloat(b.montant_consomme || 0), 0)
+  const tauxGlobal       = montantAlloue > 0 ? Math.round(montantConsom / montantAlloue * 100) : 0
 
   /* ── Budgets en attente ── */
-  const enAttente = budgets
+  const enAttente = budgetsActifs
     .filter(b => b.statut === 'SOUMIS')
     .sort((a, b) => new Date(a.date_soumission || 0) - new Date(b.date_soumission || 0))
     .slice(0, 5)
 
   /* ── Budgets en alerte ── */
-  const enAlerte = budgets
+  const enAlerte = budgetsActifs
     .filter(b => ['ROUGE', 'CRITIQUE'].includes(b.niveau_alerte) && b.statut === 'APPROUVE')
     .slice(0, 5)
 
-  /* ── Répartition par statut ── */
-  const statutData = Object.entries(
-    budgets.reduce((acc, b) => { acc[b.statut] = (acc[b.statut] || 0) + 1; return acc }, {})
-  ).map(([name, value]) => ({ name, value }))
-
-  /* ── Consommation par département ── */
+  /* ── Consommation par département (budgets APPROUVÉS uniquement) ── */
   const deptMap = {}
-  budgets.filter(b => b.statut === 'APPROUVE').forEach(b => {
+  budgetsActifs.filter(b => b.statut === 'APPROUVE').forEach(b => {
     const dept = b.departement_detail?.nom || b.departement_nom || 'Autre'
-    const short = dept.replace(/^Ministère (de |du |des |de l')?/i, '').slice(0, 14)
+    const short = normalizeDeptName(dept)
     if (!deptMap[short]) deptMap[short] = { alloue: 0, consomme: 0 }
     deptMap[short].alloue   += parseFloat(b.montant_global || 0)
     deptMap[short].consomme += parseFloat(b.montant_consomme || 0)
@@ -94,6 +177,8 @@ export default function AdminDashboard() {
   const deptData = Object.entries(deptMap)
     .map(([name, v]) => ({ name, ...v, taux: v.alloue > 0 ? Math.round(v.consomme / v.alloue * 100) : 0 }))
     .sort((a, b) => b.alloue - a.alloue)
+  const budgetPieData  = toTopSlicesWithOthers(deptData.map(d => ({ name: d.name, value: d.alloue })))
+  const depensePieData = toTopSlicesWithOthers(deptData.map(d => ({ name: d.name, value: d.consomme })))
 
   const now = new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
 
@@ -104,7 +189,7 @@ export default function AdminDashboard() {
     d.setDate(1)
     d.setMonth(d.getMonth() - (5 - i))
     const m = d.getMonth(), y = d.getFullYear()
-    const bMois = budgets.filter(b => {
+    const bMois = budgetsActifs.filter(b => {
       const c = new Date(b.date_creation)
       return c.getMonth() === m && c.getFullYear() === y
     })
@@ -132,16 +217,16 @@ export default function AdminDashboard() {
         <KpiCard
           icon={<Wallet size={22} strokeWidth={1.8} />}
           label="Budget Total Alloué"
-          value={enveloppeGlobale >= 1e6 ? `${(enveloppeGlobale/1e6).toFixed(1)}M` : `${fmt(enveloppeGlobale)} F`}
-          trendText={`${fmt(enveloppeAllouee)} F alloués depts`}
+          value={montantAlloue >= 1e6 ? fmtMillions(montantAlloue) : `${fmt(montantAlloue)} F`}
+          trendText={`Enveloppe annuelle: ${fmt(enveloppeGlobale)} F`}
           color="#C9910A" bgColor="#FEF9EC"
           sparklineData={evolutionData.map(d => d.montant)}
         />
         <KpiCard
           icon={<TrendingUp size={22} strokeWidth={1.8} />}
           label="Budget Consommé"
-          value={montantConsom >= 1e6 ? `${(montantConsom/1e6).toFixed(1)}M` : `${fmt(montantConsom)} F`}
-          trendText={`${Math.round(budgetsApprouves/Math.max(totalBudgets,1)*100)}% budgets approuvés`}
+          value={montantConsom >= 1e6 ? fmtMillions(montantConsom) : `${fmt(montantConsom)} F`}
+          trendText={`${Math.round(budgetsApprouves/Math.max(totalBudgets,1))*100}% budgets approuvés`}
           color="#7C3AED" bgColor="#EDE9FE"
           onClick={() => navigate('/budgets')}
           sparklineData={evolutionData.map(d => d.consomme)}
@@ -173,54 +258,140 @@ export default function AdminDashboard() {
       </div>
 
       {/* ── Charts ───────────────────────────────────────────────────────── */}
-      <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(min(300px,100%), 1fr))', gap:20, marginBottom:24 }}>
-
-        {/* Consommation par département */}
+      <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(280px, 1fr))', gap:20, marginBottom:24, minWidth: 0 }}>
+        {/* 1. Budgets par département */}
         <div className="card" style={{ padding:'20px 24px' }}>
           <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:18 }}>
             <Building2 size={15} strokeWidth={2} color="var(--color-primary-600)" />
-            <span style={{ fontWeight:700, fontSize:14, color:'var(--color-gray-900)' }}>Consommation par département</span>
+            <span style={{ fontWeight:700, fontSize:14, color:'var(--color-gray-900)' }}>Budgets par département</span>
           </div>
           {deptData.length === 0 ? (
             <div className="empty-state" style={{ padding:'30px 0' }}>
               <div className="empty-icon">📊</div>
-              <div className="empty-title">Aucun budget approuvé</div>
+              <div className="empty-title">Aucun budget</div>
             </div>
           ) : (
-            <ResponsiveContainer width="100%" height={210}>
-              <BarChart data={deptData} barSize={14} barGap={3} layout="vertical">
-                <CartesianGrid strokeDasharray="3 3" stroke="var(--color-gray-100)" horizontal={false} />
-                <XAxis type="number" tick={{ fontSize:10, fill:'var(--color-gray-400)' }} tickFormatter={v=>fmt(v/1e6)+'M'} axisLine={false} tickLine={false} />
-                <YAxis type="category" dataKey="name" tick={{ fontSize:10, fill:'var(--color-gray-500)' }} axisLine={false} tickLine={false} width={70} />
+            <ResponsiveContainer width="100%" height={340}>
+              <PieChart margin={{ top: 20, right: 55, left: 55, bottom: 10 }}>
+                <Pie
+                  data={budgetPieData}
+                  dataKey="value"
+                  nameKey="name"
+                  cx="50%"
+                  cy="50%"
+                  outerRadius={75}
+                  innerRadius={42}
+                  paddingAngle={2}
+                  label={renderPiePercentLabel}
+                  labelLine={{ stroke: '#9CA3AF', strokeWidth: 1 }}
+                >
+                  {budgetPieData.map((entry, index) => (
+                    <Cell key={`cell-budget-${index}`} fill={getDeptColor(entry.name)} />
+                  ))}
+                </Pie>
                 <Tooltip
-                  formatter={v => fmtFull(v)}
+                  formatter={(v) => fmtFull(v)}
                   contentStyle={{ fontSize:11, borderRadius:8, border:'1px solid var(--color-gray-150)', boxShadow:'var(--shadow-md)' }}
                 />
-                <Legend iconSize={7} iconType="circle" formatter={v=><span style={{fontSize:11,color:'var(--color-gray-500)'}}>{v}</span>} />
-                <Bar dataKey="alloue"   name="Alloué"   fill="#E0E7FF" radius={[0,3,3,0]} />
-                <Bar dataKey="consomme" name="Consommé" fill="var(--color-primary-500)" radius={[0,3,3,0]} />
-              </BarChart>
+                <Legend
+                  iconSize={8}
+                  iconType="circle"
+                  formatter={v => <span style={{ fontSize:10, color:'var(--color-gray-500)' }}>{v}</span>}
+                  wrapperStyle={{ fontSize: 10 }}
+                />
+              </PieChart>
             </ResponsiveContainer>
           )}
         </div>
 
-        {/* Répartition statuts */}
+        {/* 2. Dépenses par département */}
         <div className="card" style={{ padding:'20px 24px' }}>
           <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:18 }}>
-            <TrendingUp size={15} strokeWidth={2} color="var(--color-primary-600)" />
-            <span style={{ fontWeight:700, fontSize:14, color:'var(--color-gray-900)' }}>Répartition par statut</span>
+            <TrendingUp size={15} strokeWidth={2} color="#22C55E" />
+            <span style={{ fontWeight:700, fontSize:14, color:'var(--color-gray-900)' }}>Dépenses par département</span>
           </div>
-          <ResponsiveContainer width="100%" height={210}>
-            <PieChart>
-              <Pie data={statutData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} innerRadius={44} paddingAngle={3}>
-                {statutData.map(e => (
-                  <Cell key={e.name} fill={STATUT_COLORS[e.name] || '#9CA3AF'} />
-                ))}
-              </Pie>
-              <Tooltip formatter={(v,n)=>[v, n.charAt(0)+n.slice(1).toLowerCase()]} contentStyle={{ fontSize:11, borderRadius:8, border:'1px solid var(--color-gray-150)', boxShadow:'var(--shadow-md)' }} />
-              <Legend formatter={v=><span style={{fontSize:11,color:'var(--color-gray-500)'}}>{v.charAt(0)+v.slice(1).toLowerCase()}</span>} iconSize={7} iconType="circle" />
-            </PieChart>
-          </ResponsiveContainer>
+          {deptData.length === 0 ? (
+            <div className="empty-state" style={{ padding:'30px 0' }}>
+              <div className="empty-icon">💰</div>
+              <div className="empty-title">Aucune dépense</div>
+            </div>
+          ) : (
+            <ResponsiveContainer width="100%" height={340}>
+              <PieChart margin={{ top: 20, right: 55, left: 55, bottom: 10 }}>
+                <Pie
+                  data={depensePieData}
+                  dataKey="value"
+                  nameKey="name"
+                  cx="50%"
+                  cy="50%"
+                  outerRadius={75}
+                  innerRadius={42}
+                  paddingAngle={2}
+                  label={renderPiePercentLabel}
+                  labelLine={{ stroke: '#9CA3AF', strokeWidth: 1 }}
+                >
+                  {depensePieData.map((entry, index) => (
+                    <Cell key={`cell-depense-${index}`} fill={getDeptColor(entry.name)} />
+                  ))}
+                </Pie>
+                <Tooltip
+                  formatter={(v) => fmtFull(v)}
+                  contentStyle={{ fontSize:11, borderRadius:8, border:'1px solid var(--color-gray-150)', boxShadow:'var(--shadow-md)' }}
+                />
+                <Legend
+                  iconSize={8}
+                  iconType="circle"
+                  formatter={v => <span style={{ fontSize:10, color:'var(--color-gray-500)' }}>{v}</span>}
+                  wrapperStyle={{ fontSize: 10 }}
+                />
+              </PieChart>
+            </ResponsiveContainer>
+          )}
+        </div>
+
+        {/* 3. Nombre de budgets par département */}
+        <div className="card" style={{ padding:'20px 24px' }}>
+          <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:18 }}>
+            <Target size={15} strokeWidth={2} color="#F59E0B" />
+            <span style={{ fontWeight:700, fontSize:14, color:'var(--color-gray-900)' }}>Nombre de budgets</span>
+          </div>
+          {countPieData.length === 0 ? (
+            <div className="empty-state" style={{ padding:'30px 0' }}>
+              <div className="empty-icon">📋</div>
+              <div className="empty-title">Aucun budget</div>
+            </div>
+          ) : (
+            <ResponsiveContainer width="100%" height={340}>
+              <PieChart margin={{ top: 20, right: 55, left: 55, bottom: 10 }}>
+                <Pie
+                  data={countPieData}
+                  dataKey="value"
+                  nameKey="name"
+                  cx="50%"
+                  cy="50%"
+                  outerRadius={75}
+                  innerRadius={42}
+                  paddingAngle={2}
+                  label={renderPiePercentLabel}
+                  labelLine={{ stroke: '#9CA3AF', strokeWidth: 1 }}
+                >
+                  {countPieData.map((entry, index) => (
+                    <Cell key={`cell-count-${index}`} fill={getDeptColor(entry.name)} />
+                  ))}
+                </Pie>
+                <Tooltip
+                  formatter={(v) => `${v} budget${v > 1 ? 's' : ''}`}
+                  contentStyle={{ fontSize:11, borderRadius:8, border:'1px solid var(--color-gray-150)', boxShadow:'var(--shadow-md)' }}
+                />
+                <Legend
+                  iconSize={8}
+                  iconType="circle"
+                  formatter={v => <span style={{ fontSize:10, color:'var(--color-gray-500)' }}>{v}</span>}
+                  wrapperStyle={{ fontSize: 10 }}
+                />
+              </PieChart>
+            </ResponsiveContainer>
+          )}
         </div>
       </div>
 
@@ -298,7 +469,7 @@ export default function AdminDashboard() {
           </div>
 
           {/* 3 action cards */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(220px,100%), 1fr))' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', minWidth: 0 }}>
             {[
               {
                 icon: <AlertTriangle size={19} strokeWidth={1.8} />,
@@ -378,8 +549,7 @@ export default function AdminDashboard() {
       </div>
 
       {/* ── Action panels ────────────────────────────────────────────────── */}
-      <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(min(300px,100%), 1fr))', gap:20, marginBottom:24 }}>
-
+      <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(300px, 1fr))', gap:20, marginBottom:24, minWidth: 0 }}>
         {/* Budgets en attente de validation */}
         <div className="card" style={{ overflow:'hidden' }}>
           <div style={{

@@ -5,8 +5,9 @@ import {
 } from '../../api/budget'
 import { Plus, Pencil, Trash2, CalendarDays, AlertTriangle, ChevronDown, Building2 } from 'lucide-react'
 import { ConfirmModal } from '../../components/ui'
+import { formaterNombre } from '../../utils/formatters'
 
-const fmt = (n) => new Intl.NumberFormat('fr-FR').format(n ?? 0)
+const fmt = (n) => formaterNombre(n ?? 0)
 
 const jaugeColor = (pct) => {
   if (pct > 75) return 'var(--color-danger-600)'

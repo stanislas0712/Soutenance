@@ -3,6 +3,8 @@
  */
 
 /* ── Conversion markdown → HTML (rendu propre pour rapports IA) ────────────── */
+import { formaterNombre, getLangueFormatage } from './formatters'
+
 function _inline(text) {
   return String(text || '')
     .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
@@ -68,7 +70,8 @@ function _mdToHtml(md) {
  * Impression d'un rapport IA avec rendu markdown professionnel.
  * @param {object} rapport  - objet rapport IA {titre, type_rapport, contenu, created_at, tokens_utilises}
  */
-export function printRapportIA(rapport) {
+export function printRapportIA(rapport, { langue } = {}) {
+  const htmlLang = getLangueFormatage(langue)
   const now = new Date().toLocaleDateString('fr-FR', {
     day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit',
   })
@@ -84,7 +87,7 @@ export function printRapportIA(rapport) {
 
   const bodyHtml = _mdToHtml(rapport.contenu)
 
-  const html = `<!DOCTYPE html><html lang="fr"><head>
+  const html = `<!DOCTYPE html><html lang="${htmlLang}"><head>
 <meta charset="UTF-8"/>
 <title>${rapport.titre || 'Rapport IA'}</title>
 <style>
@@ -271,7 +274,7 @@ export function printRapportIA(rapport) {
     </div>
     <div class="meta-item">
       <div class="meta-label">Tokens utilisés</div>
-      <div class="meta-value">${rapport.tokens_utilises ? rapport.tokens_utilises.toLocaleString('fr-FR') : '—'}</div>
+      <div class="meta-value">${rapport.tokens_utilises ? formaterNombre(rapport.tokens_utilises) : '—'}</div>
     </div>
     <div class="meta-item">
       <div class="meta-label">Source</div>

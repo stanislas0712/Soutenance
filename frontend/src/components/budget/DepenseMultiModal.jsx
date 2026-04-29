@@ -1,13 +1,13 @@
 import { useState, useEffect } from 'react'
 import { getBudgets, getBudgetArbre, getLignesSelecteur, depenseMultiLigne } from '../../api/budget'
 import { notifRefresh } from '../../utils/notifRefresh'
-import { getCouleurExecution } from '../../utils/formatters'
+import { formaterNombre, getCouleurExecution } from '../../utils/formatters'
 import {
   DollarSign, Paperclip, Check, AlertTriangle,
   ChevronDown, ChevronRight, Search,
 } from 'lucide-react'
 
-const fmt = (n) => new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 0 }).format(parseFloat(n || 0))
+const fmt = (n) => formaterNombre(n, { maximumFractionDigits: 0 })
 
 export default function DepenseMultiModal({ budgetId: propBudgetId = null, onClose, onSuccess }) {
 

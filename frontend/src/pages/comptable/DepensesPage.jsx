@@ -1,4 +1,4 @@
-import { useState } from 'react'
+﻿import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { getDepenses, validerDepense, rejeterDepense } from '../../api/depenses'
@@ -7,9 +7,10 @@ import {
   Paperclip, ChevronRight, X,
 } from 'lucide-react'
 import { notifRefresh } from '../../utils/notifRefresh'
+import { formaterNombre, formaterPourcentage } from '../../utils/formatters'
 
-const fmt     = (n)   => new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 0 }).format(parseFloat(n || 0))
-const fmtDate = (iso) => iso ? new Date(iso).toLocaleDateString('fr-FR') : '—'
+const fmt = (n) => formaterNombre(n, { maximumFractionDigits: 0 })
+const fmtDate = (iso) => iso ? new Date(iso).toLocaleDateString('fr-FR') : '-'
 
 const STATUT = {
   SAISIE:  { bg: 'var(--color-warning-50)',  color: 'var(--color-warning-700)', label: 'En attente' },
@@ -24,9 +25,9 @@ const TABS = [
   { key: 'REJETEE', label: 'Rejetées',   color: '#DC2626' },
 ]
 
-/* ══════════════════════════════════════════════════════════
+/* ---------------------------------------------------
    Page principale
-══════════════════════════════════════════════════════════ */
+--------------------------------------------------- */
 export default function DepensesPage() {
   const navigate = useNavigate()
   const [tab,    setTab]    = useState('SAISIE')
@@ -160,7 +161,7 @@ export default function DepensesPage() {
       {isLoading ? (
         <div style={{ padding: 60, textAlign: 'center' }}>
           <div className="spinner" style={{ margin: '0 auto 12px' }} />
-          <p style={{ fontSize: '13px', color: 'var(--color-gray-400)' }}>Chargement…</p>
+          <p style={{ fontSize: '13px', color: 'var(--color-gray-400)' }}>Chargement</p>
         </div>
       ) : groups.length === 0 ? (
         <div className="empty-state">
@@ -222,7 +223,7 @@ export default function DepensesPage() {
                     <div className={`progress-fill ${tauxValid >= 100 ? 'progress-fill-green' : tauxValid > 0 ? 'progress-fill-orange' : ''}`} style={{ width: `${Math.min(tauxValid, 100)}%` }} />
                   </div>
                   <div style={{ fontSize: '10px', color: 'var(--color-gray-500)', textAlign: 'center', marginTop: 3, fontWeight: 600 }}>
-                    {tauxValid.toFixed(0)}% validé
+                    {formaterPourcentage(tauxValid, { decimales: 0 })} validé
                   </div>
                 </div>
 
@@ -242,9 +243,9 @@ export default function DepensesPage() {
   )
 }
 
-/* ══════════════════════════════════════════════════════════
+/* ---------------------------------------------------
    Modal détail d'un groupe — version Comptable (avec actions)
-══════════════════════════════════════════════════════════ */
+--------------------------------------------------- */
 function DepenseGroupDetail({ group, onClose, onRefresh }) {
   const navigate = useNavigate()
   const [items,      setItems]      = useState(group.items)
@@ -310,7 +311,7 @@ function DepenseGroupDetail({ group, onClose, onRefresh }) {
                 <div style={{ display: 'flex', gap: 14, fontSize: '12px', opacity: .85 }}>
                   <span>✓ {validated.length} validée{validated.length !== 1 ? 's' : ''}</span>
                   <span>⏳ {pending.length} en attente</span>
-                  {rejected.length > 0 && <span>✕ {rejected.length} rejetée{rejected.length > 1 ? 's' : ''}</span>}
+                  {rejected.length > 0 && <span>• {rejected.length} rejeté{rejected.length > 1 ? 's' : ''}</span>}
                 </div>
               </div>
               <div style={{ textAlign: 'right', flexShrink: 0 }}>
@@ -454,9 +455,9 @@ function DepenseGroupDetail({ group, onClose, onRefresh }) {
   )
 }
 
-/* ══════════════════════════════════════════════════════════
+/* ---------------------------------------------------
    Modal de rejet avec motif
-══════════════════════════════════════════════════════════ */
+--------------------------------------------------- */
 function RejetModal({ onConfirm, onClose }) {
   const [motif, setMotif] = useState('')
   const valid = motif.length >= 10

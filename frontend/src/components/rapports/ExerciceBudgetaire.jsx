@@ -2,7 +2,9 @@
  * Affiche les informations de l'exercice budgétaire annuel
  * et le détail des allocations départementales.
  */
-const fmt = (n) => new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 0 }).format(parseFloat(n || 0))
+import { formaterNombre, formaterPourcentage } from '../../utils/formatters'
+
+const fmt = (n) => formaterNombre(n, { maximumFractionDigits: 0 })
 
 export default function ExerciceBudgetaire({ budgetAnnuel, detailTrimestres }) {
   return (
@@ -72,7 +74,7 @@ export default function ExerciceBudgetaire({ budgetAnnuel, detailTrimestres }) {
                               fontSize: '11px', fontWeight: 700,
                               color: a.taux > 75 ? '#DC2626' : a.taux > 50 ? '#D97706' : '#059669',
                             }}>
-                              {a.taux?.toFixed(1)} %
+                              {formaterPourcentage(a.taux, { decimales: 1 })}
                             </span>
                           </div>
                         </td>

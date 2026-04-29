@@ -4,8 +4,9 @@ import { getDepartements, createDepartement, updateDepartement, deleteDepartemen
 import { getBudgetAnnuels, createAllocation, updateAllocation } from '../../api/budget'
 import { Plus, Building2, Pencil, Trash2, UserCheck, UserX, FileText, Coins, AlertTriangle } from 'lucide-react'
 import { ConfirmModal } from '../../components/ui'
+import { formaterNombre } from '../../utils/formatters'
 
-const fmt = (n) => new Intl.NumberFormat('fr-FR').format(n ?? 0)
+const fmt = (n) => formaterNombre(n ?? 0)
 
 const jaugeColor = (taux) => {
   if (taux > 75) return 'var(--color-danger-600)'

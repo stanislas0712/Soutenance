@@ -1,7 +1,9 @@
 /**
  * Tableau générique : dépenses par département ou top lignes.
  */
-const fmt = (n) => new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 0 }).format(parseFloat(n || 0))
+import { formaterNombre, formaterPourcentage } from '../../utils/formatters'
+
+const fmt = (n) => formaterNombre(n, { maximumFractionDigits: 0 })
 
 export function DepensesParDepartement({ data, totalPeriode }) {
   if (!data?.length) return (
@@ -30,7 +32,8 @@ export function DepensesParDepartement({ data, totalPeriode }) {
             {data.map((d, i) => {
               const nom   = d.ligne__budget__departement__nom || '—'
               const t     = parseFloat(d.total || 0)
-              const part  = (t / total * 100).toFixed(1)
+              const partValue = (t / total) * 100
+              const part = formaterPourcentage(partValue, { decimales: 1 })
               return (
                 <tr key={i}>
                   <td className="font-medium">{nom}</td>
@@ -38,12 +41,12 @@ export function DepensesParDepartement({ data, totalPeriode }) {
                     {fmt(t)} <span style={{ fontSize: '10px', color: '#9CA3AF' }}>FCFA</span>
                   </td>
                   <td style={{ textAlign: 'center' }}>{d.nb}</td>
-                  <td style={{ fontWeight: 700, color: '#374151' }}>{part} %</td>
+                  <td style={{ fontWeight: 700, color: '#374151' }}>{part}</td>
                   <td style={{ minWidth: 120 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                       <div style={{ flex: 1, height: 6, borderRadius: 3, background: '#F3F4F6', overflow: 'hidden' }}>
                         <div style={{
-                          height: '100%', width: `${Math.min(parseFloat(part), 100)}%`,
+                          height: '100%', width: `${Math.min(partValue, 100)}%`,
                           borderRadius: 3,
                           background: 'linear-gradient(90deg, #6EE7B7, #059669)',
                         }} />

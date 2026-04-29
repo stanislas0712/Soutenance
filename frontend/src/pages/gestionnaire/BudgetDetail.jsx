@@ -17,8 +17,9 @@ import {
   FileText, Receipt,
   Download, Printer, Paperclip, ChevronDown,
 } from 'lucide-react'
+import { formaterNombre, formaterPourcentage } from '../../utils/formatters'
 
-const fmt = (n) => new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 0 }).format(parseFloat(n || 0))
+const fmt = (n) => formaterNombre(n, { maximumFractionDigits: 0 })
 
 const jaugeColor = (taux) => {
   if (taux > 75) return '#F43F5E'
@@ -210,7 +211,7 @@ export default function BudgetDetail({ basePath = '/mes-budgets' }) {
             { label: 'Budget global',  val: fmt(montantGlobal) + ' FCFA',     color: 'var(--color-primary-700)', bg: 'var(--color-primary-50)' },
             { label: 'Consommé',       val: fmt(montantConsomme) + ' FCFA',   color: '#6a2fa0',                  bg: '#f5f0fd' },
             { label: 'Disponible',     val: fmt(montantDisponible) + ' FCFA', color: montantDisponible <= 0 ? 'var(--color-danger-700)' : 'var(--color-success-700)', bg: montantDisponible <= 0 ? 'var(--color-danger-50)' : 'var(--color-success-50)' },
-            { label: "Taux d'exéc.",   val: taux.toFixed(1) + '%',            color: jaugeColor(taux),           bg: taux > 75 ? 'var(--color-danger-50)' : taux > 50 ? 'var(--color-warning-50)' : 'var(--color-success-50)' },
+            { label: "Taux d'exéc.",   val: formaterPourcentage(taux, { decimales: 1 }), color: jaugeColor(taux), bg: taux > 75 ? 'var(--color-danger-50)' : taux > 50 ? 'var(--color-warning-50)' : 'var(--color-success-50)' },
           ].map((k, idx, arr) => (
             <div key={k.label} style={{
               padding: '12px 20px', background: k.bg,

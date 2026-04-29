@@ -9,8 +9,9 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, PieChart, Pie, Cell, Legend,
 } from 'recharts'
+import { formaterNombre } from '../../utils/formatters'
 
-const fmt = (n) => new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 0 }).format(parseFloat(n || 0))
+const fmt = (n) => formaterNombre(n, { maximumFractionDigits: 0 })
 
 export default function ComptableDashboard() {
   const { user }   = useAuth()

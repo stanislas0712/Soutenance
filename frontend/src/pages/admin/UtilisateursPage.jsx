@@ -4,8 +4,9 @@ import { getUtilisateurs, createUtilisateur, updateUtilisateur, deleteUtilisateu
 import { Plus, KeyRound, Trash2, UserCheck, UserX, Building2, Search, X, Activity, Wallet, CreditCard, CheckCircle2, ChevronRight, ShieldOff } from 'lucide-react'
 import { ConfirmModal } from '../../components/ui'
 import { RoleBadge, StatutBadge } from '../../components/StatusBadge'
+import { formaterNombre } from '../../utils/formatters'
 
-const fmt = n => new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 0 }).format(parseFloat(n || 0))
+const fmt = (n) => formaterNombre(n, { maximumFractionDigits: 0 })
 const fmtDate = iso => iso ? new Date(iso).toLocaleDateString('fr-FR') : '—'
 
 const STATUT_COLOR = {

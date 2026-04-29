@@ -7,8 +7,9 @@ import { Search, ArrowLeft, ArrowRight, CheckCircle2, XCircle, TrendingUp, BarCh
 import { notifRefresh } from '../../utils/notifRefresh'
 import { ConfirmModal } from '../../components/ui'
 import { exportCSV, exportCSVMulti, printPDF, printPDFMulti } from '../../utils/export'
+import { formaterNombre } from '../../utils/formatters'
 
-const fmt     = (n)   => new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 0 }).format(parseFloat(n || 0))
+const fmt = (n) => formaterNombre(n, { maximumFractionDigits: 0 })
 const fmtK    = fmt
 const fmtDate = (iso) => iso ? new Date(iso).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'
 

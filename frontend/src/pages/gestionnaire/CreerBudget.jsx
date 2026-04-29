@@ -3,8 +3,9 @@ import { useNavigate } from 'react-router-dom'
 import { createBudget, getBudgetAnnuels, getAllocations } from '../../api/budget'
 import { getDepartements } from '../../api/accounts'
 import { ArrowLeft, ArrowRight, Info, AlertTriangle, Building2, Calendar } from 'lucide-react'
+import { formaterNombre } from '../../utils/formatters'
 
-const fmt = (n) => new Intl.NumberFormat('fr-FR').format(n ?? 0)
+const fmt = (n) => formaterNombre(n ?? 0)
 
 export default function CreerBudget() {
   const navigate = useNavigate()

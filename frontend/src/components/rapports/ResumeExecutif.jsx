@@ -1,7 +1,8 @@
 import { TrendingUp, TrendingDown, Wallet, CreditCard, AlertTriangle, CheckCircle2 } from 'lucide-react'
+import { formaterNombre, formaterPourcentage } from '../../utils/formatters'
 
-const fmt = (n) => new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 0 }).format(parseFloat(n || 0))
-const fmtPct = (n) => `${parseFloat(n || 0).toFixed(1)} %`
+const fmt = (n) => formaterNombre(n, { maximumFractionDigits: 0 })
+const fmtPct = (n) => formaterPourcentage(n, { decimales: 1 })
 
 function KpiCard({ icon: Icon, label, value, sub, color = '#1E3A8A', bg = '#F8FAFC' }) {
   return (
@@ -85,7 +86,7 @@ export default function ResumeExecutif({ resume, totalDepenses, nbDepenses, comp
           <KpiCard
             icon={variation >= 0 ? TrendingUp : TrendingDown}
             label="vs année préc."
-            value={`${variation >= 0 ? '+' : ''}${variation.toFixed(1)} %`}
+            value={`${variation >= 0 ? '+' : ''}${fmtPct(Math.abs(variation))}`}
             sub={`${comparaison.annee_precedente} : ${fmt(comparaison.total_precedent)} FCFA`}
             color={variation > 10 ? '#DC2626' : variation < 0 ? '#059669' : '#D97706'}
             bg={variation > 10 ? '#FFF1F2' : variation < 0 ? '#F0FDF4' : '#FFFBEB'}

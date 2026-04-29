@@ -10,6 +10,7 @@ import {
   LineChart, Line, CartesianGrid, Legend,
 } from 'recharts'
 import { BarChart3, CheckCircle2, Clock, XCircle, TrendingUp, AlertTriangle } from 'lucide-react'
+import { formaterNombre } from '../../utils/formatters'
 
 export default function RapportsKPIPage() {
   const { data: kpisData } = useQuery({ queryKey: ['rapports-kpis'], queryFn: () => getKpis().then(r => r.data.data) })
@@ -136,7 +137,7 @@ export default function RapportsKPIPage() {
                     </span>
                     <div className="flex gap-3 items-center">
                       <span className="text-[11px] text-[#9CA3AF] font-mono">
-                        {Number(e.montant_alloue).toLocaleString('fr-FR')} / {Number(e.montant_total).toLocaleString('fr-FR')} FCFA
+                        {formaterNombre(e.montant_alloue)} / {formaterNombre(e.montant_total)} FCFA
                       </span>
                       <span className="text-[12px] font-extrabold font-mono" style={{ color }}>
                         {taux}%

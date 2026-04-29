@@ -9,8 +9,9 @@ import {
   ArrowLeft, CheckCircle2, XCircle, AlertTriangle,
   Paperclip, ExternalLink, Receipt,
 } from 'lucide-react'
+import { formaterNombre } from '../../utils/formatters'
 
-const fmt     = (n)   => new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 0 }).format(parseFloat(n || 0))
+const fmt = (n) => formaterNombre(n, { maximumFractionDigits: 0 })
 const fmtDate = (iso) => iso ? new Date(iso).toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' }) : '—'
 
 export default function DepenseDetail({ basePath = '/mes-depenses' }) {

@@ -3,8 +3,10 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import { getBudgets, getRapportCloture } from '../../api/budget'
 import { StatutBadge, AlerteBadge } from '../../components/StatusBadge'
 import { Search, FileText, TrendingUp, Building2, X } from 'lucide-react'
+import { printPDF } from '../../utils/export'
+import { formaterNombre } from '../../utils/formatters'
 
-const fmt = (n) => new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 0 }).format(parseFloat(n || 0))
+const fmt = (n) => formaterNombre(n, { maximumFractionDigits: 0 })
 
 const STATUTS = [
   { value: '',          label: 'Tous'      },
@@ -43,16 +45,16 @@ export default function BudgetsPage() {
       const headers = ['Ligne', 'Alloué (FCFA)', 'Consommé (FCFA)', 'Disponible (FCFA)', 'Taux %']
       const rows = rpt.lignes.map(l => [
         l.libelle,
-        new Intl.NumberFormat('fr-FR').format(l.montant_alloue),
-        new Intl.NumberFormat('fr-FR').format(l.montant_consomme),
-        new Intl.NumberFormat('fr-FR').format(l.disponible),
+        formaterNombre(l.montant_alloue),
+        formaterNombre(l.montant_consomme),
+        formaterNombre(l.disponible),
         `${l.taux}%`,
       ])
       printPDF(`Rapport de clôture — ${rpt.budget.code}`, headers, rows, {
         subtitle: `${rpt.budget.nom} · Clôturé le ${rpt.date_cloture ? new Date(rpt.date_cloture).toLocaleDateString('fr-FR') : '—'}`,
         stats: [
-          { value: new Intl.NumberFormat('fr-FR').format(rpt.budget.montant_global) + ' FCFA', label: 'Budget global' },
-          { value: new Intl.NumberFormat('fr-FR').format(rpt.budget.montant_consomme) + ' FCFA', label: 'Consommé' },
+          { value: formaterNombre(rpt.budget.montant_global) + ' FCFA', label: 'Budget global' },
+          { value: formaterNombre(rpt.budget.montant_consomme) + ' FCFA', label: 'Consommé' },
           { value: `${rpt.budget.taux}%`, label: 'Taux consommation' },
           { value: rpt.nb_depenses, label: 'Dépenses' },
         ],

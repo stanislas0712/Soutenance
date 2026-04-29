@@ -1,10 +1,10 @@
-/**
+﻿/**
  * AllocationJauge — Jauge d'allocation départementale (consommé / alloué).
  * Similaire à ExecutionJauge mais avec le wording "Alloué / Disponible".
  *
  * @example <AllocationJauge alloue={5000000} consomme={3000000} />
  */
-import { calculerTauxExecution, getCouleurExecution, formaterMontant } from '../../utils/formatters'
+import { calculerTauxExecution, getCouleurExecution, formaterMontant, formaterPourcentage } from '../../utils/formatters'
 
 export default function AllocationJauge({
   alloue,
@@ -25,7 +25,7 @@ export default function AllocationJauge({
     <div style={style}>
       <div className="flex justify-between mb-1">
         <span className="text-[11px] text-[#6B7280] font-semibold">
-          {taux.toFixed(0)} % consommé
+          {formaterPourcentage(taux, { decimales: 0 })} consommé
         </span>
         <span className="text-[11px] text-[#9CA3AF] font-mono">
           Dispo : {formaterMontant(dispo)}

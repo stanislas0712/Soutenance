@@ -8,8 +8,9 @@ import {
 } from 'lucide-react'
 import { notifRefresh } from '../../utils/notifRefresh'
 import { ConfirmModal } from '../../components/ui'
+import { formaterNombre } from '../../utils/formatters'
 
-const fmt = (n) => new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 0 }).format(parseFloat(n || 0))
+const fmt = (n) => formaterNombre(n, { maximumFractionDigits: 0 })
 
 const TABS = [
   { key: 'BROUILLON', label: 'Brouillons',  color: '#6B7280' },

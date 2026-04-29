@@ -1,4 +1,5 @@
 import { AlertTriangle, AlertCircle, Info } from 'lucide-react'
+import { formaterNombre, formaterPourcentage } from '../../utils/formatters'
 
 const NIVEAU_META = {
   CRITIQUE: { bg: '#FFF1F2', border: '#FECDD3', color: '#DC2626', icon: AlertCircle,   label: 'CRITIQUE' },
@@ -6,7 +7,7 @@ const NIVEAU_META = {
   ORANGE:   { bg: '#FFFBEB', border: '#FDE68A', color: '#D97706', icon: Info,           label: 'ORANGE'   },
 }
 
-const fmt = (n) => new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 0 }).format(parseFloat(n || 0))
+const fmt = (n) => formaterNombre(n, { maximumFractionDigits: 0 })
 
 export default function AlertesSection({ alertes }) {
   if (!alertes?.length) return null
@@ -73,7 +74,7 @@ export default function AlertesSection({ alertes }) {
                   fontFamily: 'var(--font-mono)', fontWeight: 700, fontSize: '16px',
                   color: meta.color,
                 }}>
-                  {a.taux?.toFixed(1)} %
+                  {formaterPourcentage(a.taux, { decimales: 1 })}
                 </div>
                 <div style={{ fontSize: '10px', color: '#9CA3AF', marginTop: 2 }}>taux consommation</div>
               </div>

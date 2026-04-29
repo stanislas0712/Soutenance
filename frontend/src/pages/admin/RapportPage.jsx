@@ -12,6 +12,7 @@ import {
   TopDepenses,
   RepartitionBudgets,
 } from '../../components/rapports/TableauDepenses'
+import { formaterNombre } from '../../utils/formatters'
 
 /* ── Helpers ──────────────────────────────────────────────────────────────── */
 const THIS_YEAR  = new Date().getFullYear()
@@ -148,7 +149,7 @@ function ResultPanel({ rapport, isLoading, error }) {
           </h2>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
             {rapport.detail_mois.map((m) => {
-              const fmt = (n) => new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 0 }).format(parseFloat(n || 0))
+              const fmt = (n) => formaterNombre(n, { maximumFractionDigits: 0 })
               return (
                 <div key={m.mois} style={{
                   background: '#fff', borderRadius: 10, padding: '14px 16px',

@@ -10,8 +10,10 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, Legend, Cell,
 } from 'recharts'
+import { formaterNombre } from '../../utils/formatters'
 
-const fmt = n => new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 0 }).format(parseFloat(n || 0))
+const fmt = (n) => formaterNombre(n, { maximumFractionDigits: 0 })
+const fmtMillions = (n) => `${formaterNombre(n / 1e6, { maximumFractionDigits: 1 })}M`
 
 function jaugeColor(taux) {
   if (taux > 75) return '#F43F5E'
@@ -110,7 +112,7 @@ export default function GestionnaireDashboard() {
         <KpiCard icon={<CheckCircle2 size={22} strokeWidth={1.8}/>} label="Approuvés"      value={approuves}                                                               color="#16A34A"  bgColor="#DCFCE7" trendText={approuves > 0 ? `${approuves} budget${approuves>1?'s':''} actifs` : 'Aucun approuvé'} />
         <KpiCard icon={<Clock size={22} strokeWidth={1.8}/>}        label="En validation"  value={soumis}                                                                  color="#D97706"  bgColor="#FEF3C7" trendText={soumis > 0 ? `${soumis} en attente` : 'Tout traité'} />
         <KpiCard icon={<XCircle size={22} strokeWidth={1.8}/>}      label="Rejetés"        value={rejetes}                                                                 color="#DC2626"  bgColor="#FEE2E2" trendText={rejetes > 0 ? `${rejetes} à corriger` : 'Aucun rejet'} trendPositive={rejetes === 0} />
-        <KpiCard icon={<Wallet size={22} strokeWidth={1.8}/>}       label="Montant total"  value={montantTotal >= 1e6 ? `${(montantTotal/1e6).toFixed(1)}M` : `${fmt(montantTotal)} F`} color="#7C3AED" bgColor="#EDE9FE" sparklineData={sparkMois.map(m => m.montant)} trendText="FCFA alloués" />
+        <KpiCard icon={<Wallet size={22} strokeWidth={1.8}/>}       label="Montant total"  value={montantTotal >= 1e6 ? fmtMillions(montantTotal) : `${fmt(montantTotal)} F`} color="#7C3AED" bgColor="#EDE9FE" sparklineData={sparkMois.map(m => m.montant)} trendText="FCFA alloués" />
         <KpiCard icon={<ShieldAlert size={22} strokeWidth={1.8}/>}  label="Alertes"        value={critiques}                                                               color="#DC2626"  bgColor="#FEE2E2" trendText={alertes > 0 ? `+${alertes} avertissements` : 'Aucune alerte'} trendPositive={alertes === 0} />
       </div>
 
